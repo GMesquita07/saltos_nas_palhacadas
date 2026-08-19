@@ -1,0 +1,4 @@
+.brandMark { display: inline-flex; align-items: center; gap: 10px; color: var(--color-ink); text-align: left; }
+.symbol { display: grid; width: 40px; place-items: center; aspect-ratio: 1; border: 1px solid currentColor; border-radius: 50%; font: 600 21px/1 Georgia, serif; }
+.text { display: grid; gap: 3px; line-height: 1; }.text strong { font: 600 21px/1 Georgia, serif; letter-spacing: -.5px; }.text small { font-size: 8px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; }
+.compact .symbol { width: 31px; font-size: 16px; }.compact .text strong { font-size: 17px; }.compact .text small { font-size: 7px; }

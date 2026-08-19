@@ -1,0 +1,2 @@
+.footer { border-top: 1px solid var(--color-line); }.inner { width: min(1120px, calc(100% - 48px)); min-height: 105px; display: flex; align-items: center; gap: 28px; margin: auto; color: var(--color-muted); font-size: 13px; }.inner p { margin: 0; }.inner a { margin-left: auto; color: var(--color-ink); text-decoration: none; }.inner a:hover { text-decoration: underline; }
+@media (max-width: 600px) { .inner { width: min(100% - 32px, 1120px); align-items: flex-start; flex-direction: column; gap: 12px; padding: 26px 0; }.inner a { margin-left: 0; } }

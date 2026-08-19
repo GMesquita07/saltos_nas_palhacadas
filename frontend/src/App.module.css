@@ -1,0 +1,7 @@
+.application { min-height: 100svh; display: flex; flex-direction: column; opacity: 1; transition: opacity 280ms ease; }
+.isWaiting { opacity: 0; }
+.main { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .isWaiting { opacity: 1; }
+}
