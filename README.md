@@ -30,6 +30,7 @@ Terminal 1 — API:
 
 ```bash
 cd backend
+set -a && source ../.env && set +a
 ./mvnw spring-boot:run
 ```
 
@@ -72,6 +73,17 @@ A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca 
 | `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
 
 Nesta fase não existem dados de demonstração: os perfis e conteúdos serão criados pela futura área de administração. Os endpoints públicos só devolvem perfis ativos e conteúdos publicados.
+
+## Administração
+
+Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Defina ambos no `.env` antes do primeiro arranque. O painel está disponível no botão **Admin** do site e usa os endpoints seguintes:
+
+- `POST /api/v1/auth/login` — devolve um token de sessão JWT.
+- `POST /api/v1/auth/register` — cria exclusivamente contas `CUSTOMER`.
+- `POST /api/v1/admin/profiles` — requer token `ADMIN`.
+- `POST /api/v1/admin/profiles/{slug}/portfolio` — requer token `ADMIN`.
+
+Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 
 ## Deploy gratuito
 

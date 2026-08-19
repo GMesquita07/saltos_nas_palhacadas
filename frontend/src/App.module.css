@@ -1,6 +1,7 @@
 .application { min-height: 100svh; display: flex; flex-direction: column; opacity: 1; transition: opacity 280ms ease; }
 .isWaiting { opacity: 0; }
 .main { flex: 1; }
+.feedback { width: min(1120px, calc(100% - 48px)); padding: 90px 0; margin: auto; color: var(--color-muted); text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {
   .isWaiting { opacity: 1; }

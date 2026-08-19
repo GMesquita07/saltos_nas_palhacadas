@@ -59,6 +59,9 @@ hs_err_pid*
 *.log
 logs/
 
+# Local media uploads (use external object storage in production)
+backend/uploads/
+
 # ==========================================
 # OS generated files
 # ==========================================

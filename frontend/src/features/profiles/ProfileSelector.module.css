@@ -1,2 +1,3 @@
 .section { width: min(1120px, calc(100% - 48px)); display: grid; min-height: calc(100svh - 187px); place-content: center; padding: 72px 0; margin: auto; }.intro { max-width: 500px; margin: 0 auto 42px; text-align: center; }.intro h1 { margin: 0 0 13px; font-size: clamp(36px, 5vw, 60px); }.intro p:last-child { margin: 0; color: var(--color-muted); line-height: 1.6; }.cards { display: grid; grid-template-columns: repeat(2, minmax(260px, 370px)); justify-content: center; gap: 18px; }
+.empty { margin: 0; color: var(--color-muted); text-align: center; }
 @media (max-width: 600px) { .section { width: min(100% - 32px, 1120px); padding: 50px 0; }.cards { grid-template-columns: minmax(0, 370px); } }

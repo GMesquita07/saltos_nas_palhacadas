@@ -24,6 +24,11 @@ public class AdminPortfolioController {
         Profile profile = profiles.findBySlugAndActiveTrue(slug).orElseThrow(() -> new ProfileNotFoundException(slug));
         items.save(new PortfolioItem(profile, request.type(), request.title(), request.location(), request.eventDate(), request.mediaUrl(), request.thumbnailUrl(), request.displayOrder(), request.published()));
     }
+    @DeleteMapping("/profiles/{slug}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteProfile(@PathVariable String slug) {
+        Profile profile = profiles.findBySlugAndActiveTrue(slug).orElseThrow(() -> new ProfileNotFoundException(slug));
+        profiles.delete(profile);
+    }
     record CreateProfileRequest(@NotBlank @Pattern(regexp="[a-z0-9]+(?:-[a-z0-9]+)*") String slug, @NotBlank @Size(max=120) String name, @NotBlank @Size(max=120) String role, @NotBlank @Size(max=500) String description, @Size(max=2048) String profileImageUrl) { }
     record CreatePortfolioItemRequest(@NotNull MediaType type, @NotBlank @Size(max=180) String title, @NotBlank @Size(max=180) String location, @NotNull LocalDate eventDate, @NotBlank @Size(max=2048) String mediaUrl, @Size(max=2048) String thumbnailUrl, @Min(0) int displayOrder, boolean published) { }
 }
