@@ -60,6 +60,19 @@ Copie os ficheiros de exemplo; nunca publique os ficheiros `.env`.
 
 O perfil `dev` tem valores locais seguros. O perfil `prod` exige `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` no provedor de alojamento.
 
+## API pública
+
+A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca altere uma migration que já tenha sido aplicada; para cada mudança de schema, crie uma nova migration versionada.
+
+| Método | Endpoint | Descrição |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | Estado da API |
+| `GET` | `/api/v1/profiles` | Lista perfis ativos |
+| `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
+| `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
+
+Nesta fase não existem dados de demonstração: os perfis e conteúdos serão criados pela futura área de administração. Os endpoints públicos só devolvem perfis ativos e conteúdos publicados.
+
 ## Deploy gratuito
 
 1. Crie uma base PostgreSQL no [Neon](https://neon.com/pricing) e guarde as credenciais apenas nas variáveis de ambiente do Render.
@@ -88,7 +101,7 @@ Antes de `git add .`, confirme que `.env` não aparece na lista. Para alteraçõ
 
 ## Próximas funcionalidades
 
-1. Definir entidades `Media`, `Servico` e `Contacto` com migrations Flyway.
-2. Criar área de administração protegida para o animador gerir o conteúdo.
+1. Criar área de administração protegida para o animador gerir perfis e conteúdos.
+2. Ligar o frontend aos endpoints públicos e tratar estados de carregamento, vazio e erro.
 3. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
-4. Adicionar testes de API, acessibilidade e uma política de privacidade/cookies antes do lançamento.
+4. Adicionar CI no GitHub Actions, testes de acessibilidade e uma política de privacidade/cookies antes do lançamento.
