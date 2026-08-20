@@ -61,4 +61,5 @@ public class Contact {
     public String getValue() { return value; }
     public int getDisplayOrder() { return displayOrder; }
     public boolean isVisible() { return visible; }
+    public void update(String label, ContactType type, String value) { this.label = label; this.type = type; this.value = value; }
 }

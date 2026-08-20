@@ -86,4 +86,10 @@ public class PortfolioItem {
     public String getMediaUrl() { return mediaUrl; }
     public String getThumbnailUrl() { return thumbnailUrl; }
     public int getDisplayOrder() { return displayOrder; }
+    public boolean isPublished() { return published; }
+
+    public void update(MediaType mediaType, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, boolean published) {
+        this.mediaType = mediaType; this.title = title; this.location = location; this.eventDate = eventDate;
+        this.mediaUrl = mediaUrl; this.thumbnailUrl = thumbnailUrl; this.published = published;
+    }
 }

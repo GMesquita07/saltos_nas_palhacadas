@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PortfolioItemRepository extends JpaRepository<PortfolioItem, Long> {
-    List<PortfolioItem> findAllByProfileIdAndPublishedTrueOrderByDisplayOrderAscEventDateDesc(Long profileId);
-    List<PortfolioItem> findAllByProfileIdAndPublishedTrueAndMediaTypeOrderByDisplayOrderAscEventDateDesc(Long profileId, MediaType mediaType);
+    List<PortfolioItem> findAllByProfileIdAndPublishedTrueOrderByEventDateDescIdDesc(Long profileId);
+    List<PortfolioItem> findAllByProfileIdAndPublishedTrueAndMediaTypeOrderByEventDateDescIdDesc(Long profileId, MediaType mediaType);
     Optional<PortfolioItem> findByIdAndProfileSlug(Long id, String slug);
 }

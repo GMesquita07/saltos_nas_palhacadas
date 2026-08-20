@@ -78,4 +78,8 @@ public class Profile {
     public String getProfileImageUrl() { return profileImageUrl; }
     public String getProfileImagePosition() { return profileImagePosition; }
     public boolean isActive() { return active; }
+    public void update(String name, String role, String description, String profileImageUrl, String profileImagePosition) {
+        this.name = name; this.role = role; this.description = description; this.profileImageUrl = profileImageUrl;
+        this.profileImagePosition = profileImagePosition == null ? "50% 50%" : profileImagePosition;
+    }
 }

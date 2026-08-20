@@ -17,6 +17,6 @@ public class ContactController {
 
     @GetMapping
     List<ContactResponse> listContacts() {
-        return contacts.findAllByVisibleTrueOrderByDisplayOrderAscIdAsc().stream().map(ContactResponse::from).toList();
+        return contacts.findAllByVisibleTrueOrderByIdDesc().stream().map(ContactResponse::from).toList();
     }
 }

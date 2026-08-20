@@ -16,8 +16,8 @@ public class PortfolioService {
 
     public List<PortfolioItem> findPublishedItems(Long profileId, MediaType mediaType) {
         if (mediaType == null) {
-            return portfolioItemRepository.findAllByProfileIdAndPublishedTrueOrderByDisplayOrderAscEventDateDesc(profileId);
+            return portfolioItemRepository.findAllByProfileIdAndPublishedTrueOrderByEventDateDescIdDesc(profileId);
         }
-        return portfolioItemRepository.findAllByProfileIdAndPublishedTrueAndMediaTypeOrderByDisplayOrderAscEventDateDesc(profileId, mediaType);
+        return portfolioItemRepository.findAllByProfileIdAndPublishedTrueAndMediaTypeOrderByEventDateDescIdDesc(profileId, mediaType);
     }
 }
