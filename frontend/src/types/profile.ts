@@ -5,4 +5,5 @@ export type Profile = {
   role: string
   description: string
   imageUrl?: string
+  imagePosition?: string
 }

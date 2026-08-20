@@ -6,5 +6,6 @@ export type PortfolioItem = {
   title: string
   location: string
   eventDate: string
-  imageUrl?: string
+  mediaUrl: string
+  thumbnailUrl?: string
 }

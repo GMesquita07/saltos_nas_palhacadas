@@ -20,7 +20,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/health", "/api/v1/auth/**", "/api/v1/profiles/**", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/v1/health", "/api/v1/auth/**", "/api/v1/profiles/**", "/api/v1/contacts/**", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/media/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().denyAll())

@@ -32,6 +32,9 @@ public class Profile {
     @Column(name = "profile_image_url", length = 2048)
     private String profileImageUrl;
 
+    @Column(name = "profile_image_position", nullable = false, length = 20)
+    private String profileImagePosition = "50% 50%";
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -44,11 +47,16 @@ public class Profile {
     protected Profile() { }
 
     public Profile(String slug, String name, String role, String description, String profileImageUrl) {
+        this(slug, name, role, description, profileImageUrl, "50% 50%");
+    }
+
+    public Profile(String slug, String name, String role, String description, String profileImageUrl, String profileImagePosition) {
         this.slug = slug;
         this.name = name;
         this.role = role;
         this.description = description;
         this.profileImageUrl = profileImageUrl;
+        this.profileImagePosition = profileImagePosition == null ? "50% 50%" : profileImagePosition;
     }
 
     @jakarta.persistence.PrePersist
@@ -68,5 +76,6 @@ public class Profile {
     public String getRole() { return role; }
     public String getDescription() { return description; }
     public String getProfileImageUrl() { return profileImageUrl; }
+    public String getProfileImagePosition() { return profileImagePosition; }
     public boolean isActive() { return active; }
 }

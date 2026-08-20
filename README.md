@@ -71,8 +71,9 @@ A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca 
 | `GET` | `/api/v1/profiles` | Lista perfis ativos |
 | `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
 | `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
+| `GET` | `/api/v1/contacts` | Lista os contactos visíveis no site |
 
-Nesta fase não existem dados de demonstração: os perfis e conteúdos serão criados pela futura área de administração. Os endpoints públicos só devolvem perfis ativos e conteúdos publicados.
+Nesta fase não existem dados de demonstração: os perfis, conteúdos e contactos são criados no painel de administração. Os endpoints públicos só devolvem dados visíveis ao visitante.
 
 ## Administração
 
@@ -82,6 +83,9 @@ Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADM
 - `POST /api/v1/auth/register` — cria exclusivamente contas `CUSTOMER`.
 - `POST /api/v1/admin/profiles` — requer token `ADMIN`.
 - `POST /api/v1/admin/profiles/{slug}/portfolio` — requer token `ADMIN`.
+- `DELETE /api/v1/admin/profiles/{slug}/portfolio/{itemId}` — remove um conteúdo; requer token `ADMIN`.
+- `POST /api/v1/admin/contacts` — adiciona um contacto público; requer token `ADMIN`.
+- `DELETE /api/v1/admin/contacts/{id}` — remove um contacto; requer token `ADMIN`.
 
 Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 

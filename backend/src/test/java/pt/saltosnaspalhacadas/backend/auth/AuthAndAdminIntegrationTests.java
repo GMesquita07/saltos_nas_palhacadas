@@ -1,6 +1,7 @@
 package pt.saltosnaspalhacadas.backend.auth;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,5 +48,18 @@ class AuthAndAdminIntegrationTests {
     void anonymousUserCannotCreateProfile() throws Exception {
         mockMvc.perform(post("/api/v1/admin/profiles").contentType("application/json").content("{}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCanPublishAContactAndItIsPubliclyListed() throws Exception {
+        String token = jwtService.createToken(users.findByEmailAndActiveTrue("admin@example.test").orElseThrow());
+
+        mockMvc.perform(post("/api/v1/admin/contacts").header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"label\":\"Email geral\",\"type\":\"EMAIL\",\"value\":\"ola@example.test\",\"displayOrder\":0}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.label").value("Email geral"));
+
+        mockMvc.perform(get("/api/v1/contacts"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].value").value("ola@example.test"));
     }
 }
