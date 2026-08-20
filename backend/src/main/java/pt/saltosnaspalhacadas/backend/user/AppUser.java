@@ -1,6 +1,7 @@
 package pt.saltosnaspalhacadas.backend.user;
 
 import java.time.Instant;
+import java.util.Locale;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,7 +15,11 @@ public class AppUser {
     @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
     protected AppUser() { }
-    public AppUser(String email, String passwordHash, UserRole role) { this.email = email.toLowerCase(); this.passwordHash = passwordHash; this.role = role; }
+    public AppUser(String email, String passwordHash, UserRole role) {
+        this.email = email.trim().toLowerCase(Locale.ROOT);
+        this.passwordHash = passwordHash;
+        this.role = role;
+    }
     @PrePersist void onCreate() { createdAt = Instant.now(); updatedAt = createdAt; }
     @PreUpdate void onUpdate() { updatedAt = Instant.now(); }
     public Long getId() { return id; } public String getEmail() { return email; } public String getPasswordHash() { return passwordHash; } public UserRole getRole() { return role; } public boolean isActive() { return active; }

@@ -1,1 +1,11 @@
-.card { overflow: hidden; border: 1px solid var(--color-line); background: var(--color-surface); }.image { position: relative; display: grid; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; color: #77746e; background: #e6e3dd; font-size: 23px; }.image img,.image video { width: 100%; height: 100%; object-fit: cover; }.image small { position: absolute; top: 12px; left: 12px; padding: 5px 7px; color: var(--color-ink); background: rgb(250 249 246 / 85%); font-size: 10px; pointer-events:none; }.details { padding: 17px; }.details p { margin: 0 0 7px; color: var(--color-muted); font-size: 11px; }.details h3 { margin: 0; font: 600 20px/1.2 Georgia, serif; }
+.card { overflow: hidden; border: 1px solid var(--color-line); background: var(--color-surface); }
+.image { position: relative; display: grid; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; color: #77746e; background: #e6e3dd; font-size: 23px; }
+.image img,.image video { width: 100%; height: 100%; object-fit: cover; }
+.image small { position: absolute; top: 12px; left: 12px; padding: 5px 7px; color: var(--color-ink); background: rgb(250 249 246 / 85%); font-size: 10px; pointer-events:none; }
+.favoriteButton { position: absolute; top: 9px; right: 9px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgb(37 36 33 / 16%); border-radius: 50%; color: var(--color-ink); background: rgb(250 249 246 / 92%); font-size: 21px; line-height: 1; }
+.favoriteButton:hover { transform: scale(1.06); }
+.favoriteButton.isFavorite { border-color: #9b332c; color: #9b332c; }
+.details { padding: 17px; }
+.details p { margin: 0 0 7px; color: var(--color-muted); font-size: 11px; }
+.details h3 { margin: 0; font: 600 20px/1.2 Georgia, serif; }
+.details .favoriteError { margin: 11px 0 0; color: #9b332c; font-size: 11px; line-height: 1.45; }

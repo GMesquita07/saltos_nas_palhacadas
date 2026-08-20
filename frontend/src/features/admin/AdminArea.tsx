@@ -8,7 +8,6 @@ import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
 import styles from './AdminArea.module.css'
 
-type TokenResponse = { accessToken: string; role: 'ADMIN' | 'CUSTOMER' }
 type Notice = { type: 'success' | 'error'; text: string }
 type AdminPage = 'profile' | 'content' | 'contacts'
 type MediaType = 'PHOTO' | 'VIDEO'
@@ -46,7 +45,6 @@ type ContactField = {
   inputMode: 'email' | 'tel' | 'text' | 'url'
 }
 
-const storageKey = 'saltos.admin-token'
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const emptyProfileForm = (): ProfileFormState => ({
@@ -74,8 +72,7 @@ const emptyContactForm = (): ContactFormState => ({
   value: '',
 })
 
-export function AdminArea({ onExit }: { onExit: () => void }) {
-  const [token, setToken] = useState(() => sessionStorage.getItem(storageKey))
+export function AdminArea({ onExit, token }: { onExit: () => void; token: string }) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [page, setPage] = useState<AdminPage>('profile')
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -147,33 +144,6 @@ export function AdminArea({ onExit }: { onExit: () => void }) {
       isCurrent = false
     }
   }, [token])
-
-  async function login(form: HTMLFormElement) {
-    const values = new FormData(form)
-
-    try {
-      const result = await apiClient<TokenResponse>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: values.get('email'),
-          password: values.get('password'),
-        }),
-      })
-
-      if (result.role !== 'ADMIN') {
-        throw new Error('Esta conta não tem permissões de administração.')
-      }
-
-      sessionStorage.setItem(storageKey, result.accessToken)
-      setToken(result.accessToken)
-      setNotice(null)
-    } catch (error) {
-      setNotice({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Não foi possível iniciar sessão.',
-      })
-    }
-  }
 
   async function upload(event: ChangeEvent<HTMLInputElement>, onUploaded: (url: string, file: File) => void) {
     const input = event.currentTarget
@@ -473,10 +443,6 @@ export function AdminArea({ onExit }: { onExit: () => void }) {
     }
   }
 
-  if (!token) {
-    return <Login onExit={onExit} notice={notice} onLogin={login} />
-  }
-
   return (
     <section className={styles.dashboard}>
       <div className={styles.top}>
@@ -489,16 +455,7 @@ export function AdminArea({ onExit }: { onExit: () => void }) {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            sessionStorage.removeItem(storageKey)
-            setToken(null)
-            setNotice(null)
-          }}
-        >
-          Terminar sessão
-        </button>
+        <button type="button" onClick={onExit}>Voltar ao site</button>
       </div>
 
       <nav className={styles.tabs} aria-label="Secções de administração">
@@ -560,39 +517,6 @@ export function AdminArea({ onExit }: { onExit: () => void }) {
           onDelete={deleteContact}
         />
       )}
-    </section>
-  )
-}
-
-function Login({
-  onExit,
-  notice,
-  onLogin,
-}: {
-  onExit: () => void
-  notice: Notice | null
-  onLogin: (form: HTMLFormElement) => Promise<void>
-}) {
-  return (
-    <section className={styles.login}>
-      <button onClick={onExit} type="button">← Voltar ao site</button>
-      <div>
-        <p className="eyebrow">Área reservada</p>
-        <h1>Administração</h1>
-        <p>Inicia sessão para gerir os perfis e conteúdos.</p>
-        <form onSubmit={(event) => { event.preventDefault(); void onLogin(event.currentTarget) }}>
-          <label>
-            Email
-            <input name="email" type="email" autoComplete="email" required />
-          </label>
-          <label>
-            Palavra-passe
-            <input name="password" type="password" autoComplete="current-password" required />
-          </label>
-          {notice && <p className={styles[notice.type]}>{notice.text}</p>}
-          <button type="submit">Entrar</button>
-        </form>
-      </div>
     </section>
   )
 }

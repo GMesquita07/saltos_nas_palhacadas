@@ -1,2 +1,13 @@
-.header { border-bottom: 1px solid var(--color-line); }.inner { width: min(1120px, calc(100% - 48px)); min-height: 82px; display: flex; align-items: center; justify-content: space-between; margin: auto; }.brandButton { border: 0; padding: 0; background: none; }.inner nav { display: flex; gap: 25px; }.inner nav button, .inner nav a { border: 0; padding: 4px 0; color: var(--color-muted); background: none; font-size: 13px; text-decoration: none; }.inner nav button:hover, .inner nav a:hover { color: var(--color-ink); }
-@media (max-width: 600px) { .inner { width: min(100% - 32px, 1120px); min-height: 72px; } }
+.header { border-bottom: 1px solid var(--color-line); }
+.inner { width: min(1120px, calc(100% - 48px)); min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: auto; }
+.brandButton { flex: 0 0 auto; border: 0; padding: 0; background: none; }
+.inner nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 18px; }
+.inner nav button, .inner nav a { display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 4px 0; color: var(--color-muted); background: none; font-size: 13px; text-decoration: none; }
+.inner nav button:hover, .inner nav a:hover { color: var(--color-ink); }
+.inner nav svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.inner nav .authenticationButton { border: 1px solid var(--color-ink); padding: 8px 11px; color: var(--color-ink); }
+.inner nav .authenticationButton:hover { color: white; background: var(--color-ink); }
+.inner nav .accountButton { color: var(--color-ink); font-weight: 600; }
+.inner nav .logoutButton { color: #9b332c; }
+@media (max-width: 760px) { .inner { width: min(100% - 32px, 1120px); min-height: 72px; align-items: flex-start; padding: 18px 0; } .inner nav { justify-content: flex-end; gap: 11px 16px; } }
+@media (max-width: 470px) { .inner { flex-direction: column; align-items: stretch; } .inner nav { justify-content: flex-start; } }

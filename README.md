@@ -72,15 +72,22 @@ A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca 
 | `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
 | `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
 | `GET` | `/api/v1/contacts` | Lista os contactos visíveis no site |
+| `POST` | `/api/v1/auth/register` | Cria uma conta normal (`CUSTOMER`) |
+| `POST` | `/api/v1/auth/login` | Inicia sessão e devolve um JWT |
+| `GET` | `/api/v1/auth/me` | Devolve a conta da sessão atual |
+| `GET` | `/api/v1/favorites` | Lista os favoritos da conta autenticada |
+| `POST` / `DELETE` | `/api/v1/favorites/{portfolioItemId}` | Adiciona ou remove uma publicação dos favoritos |
 
 Nesta fase não existem dados de demonstração: os perfis, conteúdos e contactos são criados no painel de administração. Os endpoints públicos só devolvem dados visíveis ao visitante.
 
 ## Administração
 
-Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Defina ambos no `.env` antes do primeiro arranque. O painel está disponível no botão **Admin** do site e usa os endpoints seguintes:
+Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Defina ambos no `.env` antes do primeiro arranque. O login é único para todo o site: contas normais criadas em **Criar conta** recebem o papel `CUSTOMER`; apenas contas com papel `ADMIN` veem e podem abrir o botão **Admin**.
 
 - `POST /api/v1/auth/login` — devolve um token de sessão JWT.
 - `POST /api/v1/auth/register` — cria exclusivamente contas `CUSTOMER`.
+- `GET /api/v1/auth/me` — valida a sessão atual.
+- `GET`, `POST` e `DELETE /api/v1/favorites/**` — requerem uma conta autenticada.
 - `POST /api/v1/admin/profiles` — requer token `ADMIN`.
 - `POST /api/v1/admin/profiles/{slug}/portfolio` — requer token `ADMIN`.
 - `DELETE /api/v1/admin/profiles/{slug}/portfolio/{itemId}` — remove um conteúdo; requer token `ADMIN`.
@@ -117,7 +124,6 @@ Antes de `git add .`, confirme que `.env` não aparece na lista. Para alteraçõ
 
 ## Próximas funcionalidades
 
-1. Criar área de administração protegida para o animador gerir perfis e conteúdos.
-2. Ligar o frontend aos endpoints públicos e tratar estados de carregamento, vazio e erro.
-3. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
-4. Adicionar CI no GitHub Actions, testes de acessibilidade e uma política de privacidade/cookies antes do lançamento.
+1. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
+2. Adicionar recuperação de palavra-passe e verificação de email antes do lançamento público.
+3. Adicionar CI no GitHub Actions, testes de acessibilidade e uma política de privacidade/cookies antes do lançamento.

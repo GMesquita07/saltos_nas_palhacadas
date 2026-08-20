@@ -5,7 +5,12 @@ export async function apiClient<T>(path: string, options: RequestInit = {}, toke
   if (!response.ok) {
     const body = await response.text()
     const detail = parseError(body)
-    throw new Error(response.status === 401 ? 'Email ou palavra-passe inválidos.' : detail || `Não foi possível concluir a operação (${response.status}).`)
+    if (response.status === 401) {
+      throw new Error(path === '/auth/login'
+        ? 'Email ou palavra-passe inválidos.'
+        : 'A tua sessão terminou. Inicia sessão novamente.')
+    }
+    throw new Error(detail || `Não foi possível concluir a operação (${response.status}).`)
   }
   if (response.status === 204) return undefined as T
   const body = await response.text()

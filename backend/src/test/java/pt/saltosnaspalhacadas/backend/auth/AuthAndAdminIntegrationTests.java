@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,25 @@ class AuthAndAdminIntegrationTests {
     void anonymousUserCannotCreateProfile() throws Exception {
         mockMvc.perform(post("/api/v1/admin/profiles").contentType("application/json").content("{}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void customerCannotAccessAdminEndpoints() throws Exception {
+        AppUser customer = users.save(new AppUser(
+                "cliente-" + UUID.randomUUID().toString().substring(0, 8) + "@example.test",
+                passwords.encode("palavra123"),
+                UserRole.CUSTOMER));
+
+        try {
+            String token = jwtService.createToken(customer);
+            mockMvc.perform(post("/api/v1/admin/profiles")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType("application/json")
+                            .content("{\"slug\":\"perfil-nao-autorizado\",\"name\":\"Sem permissão\",\"role\":\"DJ\",\"description\":\"Este perfil não deve ser criado\"}"))
+                    .andExpect(status().isForbidden());
+        } finally {
+            users.deleteById(customer.getId());
+        }
     }
 
     @Test

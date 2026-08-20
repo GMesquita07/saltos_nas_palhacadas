@@ -79,6 +79,7 @@ public class PortfolioItem {
     void onUpdate() { updatedAt = Instant.now(); }
 
     public Long getId() { return id; }
+    public Profile getProfile() { return profile; }
     public MediaType getMediaType() { return mediaType; }
     public String getTitle() { return title; }
     public String getLocation() { return location; }

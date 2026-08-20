@@ -1,0 +1,17 @@
+.page { width: min(960px, calc(100% - 48px)); padding: 65px 0 95px; margin: auto; }
+.back { border: 0; padding: 0; color: var(--color-muted); background: none; font-size: 13px; }
+.back:hover { color: var(--color-ink); }
+.panel { width: min(100%, 430px); margin: 56px auto; }
+.panel h1 { margin-bottom: 12px; }
+.intro { color: var(--color-muted); line-height: 1.6; }
+.modeSwitch { display: grid; grid-template-columns: 1fr 1fr; margin-top: 30px; border-bottom: 1px solid var(--color-line); }
+.modeSwitch button { border: 0; border-bottom: 2px solid transparent; padding: 12px; color: var(--color-muted); background: transparent; }
+.modeSwitch .active { border-color: var(--color-ink); color: var(--color-ink); font-weight: 600; }
+.panel form { display: grid; gap: 16px; margin-top: 25px; }
+.panel label { display: grid; gap: 7px; color: var(--color-muted); font-size: 12px; }
+.panel input { width: 100%; border: 1px solid var(--color-line); padding: 11px; color: var(--color-ink); background: var(--color-surface); }
+.panel input:focus { outline: 2px solid rgb(35 34 32 / 25%); outline-offset: 1px; }
+.panel small { color: var(--color-muted); font-size: 11px; }
+.panel form > button { border: 0; padding: 12px; color: white; background: var(--color-ink); }
+.error { margin: 0; color: #9b332c; line-height: 1.5; }
+@media (max-width: 650px) { .page { width: min(100% - 32px, 960px); padding-top: 40px; } .panel { margin-top: 45px; } }

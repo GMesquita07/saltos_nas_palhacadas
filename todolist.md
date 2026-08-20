@@ -1,0 +1,3 @@
+- falta a parte do agendamento
+- deploy online do site
+- fix alteraçao da foto de perfil, descubri esse bug

@@ -1,0 +1,10 @@
+.page { width: min(1120px, calc(100% - 48px)); padding: 56px 0 96px; margin: auto; }
+.back { border: 0; padding: 0; color: var(--color-muted); background: none; font-size: 13px; }
+.back:hover { color: var(--color-ink); }
+.header { margin: 65px 0 45px; text-align: center; }
+.header h1 { margin: 0 0 12px; }
+.header p:last-child { max-width: 530px; margin: auto; color: var(--color-muted); line-height: 1.6; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.profile { margin: 0 0 8px; color: var(--color-muted); font-size: 11px; }
+.feedback { color: var(--color-muted); text-align: center; line-height: 1.6; }
+@media (max-width: 760px) { .page { width: min(100% - 32px, 1120px); padding-top: 36px; } .header { margin: 45px 0 35px; } .grid { grid-template-columns: 1fr; } }
