@@ -1,0 +1,299 @@
+.page {
+  margin-top: 30px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 24px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.header p,
+.feedback {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.header p {
+  max-width: 590px;
+  margin: 10px 0 0;
+}
+
+.controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.controls label,
+.decisionForm label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.controls select,
+.controls button,
+.actions button,
+.decisionForm input,
+.decisionForm textarea,
+.decisionForm button {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.controls select,
+.decisionForm input,
+.decisionForm textarea {
+  padding: 10px;
+}
+
+.controls button,
+.actions button,
+.decisionForm button {
+  padding: 11px 13px;
+}
+
+.controls button:hover,
+.actions button:hover,
+.decisionForm button:hover {
+  border-color: var(--color-ink);
+}
+
+.controls button:disabled,
+.actions button:disabled,
+.decisionForm button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.feedback {
+  margin: 30px 0;
+}
+
+.list {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.booking {
+  border: 1px solid var(--color-line);
+  padding: 24px;
+}
+
+.bookingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bookingHeader h3 {
+  margin: 5px 0 0;
+  font-size: 24px;
+}
+
+.eyebrow,
+.details dt,
+.request h4,
+.counterSummary strong,
+.message strong {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.status {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-line);
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusPENDING {
+  border-color: #a8843c;
+  color: #715416;
+}
+
+.statusACCEPTED {
+  border-color: #78907d;
+  color: #3a6848;
+}
+
+.statusDECLINED {
+  border-color: #b85c55;
+  color: #9b332c;
+}
+
+.statusCOUNTER_PROPOSED {
+  border-color: #807199;
+  color: #5e4d77;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 0;
+}
+
+.details > div {
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
+}
+
+.details dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.details a {
+  color: inherit;
+}
+
+.request,
+.counterSummary,
+.message {
+  margin-top: 22px;
+}
+
+.request h4 + p,
+.request p,
+.message p {
+  margin: 7px 0 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.request h4:not(:first-child) {
+  margin-top: 17px;
+}
+
+.counterSummary,
+.message {
+  display: grid;
+  gap: 6px;
+  border-left: 3px solid #807199;
+  padding: 10px 13px;
+  background: #f7f5f8;
+}
+
+.message {
+  border-left-color: var(--color-ink);
+  background: #f6f5f2;
+}
+
+.createdAt {
+  margin: 18px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.actions button:first-child,
+.confirmButton {
+  border-color: var(--color-ink) !important;
+  background: var(--color-ink) !important;
+  color: white !important;
+}
+
+.declineButton {
+  border-color: #b85c55 !important;
+  color: #9b332c !important;
+}
+
+.counterButton {
+  border-color: #807199 !important;
+  color: #5e4d77 !important;
+}
+
+.decisionForm {
+  display: grid;
+  gap: 15px;
+  margin-top: 22px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 22px;
+}
+
+.decisionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.decisionHeading h4,
+.decisionHeading p {
+  margin: 0;
+}
+
+.decisionHeading p {
+  margin-top: 5px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.counterFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.decisionForm textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.decisionForm label span {
+  font-weight: 400;
+}
+
+.formError {
+  margin: 0;
+  color: #9b332c;
+  line-height: 1.5;
+}
+
+.confirmButton {
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .header,
+  .controls,
+  .bookingHeader,
+  .decisionHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .controls {
+    align-items: stretch;
+  }
+
+  .details,
+  .counterFields {
+    grid-template-columns: 1fr;
+  }
+}

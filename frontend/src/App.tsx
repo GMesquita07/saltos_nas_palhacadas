@@ -5,6 +5,7 @@ import { AccountPage } from './features/auth/AccountPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
 import { AdminArea } from './features/admin/AdminArea'
+import { BookingPage } from './features/booking/BookingPage'
 import { ContactPage } from './features/contacts/ContactPage'
 import { FavoritesPage } from './features/favorites/FavoritesPage'
 import { PortfolioPage } from './features/portfolio/PortfolioPage'
@@ -17,12 +18,14 @@ import styles from './App.module.css'
 
 const SPLASH_DURATION_MS = 2200
 
-type View = 'profiles' | 'contacts' | 'admin' | 'auth' | 'favorites' | 'account'
+type View = 'profiles' | 'contacts' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking'
 
 function App() {
   const { isSessionReady, logout, session } = useAuth()
   const [isSplashVisible, setIsSplashVisible] = useState(true)
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
+  const [bookingProfile, setBookingProfile] = useState<Profile | null>(null)
+  const [shouldReturnToBooking, setShouldReturnToBooking] = useState(false)
   const [view, setView] = useState<View>('profiles')
   const [authMode, setAuthMode] = useState<AuthenticationMode>('login')
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -48,33 +51,52 @@ function App() {
 
   function showProfiles() {
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setView('profiles')
   }
 
   function showContacts() {
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setView('contacts')
+  }
+
+  function openBooking(profile: Profile | null = null) {
+    setSelectedProfile(null)
+    setBookingProfile(profile)
+    setShouldReturnToBooking(false)
+    setView('booking')
   }
 
   function openAuthentication(mode: AuthenticationMode) {
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setAuthMode(mode)
+    setView('auth')
+  }
+
+  function requireBookingAuthentication() {
+    setAuthMode('login')
+    setShouldReturnToBooking(true)
     setView('auth')
   }
 
   function openFavorites() {
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setView('favorites')
   }
 
   function openAccount() {
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setView('account')
   }
 
   function handleAuthenticated(nextSession: AuthSession) {
     setSelectedProfile(null)
-    setView(nextSession.role === 'ADMIN' ? 'admin' : 'profiles')
+    setView(shouldReturnToBooking ? 'booking' : nextSession.role === 'ADMIN' ? 'admin' : 'profiles')
+    setShouldReturnToBooking(false)
   }
 
   function handleLogout() {
@@ -85,12 +107,13 @@ function App() {
   function openAdmin() {
     if (session?.role !== 'ADMIN') return
     setSelectedProfile(null)
+    setShouldReturnToBooking(false)
     setView('admin')
   }
 
   function renderView() {
     if (view === 'auth') {
-      return <AuthPage key={authMode} initialMode={authMode} onAuthenticated={handleAuthenticated} onBack={showProfiles} />
+      return <AuthPage key={authMode} initialMode={authMode} onAuthenticated={handleAuthenticated} onBack={() => shouldReturnToBooking ? openBooking(bookingProfile) : showProfiles()} />
     }
 
     if (view === 'admin' && session?.role === 'ADMIN') {
@@ -98,9 +121,10 @@ function App() {
     }
 
     if (view === 'contacts') return <ContactPage />
+    if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
     if (view === 'account' && session) return <AccountPage onExit={showProfiles} onFavoritesClick={openFavorites} />
-    if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} />
+    if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} />
     if (profilesError) return <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
 
     return <ProfileSelector profiles={profiles} onProfileSelect={setSelectedProfile} />
@@ -115,6 +139,7 @@ function App() {
           onAccountClick={openAccount}
           onAdminClick={openAdmin}
           onAuthenticationClick={openAuthentication}
+          onBookingClick={() => openBooking()}
           onContactsClick={showContacts}
           onFavoritesClick={openFavorites}
           onLogout={handleLogout}

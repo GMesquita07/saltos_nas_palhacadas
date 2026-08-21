@@ -6,10 +6,11 @@ import { getProfiles } from '../../services/profileService'
 import type { Contact, ContactType } from '../../types/contact'
 import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
+import { BookingManagement } from './booking/BookingManagement'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'profile' | 'content' | 'contacts'
+type AdminPage = 'profile' | 'content' | 'contacts' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 type ImagePosition = { x: number; y: number }
 
@@ -462,6 +463,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         <Tab active={page === 'profile'} onClick={() => setPage('profile')}>Novo perfil</Tab>
         <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
+        <Tab active={page === 'bookings'} onClick={() => setPage('bookings')}>Agendamentos</Tab>
       </nav>
 
       {page === 'profile' && (
@@ -516,6 +518,10 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           onEdit={startContactEditing}
           onDelete={deleteContact}
         />
+      )}
+
+      {page === 'bookings' && (
+        <BookingManagement token={token} onNotice={setNotice} />
       )}
     </section>
   )

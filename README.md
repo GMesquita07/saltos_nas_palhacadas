@@ -71,6 +71,7 @@ A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca 
 | `GET` | `/api/v1/profiles` | Lista perfis ativos |
 | `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
 | `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
+| `GET` | `/api/v1/profiles/{slug}/availability?from=YYYY-MM-DD&to=YYYY-MM-DD` | Datas já reservadas para esse artista, sem expor dados do evento |
 | `GET` | `/api/v1/contacts` | Lista os contactos visíveis no site |
 | `POST` | `/api/v1/auth/register` | Cria uma conta normal (`CUSTOMER`) |
 | `POST` | `/api/v1/auth/login` | Inicia sessão e devolve um JWT |
@@ -93,6 +94,20 @@ Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADM
 - `DELETE /api/v1/admin/profiles/{slug}/portfolio/{itemId}` — remove um conteúdo; requer token `ADMIN`.
 - `POST /api/v1/admin/contacts` — adiciona um contacto público; requer token `ADMIN`.
 - `DELETE /api/v1/admin/contacts/{id}` — remove um contacto; requer token `ADMIN`.
+
+## Agendamentos
+
+O visitante pode consultar o calendário de cada artista sem iniciar sessão. Apenas as datas de eventos **aceites** são públicas; nunca são expostos o cliente, contacto, orçamento, descrição ou notas.
+
+Para enviar uma proposta, o utilizador inicia sessão e indica artista, data, tipo de evento, nome, contacto telefónico, orçamento, descrição e notas opcionais. Cada conta só pode consultar os seus próprios pedidos e respetiva resposta. O administrador vê todas as propostas no separador **Agendamentos** do painel e pode aceitar, recusar ou enviar uma contraproposta com nova data e/ou orçamento. O cliente pode então aceitar ou recusar essa contraproposta; ao aceitá-la, os valores propostos passam a ser a reserva efetiva.
+
+- `POST /api/v1/bookings` — cria uma proposta; requer sessão autenticada.
+- `GET /api/v1/bookings/mine` — devolve apenas as propostas da conta autenticada.
+- `PUT /api/v1/bookings/{id}/counter-proposal/decision` — aceita ou recusa a contraproposta da própria conta.
+- `GET /api/v1/admin/bookings?status=PENDING` — lista propostas para o administrador.
+- `PUT /api/v1/admin/bookings/{id}/decision` — aceita, recusa ou envia contraproposta; requer `ADMIN`.
+
+O backend impede reservas aceites sobrepostas para o mesmo artista e data, incluindo decisões concorrentes, e bloqueia propostas ativas duplicadas do mesmo cliente. Para preservar o histórico, um perfil que tenha agendamentos associados não pode ser eliminado. A migration Flyway `V6__create_booking_requests.sql` é aplicada automaticamente no próximo arranque da API.
 
 Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 

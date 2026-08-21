@@ -9,6 +9,7 @@ type HeaderProps = {
   session: AuthSession | null
   onAdminClick: () => void
   onProfilesClick: () => void
+  onBookingClick: () => void
   onContactsClick: () => void
   onFavoritesClick: () => void
   onAccountClick: () => void
@@ -20,6 +21,7 @@ export function Header({
   session,
   onAdminClick,
   onProfilesClick,
+  onBookingClick,
   onContactsClick,
   onFavoritesClick,
   onAccountClick,
@@ -34,6 +36,7 @@ export function Header({
         </button>
         <nav aria-label="Navegação principal">
           <button type="button" onClick={onProfilesClick}><NavIcon name="profiles" />Perfis</button>
+          <button type="button" onClick={onBookingClick}><NavIcon name="booking" />Agendar</button>
           <button type="button" onClick={onContactsClick}><NavIcon name="contacts" />Contactos</button>
           {session && <button type="button" onClick={onFavoritesClick}><NavIcon name="favorites" />Favoritos</button>}
           {session?.role === 'ADMIN' && <button type="button" onClick={onAdminClick}><NavIcon name="admin" />Admin</button>}

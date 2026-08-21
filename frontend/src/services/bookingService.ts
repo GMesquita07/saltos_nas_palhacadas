@@ -1,0 +1,113 @@
+import { apiClient } from './apiClient'
+import type {
+  Booking,
+  BookingCounterProposal,
+  BookingCounterProposalDecision,
+  BookingDecision,
+  BookingProposal,
+  BookingStatus,
+} from '../types/booking'
+
+type ApiBooking = {
+  id: string | number
+  profileSlug: string
+  profileName?: string | null
+  eventDate: string
+  eventType: string
+  contactName: string
+  contactPhone: string
+  budget: number
+  description: string
+  notes?: string | null
+  status: string
+  counterProposal?: { budget?: number | null; eventDate?: string | null } | null
+  message?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+type AvailabilityResponse = string[] | { bookedDates?: unknown }
+
+export async function getBookedDates(profileSlug: string, from: string, to: string): Promise<string[]> {
+  const response = await apiClient<AvailabilityResponse>(`/profiles/${encodeURIComponent(profileSlug)}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+  const values = Array.isArray(response) ? response : response.bookedDates
+
+  if (!Array.isArray(values)) return []
+
+  return values.filter((value): value is string => typeof value === 'string')
+}
+
+export async function createBooking(proposal: BookingProposal, token: string): Promise<Booking> {
+  const response = await apiClient<ApiBooking>('/bookings', {
+    method: 'POST',
+    body: JSON.stringify(proposal),
+  }, token)
+
+  return toBooking(response)
+}
+
+export async function getMyBookings(token: string): Promise<Booking[]> {
+  const response = await apiClient<ApiBooking[]>('/bookings/mine', {}, token)
+  return response.map(toBooking)
+}
+
+export async function getAdminBookings(token: string, status?: BookingStatus): Promise<Booking[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  const response = await apiClient<ApiBooking[]>(`/admin/bookings${query}`, {}, token)
+  return response.map(toBooking)
+}
+
+export async function decideBooking(id: string, decision: BookingDecision, token: string): Promise<Booking> {
+  const response = await apiClient<ApiBooking>(`/admin/bookings/${encodeURIComponent(id)}/decision`, {
+    method: 'PUT',
+    body: JSON.stringify(decision),
+  }, token)
+  return toBooking(response)
+}
+
+export async function respondToCounterProposal(
+  id: string,
+  decision: BookingCounterProposalDecision,
+  token: string,
+): Promise<Booking> {
+  const response = await apiClient<ApiBooking>(`/bookings/${encodeURIComponent(id)}/counter-proposal/decision`, {
+    method: 'PUT',
+    body: JSON.stringify({ decision }),
+  }, token)
+
+  return toBooking(response)
+}
+
+function toBooking(booking: ApiBooking): Booking {
+  return {
+    id: String(booking.id),
+    profileSlug: booking.profileSlug,
+    profileName: booking.profileName?.trim() || booking.profileSlug,
+    eventDate: booking.eventDate,
+    eventType: booking.eventType,
+    contactName: booking.contactName,
+    contactPhone: booking.contactPhone,
+    budget: Number(booking.budget),
+    description: booking.description,
+    notes: booking.notes ?? '',
+    status: toBookingStatus(booking.status),
+    counterProposal: toCounterProposal(booking.counterProposal),
+    message: booking.message ?? null,
+    createdAt: booking.createdAt ?? '',
+    updatedAt: booking.updatedAt ?? null,
+  }
+}
+
+function toBookingStatus(status: string): BookingStatus {
+  if (status === 'ACCEPTED' || status === 'DECLINED' || status === 'COUNTER_PROPOSED') return status
+  return 'PENDING'
+}
+
+function toCounterProposal(value: ApiBooking['counterProposal']): BookingCounterProposal | null {
+  if (!value || (typeof value.budget !== 'number' && !value.eventDate)) return null
+
+  return {
+    budget: typeof value.budget === 'number' ? value.budget : null,
+    eventDate: value.eventDate ?? null,
+  }
+}

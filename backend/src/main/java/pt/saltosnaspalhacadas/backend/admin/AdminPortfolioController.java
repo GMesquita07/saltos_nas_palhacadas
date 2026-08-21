@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import pt.saltosnaspalhacadas.backend.booking.BookingRepository;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
@@ -32,10 +33,12 @@ public class AdminPortfolioController {
 
     private final ProfileRepository profiles;
     private final PortfolioItemRepository items;
+    private final BookingRepository bookings;
 
-    public AdminPortfolioController(ProfileRepository profiles, PortfolioItemRepository items) {
+    public AdminPortfolioController(ProfileRepository profiles, PortfolioItemRepository items, BookingRepository bookings) {
         this.profiles = profiles;
         this.items = items;
+        this.bookings = bookings;
     }
 
     @PostMapping("/profiles")
@@ -126,6 +129,11 @@ public class AdminPortfolioController {
     void deleteProfile(@PathVariable String slug) {
         Profile profile = profiles.findBySlugAndActiveTrue(slug)
                 .orElseThrow(() -> new ProfileNotFoundException(slug));
+        if (bookings.existsByProfileId(profile.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Não é possível eliminar este perfil porque tem agendamentos associados. Resolve ou cancela os agendamentos primeiro.");
+        }
         profiles.delete(profile);
     }
 
