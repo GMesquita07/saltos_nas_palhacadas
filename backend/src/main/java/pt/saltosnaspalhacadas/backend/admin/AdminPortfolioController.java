@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -54,7 +56,9 @@ public class AdminPortfolioController {
                 request.role(),
                 request.description(),
                 emptyToNull(request.profileImageUrl()),
-                defaultImagePosition(request.profileImagePosition()));
+                defaultImagePosition(request.profileImagePosition()),
+                defaultImageZoom(request.profileImageZoom()),
+                emptyToNull(request.featuredVideoUrl()));
 
         return ProfileResponse.from(profiles.save(profile));
     }
@@ -69,7 +73,9 @@ public class AdminPortfolioController {
                 request.role(),
                 request.description(),
                 emptyToNull(request.profileImageUrl()),
-                defaultImagePosition(request.profileImagePosition()));
+                defaultImagePosition(request.profileImagePosition()),
+                defaultImageZoom(request.profileImageZoom()),
+                emptyToNull(request.featuredVideoUrl()));
 
         return ProfileResponse.from(profiles.save(profile));
     }
@@ -145,6 +151,10 @@ public class AdminPortfolioController {
         return value == null || value.isBlank() ? "50% 50%" : value;
     }
 
+    private static double defaultImageZoom(Double value) {
+        return value == null ? 1.0 : value;
+    }
+
     private static boolean isPublishedByDefault(Boolean published) {
         return published == null || published;
     }
@@ -166,7 +176,12 @@ public class AdminPortfolioController {
             @Size(max = 2048, message = "O URL da imagem é demasiado longo")
             String profileImageUrl,
             @Pattern(regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%", message = "A posição da imagem é inválida")
-            String profileImagePosition) {
+            String profileImagePosition,
+            @DecimalMin(value = "1.0", message = "O zoom mínimo da imagem é 1")
+            @DecimalMax(value = "3.0", message = "O zoom máximo da imagem é 3")
+            Double profileImageZoom,
+            @Size(max = 2048, message = "O URL do vídeo de destaque é demasiado longo")
+            String featuredVideoUrl) {
     }
 
     record UpdateProfileRequest(
@@ -182,7 +197,12 @@ public class AdminPortfolioController {
             @Size(max = 2048, message = "O URL da imagem é demasiado longo")
             String profileImageUrl,
             @Pattern(regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%", message = "A posição da imagem é inválida")
-            String profileImagePosition) {
+            String profileImagePosition,
+            @DecimalMin(value = "1.0", message = "O zoom mínimo da imagem é 1")
+            @DecimalMax(value = "3.0", message = "O zoom máximo da imagem é 3")
+            Double profileImageZoom,
+            @Size(max = 2048, message = "O URL do vídeo de destaque é demasiado longo")
+            String featuredVideoUrl) {
     }
 
     record CreatePortfolioItemRequest(

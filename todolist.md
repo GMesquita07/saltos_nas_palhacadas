@@ -1,26 +1,18 @@
-- falta a parte do agendamento
+- falta melhorar a parte do agendamento
 - deploy online do site
 - fix alteraçao da foto de perfil, descubri esse bug
 - fix da posiçao dos perfis, 3 perfis por linha 
 -registo tem de conter o numr telemovell
 
-- conteudos apareceram do mais recente para o mais velho (mais velho em baixo)
-
 - motor de pesquisa, ao procurar por Dj kidg ou dj joao tomas se me leva ao site logo
-
-- apos o login do user, dizer na home page Bem vindo @user
-
-- comentarios/reviews/avaliaçoes, controlado pelo o admin, essa secçao deve ser debaixo dos  perfis da homepage
-cada comentario pode deixar uma avaliaçao de 1-5 estrelas
-![alt text](image.png)
-(ideia dos casamentos.pt)
 
 - traduçao da pagina
 
-- video de destaque a passar quando abre o perfil de cada artista (editavel pelo o admin)
 
 
-//
+
+
+##
 o agendamento funciona desta forma
 
 o user ve o calendario e manda um pedido de orçamento e agendamento, com o tipo de evento, local, nome, contacto email e telemovel, descriçao do evento, eventuais notas, horas (opcional)
@@ -36,3 +28,4 @@ o evento pode ser cancelado pelo o animador com uma mensagem de justificaçao
 
 so pode mandar proposta quem tem login
 quero que o user receba um email de confirmaçao que o animador recebeu a proposta e vai analisar o pedido e entrar em contacto
+ 

@@ -25,6 +25,14 @@ export async function uploadFile(file: File, token: string): Promise<{ url: stri
   return response.json() as Promise<{ url: string }>
 }
 
+export async function uploadUserImage(file: File, token: string): Promise<{ url: string }> {
+  const body = new FormData()
+  body.append('file', file)
+  const response = await fetch(`${apiUrl}/media`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body })
+  if (!response.ok) throw new Error(parseError(await response.text()) || 'Não foi possível enviar a imagem.')
+  return response.json() as Promise<{ url: string }>
+}
+
 function parseError(body: string) {
   try {
     const error = JSON.parse(body) as {

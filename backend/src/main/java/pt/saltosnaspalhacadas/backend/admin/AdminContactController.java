@@ -1,10 +1,15 @@
 package pt.saltosnaspalhacadas.backend.admin;
 
 import java.net.URI;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -43,7 +48,12 @@ public class AdminContactController {
     @ResponseStatus(HttpStatus.CREATED)
     ContactResponse createContact(@Valid @RequestBody CreateContactRequest request) {
         validateContactValue(request.type(), request.value());
-        Contact contact = new Contact(request.label().trim(), request.type(), request.value().trim(), 0);
+        int displayOrder = contacts.findAllByOrderByDisplayOrderAscIdAsc()
+                .stream()
+                .mapToInt(Contact::getDisplayOrder)
+                .max()
+                .orElse(-1) + 1;
+        Contact contact = new Contact(request.label().trim(), request.type(), request.value().trim(), displayOrder);
         return ContactResponse.from(contacts.save(contact));
     }
 
@@ -55,6 +65,31 @@ public class AdminContactController {
 
         contact.update(request.label().trim(), request.type(), request.value().trim());
         return ContactResponse.from(contacts.save(contact));
+    }
+
+    @PutMapping("/order")
+    List<ContactResponse> reorderContacts(@Valid @RequestBody ReorderContactsRequest request) {
+        if (new HashSet<>(request.contactIds()).size() != request.contactIds().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de contactos contém repetidos");
+        }
+
+        List<Contact> currentContacts = contacts.findAllByOrderByDisplayOrderAscIdAsc();
+        Map<Long, Contact> byId = currentContacts.stream().collect(Collectors.toMap(Contact::getId, contact -> contact));
+
+        for (int index = 0; index < request.contactIds().size(); index++) {
+            Long id = request.contactIds().get(index);
+            Contact contact = byId.get(id);
+            if (contact == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Contacto não encontrado");
+            }
+            contact.updateDisplayOrder(index);
+        }
+
+        return contacts.saveAll(currentContacts)
+                .stream()
+                .sorted(java.util.Comparator.comparingInt(Contact::getDisplayOrder).thenComparing(Contact::getId))
+                .map(ContactResponse::from)
+                .toList();
     }
 
     @DeleteMapping("/{id}")
@@ -132,5 +167,10 @@ public class AdminContactController {
             @NotBlank(message = "O contacto é obrigatório")
             @Size(max = 500, message = "O contacto pode ter no máximo 500 caracteres")
             String value) {
+    }
+
+    record ReorderContactsRequest(
+            @NotEmpty(message = "Envia a nova ordem dos contactos")
+            List<Long> contactIds) {
     }
 }

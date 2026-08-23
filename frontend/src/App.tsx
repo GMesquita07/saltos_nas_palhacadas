@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
 import { AccountPage } from './features/auth/AccountPage'
@@ -31,28 +31,50 @@ function App() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [profilesError, setProfilesError] = useState(false)
 
+  const loadProfiles = useCallback(async () => {
+    try {
+      const result = await getProfiles()
+      setProfiles(result)
+      setSelectedProfile((current) => refreshProfileReference(current, result))
+      setBookingProfile((current) => refreshProfileReference(current, result))
+      setProfilesError(false)
+    } catch {
+      setProfilesError(true)
+    }
+  }, [])
+
   useEffect(() => {
     const timer = window.setTimeout(() => setIsSplashVisible(false), SPLASH_DURATION_MS)
     return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {
-    const loadProfiles = () => getProfiles()
+    let isCurrent = true
+
+    void getProfiles()
       .then((result) => {
+        if (!isCurrent) return
         setProfiles(result)
+        setSelectedProfile((current) => refreshProfileReference(current, result))
+        setBookingProfile((current) => refreshProfileReference(current, result))
         setProfilesError(false)
       })
-      .catch(() => setProfilesError(true))
+      .catch(() => {
+        if (isCurrent) setProfilesError(true)
+      })
 
-    void loadProfiles()
     window.addEventListener('profiles:changed', loadProfiles)
-    return () => window.removeEventListener('profiles:changed', loadProfiles)
-  }, [])
+    return () => {
+      isCurrent = false
+      window.removeEventListener('profiles:changed', loadProfiles)
+    }
+  }, [loadProfiles])
 
   function showProfiles() {
     setSelectedProfile(null)
     setShouldReturnToBooking(false)
     setView('profiles')
+    void loadProfiles()
   }
 
   function showContacts() {
@@ -124,10 +146,10 @@ function App() {
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
     if (view === 'account' && session) return <AccountPage onExit={showProfiles} onFavoritesClick={openFavorites} />
-    if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} />
+    if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} onLogin={() => openAuthentication('login')} />
     if (profilesError) return <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
 
-    return <ProfileSelector profiles={profiles} onProfileSelect={setSelectedProfile} />
+    return <ProfileSelector profiles={profiles} viewerName={session ? displaySessionName(session) : undefined} onProfileSelect={setSelectedProfile} />
   }
 
   return (
@@ -155,3 +177,13 @@ function App() {
 }
 
 export default App
+
+function refreshProfileReference(current: Profile | null, profiles: Profile[]) {
+  if (!current) return null
+  return profiles.find((profile) => profile.slug === current.slug) ?? current
+}
+
+function displaySessionName(session: AuthSession) {
+  const fullName = [session.firstName, session.lastName].filter(Boolean).join(' ').trim()
+  return fullName || session.username || session.email.split('@')[0] || 'user'
+}

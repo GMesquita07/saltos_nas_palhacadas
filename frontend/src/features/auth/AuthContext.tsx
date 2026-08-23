@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { getCurrentUser, login as requestLogin, register as requestRegistration } from '../../services/authService'
+import { getCurrentUser, login as requestLogin, register as requestRegistration, updateCurrentUser, type RegisterCredentials, type UpdateAccountInput } from '../../services/authService'
 import { addFavorite, getFavorites, removeFavorite } from '../../services/favoriteService'
-import type { AuthSession } from '../../types/auth'
+import type { AuthSession, AuthUser } from '../../types/auth'
 import type { Favorite } from '../../types/favorite'
 
 const sessionStorageKey = 'saltos.auth-session'
@@ -17,10 +17,11 @@ type AuthContextValue = {
   favorites: Favorite[]
   isFavoritesLoading: boolean
   login: (credentials: Credentials) => Promise<AuthSession>
-  register: (credentials: Credentials) => Promise<AuthSession>
+  register: (credentials: RegisterCredentials) => Promise<AuthSession>
   logout: () => void
   refreshFavorites: () => Promise<void>
   toggleFavorite: (portfolioItemId: string) => Promise<void>
+  updateAccount: (input: UpdateAccountInput) => Promise<AuthUser>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -117,11 +118,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return nextSession
   }, [saveSession])
 
-  const register = useCallback(async (credentials: Credentials) => {
+  const register = useCallback(async (credentials: RegisterCredentials) => {
     const nextSession = await requestRegistration(credentials)
     saveSession(nextSession)
     return nextSession
   }, [saveSession])
+
+  const updateAccount = useCallback(async (input: UpdateAccountInput) => {
+    if (!session) {
+      throw new Error('Inicia sessão para editar a tua conta.')
+    }
+
+    const nextUser = await updateCurrentUser(input, session.token)
+    const nextSession = { ...session, ...nextUser }
+    sessionStorage.setItem(sessionStorageKey, JSON.stringify(nextSession))
+    setSession(nextSession)
+    return nextUser
+  }, [session])
 
   const toggleFavorite = useCallback(async (portfolioItemId: string) => {
     if (!session) {
@@ -148,7 +161,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     logout,
     refreshFavorites,
     toggleFavorite,
-  }), [favorites, isFavoritesLoading, isSessionReady, login, logout, refreshFavorites, register, session, toggleFavorite])
+    updateAccount,
+  }), [favorites, isFavoritesLoading, isSessionReady, login, logout, refreshFavorites, register, session, toggleFavorite, updateAccount])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

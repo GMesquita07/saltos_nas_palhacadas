@@ -146,6 +146,10 @@ button:disabled {
   margin-top: 30px;
 }
 
+.singlePage {
+  margin-top: 30px;
+}
+
 .page form {
   margin-top: 0;
   scroll-margin-top: 28px;
@@ -188,9 +192,10 @@ button:disabled {
 
 .cropEditor {
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  gap: 16px;
+  padding: 18px;
   border: 1px solid var(--color-line);
+  background: linear-gradient(180deg, #fff 0%, var(--color-surface) 100%);
 }
 
 .cropTitle,
@@ -215,7 +220,24 @@ button:disabled {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+  border: 1px solid var(--color-line);
+  cursor: grab;
   background: #e6e3dd;
+  user-select: none;
+  touch-action: none;
+}
+
+.cropPreview:active {
+  cursor: grabbing;
+}
+
+.cropPreview::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 65%);
+  box-shadow: inset 0 0 0 999px rgb(0 0 0 / 0%);
+  pointer-events: none;
+  content: "";
 }
 
 .cropPreview img {
@@ -223,6 +245,8 @@ button:disabled {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
+  transition: transform 120ms ease, object-position 120ms ease;
 }
 
 .rangeLabel {
@@ -320,6 +344,151 @@ button:disabled {
   color: var(--color-ink);
 }
 
+.contactStack {
+  display: grid;
+  gap: 8px;
+}
+
+.contactRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.contactRow:hover {
+  border-color: var(--color-ink);
+  box-shadow: 0 10px 24px rgb(35 34 32 / 7%);
+}
+
+.draggingRow {
+  opacity: 0.45;
+}
+
+.dragHandle {
+  display: grid;
+  width: 28px;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--color-muted);
+  cursor: grab;
+  font-size: 16px;
+}
+
+.contactRow span:nth-child(2) {
+  min-width: 0;
+}
+
+.contactRow strong,
+.contactRow small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewList {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.reviewRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 22px;
+  padding: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.reviewMeta,
+.reviewStars,
+.reviewComment {
+  margin: 0;
+}
+
+.reviewMeta {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reviewRow h3 {
+  margin: 8px 0 10px;
+  font-size: 20px;
+}
+
+.reviewStars {
+  color: #c47a00;
+  letter-spacing: 1px;
+}
+
+.reviewComment {
+  margin-top: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.reviewModeration {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.reviewModeration label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.reviewModeration select {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  padding: 10px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.reviewModeration button {
+  border: 1px solid var(--color-line);
+  padding: 9px 11px;
+  color: var(--color-ink);
+  background: transparent;
+  font-size: 12px;
+}
+
+.reviewModeration button:last-child {
+  border-color: #b85c55;
+  color: #9b332c;
+}
+
+.publishedBadge,
+.hiddenBadge {
+  width: fit-content;
+  border: 1px solid;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.publishedBadge {
+  border-color: #78907d;
+  color: #3a6848;
+}
+
+.hiddenBadge {
+  border-color: #b85c55;
+  color: #9b332c;
+}
+
 @media (max-width: 650px) {
   .login,
   .dashboard {
@@ -344,6 +513,10 @@ button:disabled {
     gap: 40px;
   }
 
+  .reviewRow {
+    grid-template-columns: 1fr;
+  }
+
   .manage {
     padding-top: 0;
   }
@@ -351,5 +524,13 @@ button:disabled {
   .profileRow {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .contactRow {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .contactRow .rowActions {
+    grid-column: 2;
   }
 }

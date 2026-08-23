@@ -59,10 +59,12 @@ class FavoriteIntegrationTests {
         try {
             mockMvc.perform(post("/api/v1/auth/register")
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"" + email.toUpperCase() + "\",\"password\":\"palavra123\"}"))
+                            .content("{\"email\":\"" + email.toUpperCase() + "\",\"username\":\"cliente" + UUID.randomUUID().toString().substring(0, 6) + "\",\"firstName\":\"Cliente\",\"lastName\":\"Teste\",\"phone\":\"+351 912 345 678\",\"password\":\"palavra123\"}"))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.accessToken").isNotEmpty())
                     .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                    .andExpect(jsonPath("$.firstName").value("Cliente"))
+                    .andExpect(jsonPath("$.lastName").value("Teste"))
                     .andExpect(jsonPath("$.role").value("CUSTOMER"));
 
             AppUser customer = users.findByEmailAndActiveTrue(email).orElseThrow();
@@ -71,11 +73,13 @@ class FavoriteIntegrationTests {
             mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.email").value(email))
+                    .andExpect(jsonPath("$.firstName").value("Cliente"))
+                    .andExpect(jsonPath("$.lastName").value("Teste"))
                     .andExpect(jsonPath("$.role").value("CUSTOMER"));
 
             mockMvc.perform(post("/api/v1/auth/register")
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"" + email + "\",\"password\":\"palavra123\"}"))
+                            .content("{\"email\":\"" + email + "\",\"username\":\"outro" + UUID.randomUUID().toString().substring(0, 6) + "\",\"firstName\":\"Outro\",\"lastName\":\"Cliente\",\"phone\":\"+351 912 345 679\",\"password\":\"palavra123\"}"))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.detail").value("Já existe uma conta com este email"));
         } finally {

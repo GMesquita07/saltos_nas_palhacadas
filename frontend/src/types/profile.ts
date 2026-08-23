@@ -6,4 +6,6 @@ export type Profile = {
   description: string
   imageUrl?: string
   imagePosition?: string
+  imageZoom?: number
+  featuredVideoUrl?: string
 }

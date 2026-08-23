@@ -142,3 +142,17 @@ Antes de `git add .`, confirme que `.env` não aparece na lista. Para alteraçõ
 1. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
 2. Adicionar recuperação de palavra-passe e verificação de email antes do lançamento público.
 3. Adicionar CI no GitHub Actions, testes de acessibilidade e uma política de privacidade/cookies antes do lançamento.
+
+
+## new testing
+
+```bash
+cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas/backend
+set -a && source ../.env && set +a
+SERVER_PORT=8081 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174 ./mvnw spring-boot:run
+```
+
+```bash
+cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas/frontend
+VITE_API_URL=http://localhost:8081/api/v1 npm run dev -- --host 127.0.0.1
+```

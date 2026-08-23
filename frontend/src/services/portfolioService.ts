@@ -13,7 +13,7 @@ export type ApiPortfolioItem = {
 
 export async function getPortfolioItems(slug: string): Promise<PortfolioItem[]> {
   const items = await apiClient<ApiPortfolioItem[]>(`/profiles/${slug}/portfolio`)
-  return items.map(mapPortfolioItem)
+  return items.map(mapPortfolioItem).sort((first, second) => second.eventDateIso.localeCompare(first.eventDateIso) || second.id.localeCompare(first.id))
 }
 
 export function mapPortfolioItem(item: ApiPortfolioItem): PortfolioItem {

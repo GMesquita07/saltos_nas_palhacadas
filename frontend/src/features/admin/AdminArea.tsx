@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { ImageCropEditor } from '../../components/ImageCropEditor'
+import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { apiClient, uploadFile } from '../../services/apiClient'
-import { getContacts } from '../../services/contactService'
+import { getContacts, reorderContacts } from '../../services/contactService'
 import { getPortfolioItems } from '../../services/portfolioService'
 import { getProfiles } from '../../services/profileService'
+import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Contact, ContactType } from '../../types/contact'
 import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
+import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'profile' | 'content' | 'contacts' | 'bookings'
+type AdminPage = 'profile' | 'content' | 'contacts' | 'reviews' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
-type ImagePosition = { x: number; y: number }
 
 type ProfileFormState = {
   name: string
@@ -20,7 +23,8 @@ type ProfileFormState = {
   role: string
   description: string
   profileImageUrl: string
-  imagePosition: ImagePosition
+  imageCrop: ImageCrop
+  featuredVideoUrl: string
 }
 
 type ContentFormState = {
@@ -39,6 +43,10 @@ type ContactFormState = {
   value: string
 }
 
+type ReviewModerationState = {
+  published: boolean
+}
+
 type ContactField = {
   label: string
   placeholder: string
@@ -54,7 +62,8 @@ const emptyProfileForm = (): ProfileFormState => ({
   role: '',
   description: '',
   profileImageUrl: '',
-  imagePosition: { x: 50, y: 50 },
+  imageCrop: { x: 50, y: 50, zoom: 1 },
+  featuredVideoUrl: '',
 })
 
 const emptyContentForm = (profileSlug = ''): ContentFormState => ({
@@ -78,10 +87,12 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   const [page, setPage] = useState<AdminPage>('profile')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [contentItems, setContentItems] = useState<PortfolioItem[]>([])
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm)
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewModerationState>>({})
   const [editingProfileSlug, setEditingProfileSlug] = useState<string | null>(null)
   const [editingContentId, setEditingContentId] = useState<string | null>(null)
   const [editingContactId, setEditingContactId] = useState<number | null>(null)
@@ -109,6 +120,20 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }, [])
 
+  const refreshReviews = useCallback(async () => {
+    if (!token) return []
+
+    try {
+      const items = await getAdminReviews(token)
+      setReviews(items)
+      setReviewDrafts(toReviewDrafts(items))
+      return items
+    } catch {
+      setNotice({ type: 'error', text: 'Não foi possível carregar as avaliações.' })
+      return []
+    }
+  }, [token])
+
   const refreshContentItems = useCallback(async (slug: string) => {
     if (!slug) {
       setContentItems([])
@@ -129,11 +154,13 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     if (!token) return
     let isCurrent = true
 
-    void Promise.all([getProfiles(), getContacts()])
-      .then(([profileItems, contactItems]) => {
+    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token)])
+      .then(([profileItems, contactItems, reviewItems]) => {
         if (!isCurrent) return
         setProfiles(profileItems)
         setContacts(contactItems)
+        setReviews(reviewItems)
+        setReviewDrafts(toReviewDrafts(reviewItems))
       })
       .catch(() => {
         if (isCurrent) {
@@ -185,7 +212,8 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       role: profile.role,
       description: profile.description,
       profileImageUrl: profile.imageUrl ?? '',
-      imagePosition: parseImagePosition(profile.imagePosition),
+      imageCrop: parseImageCrop(profile.imagePosition, profile.imageZoom),
+      featuredVideoUrl: profile.featuredVideoUrl ?? '',
     })
     setNotice({ type: 'success', text: 'A editar o perfil ' + profile.name + '. Altera os campos e seleciona Atualizar perfil.' })
     scrollToEditor('profile-editor')
@@ -208,7 +236,9 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       role: profileForm.role.trim(),
       description: profileForm.description.trim(),
       profileImageUrl: profileForm.profileImageUrl.trim() || null,
-      profileImagePosition: formatImagePosition(profileForm.imagePosition),
+      profileImagePosition: formatImagePosition(profileForm.imageCrop),
+      profileImageZoom: profileForm.imageCrop.zoom,
+      featuredVideoUrl: profileForm.featuredVideoUrl.trim() || null,
     }
 
     try {
@@ -444,6 +474,66 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }
 
+  async function reorderContactStack(contactIds: number[]) {
+    if (!token || isSaving) return
+    setIsSaving(true)
+
+    try {
+      const orderedContacts = await reorderContacts(contactIds, token)
+      setContacts(orderedContacts)
+      window.dispatchEvent(new Event('contacts:changed'))
+      setNotice({ type: 'success', text: 'Ordem dos contactos atualizada.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível guardar a ordem dos contactos.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function saveReviewModeration(review: Review) {
+    const draft = reviewDrafts[review.id] ?? { published: review.published }
+
+    if (!token || isSaving) return
+    setIsSaving(true)
+
+    try {
+      await moderateReview(review.id, { published: draft.published }, token)
+      await refreshReviews()
+      window.dispatchEvent(new Event('reviews:changed'))
+      setNotice({ type: 'success', text: draft.published ? 'Avaliação publicada.' : 'Avaliação ocultada.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível moderar a avaliação.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function deleteReview(review: Review) {
+    if (!token || !window.confirm('Apagar esta avaliação?')) return
+
+    setIsSaving(true)
+    try {
+      await apiClient('/admin/reviews/' + review.id, { method: 'DELETE' }, token)
+      await refreshReviews()
+      window.dispatchEvent(new Event('reviews:changed'))
+
+      setNotice({ type: 'success', text: 'Avaliação apagada com sucesso.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível apagar a avaliação.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <section className={styles.dashboard}>
       <div className={styles.top}>
@@ -463,6 +553,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         <Tab active={page === 'profile'} onClick={() => setPage('profile')}>Novo perfil</Tab>
         <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
+        <Tab active={page === 'reviews'} onClick={() => setPage('reviews')}>Avaliações</Tab>
         <Tab active={page === 'bookings'} onClick={() => setPage('bookings')}>Agendamentos</Tab>
       </nav>
 
@@ -478,7 +569,10 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           onEdit={startProfileEditing}
           onDelete={deleteProfile}
           onUpload={(event) => upload(event, (url) => {
-            setProfileForm((current) => ({ ...current, profileImageUrl: url }))
+            setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
+          })}
+          onFeaturedVideoUpload={(event) => upload(event, (url) => {
+            setProfileForm((current) => ({ ...current, featuredVideoUrl: url }))
           })}
         />
       )}
@@ -517,6 +611,18 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           onCancel={cancelContactEditing}
           onEdit={startContactEditing}
           onDelete={deleteContact}
+          onReorder={reorderContactStack}
+        />
+      )}
+
+      {page === 'reviews' && (
+        <ReviewManagement
+          drafts={reviewDrafts}
+          isSaving={isSaving}
+          reviews={reviews}
+          onChangeDraft={setReviewDrafts}
+          onModerate={saveReviewModeration}
+          onDelete={deleteReview}
         />
       )}
 
@@ -559,6 +665,7 @@ function ProfileManagement({
   onEdit,
   onDelete,
   onUpload,
+  onFeaturedVideoUpload,
 }: {
   form: ProfileFormState
   isEditing: boolean
@@ -570,6 +677,7 @@ function ProfileManagement({
   onEdit: (profile: Profile) => void
   onDelete: (profile: Profile) => Promise<void>
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+  onFeaturedVideoUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
   return (
     <div className={styles.page}>
@@ -652,12 +760,36 @@ function ProfileManagement({
         </label>
 
         {form.profileImageUrl && (
-          <ImagePositionEditor
-            position={form.imagePosition}
+          <ImageCropEditor
+            crop={form.imageCrop}
+            description="Arrasta a fotografia e ajusta o zoom. Esta pré-visualização usa o mesmo recorte circular que aparece na homepage."
+            shape="circle"
             src={form.profileImageUrl}
-            onChange={(imagePosition) => onChange((current) => ({ ...current, imagePosition }))}
+            title="Ajustar foto de perfil"
+            onChange={(imageCrop) => onChange((current) => ({ ...current, imageCrop }))}
           />
         )}
+
+        <label>
+          Carregar vídeo de destaque
+          <input accept="video/*" type="file" onChange={onFeaturedVideoUpload} />
+        </label>
+
+        {form.featuredVideoUrl && (
+          <p className={styles.uploadedFile}>Vídeo de destaque pronto para aparecer no perfil.</p>
+        )}
+
+        <label>
+          URL do vídeo de destaque
+          <input
+            maxLength={2048}
+            onChange={(event) => onChange((current) => ({ ...current, featuredVideoUrl: event.target.value }))}
+            placeholder="https://youtu.be/... ou https://..."
+            type="url"
+            value={form.featuredVideoUrl}
+          />
+          <small className={styles.fieldHint}>Aceita links do YouTube ou URLs diretas para vídeo. Também podes carregar um ficheiro pelo campo acima.</small>
+        </label>
 
         <FormActions
           isEditing={isEditing}
@@ -828,6 +960,7 @@ function ContactManagement({
   onCancel,
   onEdit,
   onDelete,
+  onReorder,
 }: {
   form: ContactFormState
   isEditing: boolean
@@ -838,6 +971,7 @@ function ContactManagement({
   onCancel: () => void
   onEdit: (contact: Contact) => void
   onDelete: (contact: Contact) => Promise<void>
+  onReorder: (contactIds: number[]) => Promise<void>
 }) {
   const field = contactField(form.type)
 
@@ -902,18 +1036,141 @@ function ContactManagement({
         />
       </form>
 
-      <ManagementList
-        empty="Não existem contactos publicados."
-        items={contacts}
-        title="Contactos publicados"
-        getDetail={(contact) => contactTypeLabel(contact.type) + ' · ' + contact.value}
-        getId={(contact) => contact.id}
-        getTitle={(contact) => contact.label}
+      <ContactOrderList
+        contacts={contacts}
         isSaving={isSaving}
         onDelete={onDelete}
         onEdit={onEdit}
+        onReorder={onReorder}
       />
     </div>
+  )
+}
+
+function ContactOrderList({
+  contacts,
+  isSaving,
+  onDelete,
+  onEdit,
+  onReorder,
+}: {
+  contacts: Contact[]
+  isSaving: boolean
+  onDelete: (contact: Contact) => Promise<void>
+  onEdit: (contact: Contact) => void
+  onReorder: (contactIds: number[]) => Promise<void>
+}) {
+  const [draggingId, setDraggingId] = useState<number | null>(null)
+
+  function dropOn(contactId: number) {
+    if (draggingId === null || draggingId === contactId) return
+
+    const draggingIndex = contacts.findIndex((contact) => contact.id === draggingId)
+    const targetIndex = contacts.findIndex((contact) => contact.id === contactId)
+    if (draggingIndex < 0 || targetIndex < 0) return
+
+    const nextContacts = [...contacts]
+    const [draggingContact] = nextContacts.splice(draggingIndex, 1)
+    nextContacts.splice(targetIndex, 0, draggingContact)
+    void onReorder(nextContacts.map((contact) => contact.id))
+  }
+
+  return (
+    <section className={styles.manage}>
+      <h2>Contactos publicados</h2>
+      {contacts.length === 0 ? (
+        <p>Não existem contactos publicados.</p>
+      ) : (
+        <div className={styles.contactStack}>
+          {contacts.map((contact, index) => (
+            <div
+              className={[styles.contactRow, draggingId === contact.id ? styles.draggingRow : ''].join(' ')}
+              draggable={!isSaving}
+              key={contact.id}
+              onDragEnd={() => setDraggingId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDragStart={() => setDraggingId(contact.id)}
+              onDrop={() => dropOn(contact.id)}
+            >
+              <span className={styles.dragHandle} aria-hidden="true">☰</span>
+              <span>
+                <strong>{index + 1}. {contact.label}</strong>
+                <small>{contactTypeLabel(contact.type)} · {contact.value}</small>
+              </span>
+              <span className={styles.rowActions}>
+                <button disabled={isSaving} type="button" onClick={() => onEdit(contact)}>Editar</button>
+                <button disabled={isSaving} type="button" onClick={() => { void onDelete(contact) }}>Apagar</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ReviewManagement({
+  drafts,
+  isSaving,
+  reviews,
+  onChangeDraft,
+  onModerate,
+  onDelete,
+}: {
+  drafts: Record<string, ReviewModerationState>
+  isSaving: boolean
+  reviews: Review[]
+  onChangeDraft: (value: Record<string, ReviewModerationState> | ((current: Record<string, ReviewModerationState>) => Record<string, ReviewModerationState>)) => void
+  onModerate: (review: Review) => Promise<void>
+  onDelete: (review: Review) => Promise<void>
+}) {
+  return (
+    <section className={styles.singlePage}>
+      <div className={styles.formHeading}>
+        <div>
+          <h2>Avaliações</h2>
+          <p className={styles.intro}>As avaliações são submetidas pelos utilizadores nos perfis dos artistas. Aqui escolhes quais aparecem publicamente; a ordem é sempre da mais recente para a mais antiga.</p>
+        </div>
+      </div>
+
+      {reviews.length === 0 ? (
+        <p className={styles.intro}>Ainda não existem avaliações submetidas.</p>
+      ) : (
+        <div className={styles.reviewList}>
+          {reviews.map((review) => {
+            const draft = drafts[review.id] ?? { published: review.published }
+            return (
+              <article className={styles.reviewRow} key={review.id}>
+                <div>
+                  <p className={styles.reviewMeta}>{review.profileName ?? 'Artista'} · {review.reviewDate} · {review.submittedByEmail ?? 'utilizador'}</p>
+                  <h3>{review.reviewerName} - {review.title}</h3>
+                  <p className={styles.reviewStars}>{stars(review.rating)} {review.rating.toFixed(1)}</p>
+                  <p className={styles.reviewComment}>{review.comment}</p>
+                </div>
+                <div className={styles.reviewModeration}>
+                  <label>
+                    Estado
+                    <select
+                      onChange={(event) => onChangeDraft((current) => ({
+                        ...current,
+                        [review.id]: { ...draft, published: event.target.value === 'published' },
+                      }))}
+                      value={draft.published ? 'published' : 'hidden'}
+                    >
+                      <option value="published">Publicada</option>
+                      <option value="hidden">Oculta</option>
+                    </select>
+                  </label>
+                  <span className={draft.published ? styles.publishedBadge : styles.hiddenBadge}>{draft.published ? 'Publicada' : 'Oculta'}</span>
+                  <button disabled={isSaving} type="button" onClick={() => { void onModerate(review) }}>Guardar</button>
+                  <button disabled={isSaving} type="button" onClick={() => { void onDelete(review) }}>Apagar</button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -964,56 +1221,6 @@ function FormActions({
   )
 }
 
-function ImagePositionEditor({
-  src,
-  position,
-  onChange,
-}: {
-  src: string
-  position: ImagePosition
-  onChange: (position: ImagePosition) => void
-}) {
-  return (
-    <div className={styles.cropEditor}>
-      <div>
-        <p className={styles.cropTitle}>Ajustar enquadramento</p>
-        <p className={styles.cropDescription}>Usa os controlos para escolher a zona da fotografia apresentada no cartão.</p>
-      </div>
-      <div className={styles.cropPreview}>
-        <img
-          alt="Pré-visualização da foto de perfil"
-          src={src}
-          style={{ objectPosition: formatImagePosition(position) }}
-        />
-      </div>
-      <label className={styles.rangeLabel}>
-        Posição horizontal
-        <input
-          aria-valuetext={position.x + '%'}
-          max="100"
-          min="0"
-          onChange={(event) => onChange({ ...position, x: Number(event.target.value) })}
-          type="range"
-          value={position.x}
-        />
-        <span>{position.x}%</span>
-      </label>
-      <label className={styles.rangeLabel}>
-        Posição vertical
-        <input
-          aria-valuetext={position.y + '%'}
-          max="100"
-          min="0"
-          onChange={(event) => onChange({ ...position, y: Number(event.target.value) })}
-          type="range"
-          value={position.y}
-        />
-        <span>{position.y}%</span>
-      </label>
-    </div>
-  )
-}
-
 function ManagementList<T>({
   title,
   empty,
@@ -1058,22 +1265,13 @@ function ManagementList<T>({
   )
 }
 
-function parseImagePosition(value?: string): ImagePosition {
-  const match = value?.match(/^(\d{1,3})% (\d{1,3})%$/)
-  if (!match) return { x: 50, y: 50 }
-
-  return {
-    x: clampPercentage(Number(match[1])),
-    y: clampPercentage(Number(match[2])),
-  }
-}
-
-function formatImagePosition(position: ImagePosition) {
-  return clampPercentage(position.x) + '% ' + clampPercentage(position.y) + '%'
-}
-
-function clampPercentage(value: number) {
-  return Math.min(100, Math.max(0, Math.round(value)))
+function toReviewDrafts(reviews: Review[]): Record<string, ReviewModerationState> {
+  return reviews.reduce<Record<string, ReviewModerationState>>((drafts, review) => {
+    drafts[review.id] = {
+      published: review.published,
+    }
+    return drafts
+  }, {})
 }
 
 function validateProfile(form: ProfileFormState) {
@@ -1082,6 +1280,7 @@ function validateProfile(form: ProfileFormState) {
   if (form.role.trim().length < 2) return 'Indica uma função com pelo menos 2 caracteres.'
   if (form.description.trim().length < 10) return 'A descrição tem de ter pelo menos 10 caracteres.'
   if (form.profileImageUrl.length > 2048) return 'A URL da imagem é demasiado longa.'
+  if (form.featuredVideoUrl.length > 2048) return 'A URL do vídeo de destaque é demasiado longa.'
   return null
 }
 
@@ -1118,6 +1317,10 @@ function validateContact(form: ContactFormState) {
   }
 
   return null
+}
+
+function stars(rating: number) {
+  return Array.from({ length: 5 }, (_, index) => index < rating ? '★' : '☆').join('')
 }
 
 function isHttpUrl(value: string) {

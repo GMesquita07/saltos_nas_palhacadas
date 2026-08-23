@@ -1,0 +1,93 @@
+.cropEditor {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  background: linear-gradient(180deg, #fff 0%, var(--color-surface) 100%);
+}
+
+.cropTitle,
+.cropDescription {
+  margin: 0;
+}
+
+.cropTitle {
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cropDescription {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cropPreview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  cursor: grab;
+  background: #e6e3dd;
+  user-select: none;
+  touch-action: none;
+}
+
+.cropPreview:active {
+  cursor: grabbing;
+}
+
+.cropPreview::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 65%);
+  pointer-events: none;
+  content: "";
+}
+
+.landscape {
+  aspect-ratio: 4 / 3;
+}
+
+.square,
+.circle {
+  aspect-ratio: 1;
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.circle::after {
+  border-radius: 50%;
+}
+
+.cropPreview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition: transform 120ms ease, object-position 120ms ease;
+}
+
+.rangeLabel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 10px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.rangeLabel input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--color-ink);
+}
+
+.rangeLabel span {
+  color: var(--color-ink);
+  font-size: 11px;
+}
