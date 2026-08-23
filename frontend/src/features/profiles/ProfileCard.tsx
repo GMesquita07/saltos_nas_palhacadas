@@ -1,5 +1,5 @@
 import type { Profile } from '../../types/profile'
-import { imageCropStyle } from '../../components/imageCrop'
+import { CroppedImage } from '../../components/CroppedImage'
 import styles from './ProfileCard.module.css'
 
 export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect: (profile: Profile) => void }) {
@@ -9,11 +9,13 @@ export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect:
   return (
     <button className={styles.card} type="button" onClick={() => onSelect(profile)}>
       <span className={styles.portrait}>
-        <span className={styles.image}>
-          {profile.imageUrl
-            ? <img key={profile.imageUrl + imagePosition + imageZoom} src={profile.imageUrl} alt="" style={imageCropStyle(imagePosition, imageZoom)} />
-            : <span>{profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}</span>}
-        </span>
+        <CroppedImage
+          className={styles.image}
+          fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+          position={imagePosition}
+          src={profile.imageUrl}
+          zoom={imageZoom}
+        />
       </span>
       <span className={styles.details}>
         <small>{profile.role}</small>

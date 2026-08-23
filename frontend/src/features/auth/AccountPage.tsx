@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
-import { formatImagePosition, imageCropStyle, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
+import { CroppedImage } from '../../components/CroppedImage'
+import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { uploadUserImage } from '../../services/apiClient'
 import { useAuth } from './AuthContext'
 import styles from './AccountPage.module.css'
@@ -32,11 +33,13 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
   const visibleForm = isEditing ? form : emptyForm(session)
   const accountName = displayName(visibleForm.firstName, visibleForm.lastName) || visibleForm.username || session.email
   const avatar = (
-    <div className={styles.avatar}>
-      {visibleForm.profileImageUrl
-        ? <img src={visibleForm.profileImageUrl} alt="" style={imageCropStyle(formatImagePosition(visibleForm.imageCrop), visibleForm.imageCrop.zoom)} />
-        : <span>{initials(visibleForm.firstName, visibleForm.lastName, session.email)}</span>}
-    </div>
+    <CroppedImage
+      className={styles.avatar}
+      fallback={initials(visibleForm.firstName, visibleForm.lastName, session.email)}
+      position={formatImagePosition(visibleForm.imageCrop)}
+      src={visibleForm.profileImageUrl}
+      zoom={visibleForm.imageCrop.zoom}
+    />
   )
 
   function startEditing() {

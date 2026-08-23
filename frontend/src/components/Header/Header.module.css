@@ -8,6 +8,7 @@
 .inner nav .authenticationButton { border: 1px solid var(--color-ink); padding: 8px 11px; color: var(--color-ink); }
 .inner nav .authenticationButton:hover { color: white; background: var(--color-ink); }
 .inner nav .accountButton { color: var(--color-ink); font-weight: 600; }
+.accountAvatar { width: 24px; aspect-ratio: 1; border: 1px solid var(--color-line); }
 .inner nav .logoutButton { color: #9b332c; }
 @media (max-width: 760px) { .inner { width: min(100% - 32px, 1120px); min-height: 72px; align-items: flex-start; padding: 18px 0; } .inner nav { justify-content: flex-end; gap: 11px 16px; } }
 @media (max-width: 470px) { .inner { flex-direction: column; align-items: stretch; } .inner nav { justify-content: flex-start; } }

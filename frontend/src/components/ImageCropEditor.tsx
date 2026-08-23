@@ -1,5 +1,6 @@
 import { useRef, type PointerEvent } from 'react'
-import { clampPercentage, clampZoom, formatImagePosition, imageCropStyle, type ImageCrop } from './imageCrop'
+import { clampPercentage, clampZoom, formatImagePosition, type ImageCrop } from './imageCrop'
+import { CroppedImage } from './CroppedImage'
 import styles from './ImageCropEditor.module.css'
 
 type ImageCropEditorProps = {
@@ -57,7 +58,7 @@ export function ImageCropEditor({
         onPointerMove={moveDrag}
         onPointerUp={stopDrag}
       >
-        <img alt={alt} src={src} style={imageCropStyle(formatImagePosition(crop), crop.zoom)} />
+        <CroppedImage alt={alt} className={styles.cropImage} position={formatImagePosition(crop)} shape={shape === 'circle' ? 'circle' : 'square'} src={src} zoom={crop.zoom} />
       </div>
       <label className={styles.rangeLabel}>
         Posição horizontal

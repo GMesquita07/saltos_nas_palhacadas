@@ -27,6 +27,18 @@ type ProfileFormState = {
   featuredVideoUrl: string
 }
 
+type ApiProfileResponse = {
+  id: number
+  slug: string
+  name: string
+  role: string
+  description: string
+  profileImageUrl: string | null
+  profileImagePosition: string | null
+  profileImageZoom: number | null
+  featuredVideoUrl: string | null
+}
+
 type ContentFormState = {
   profileSlug: string
   title: string
@@ -242,21 +254,30 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
 
     try {
+      let savedProfile: Profile | null = null
       if (editingProfileSlug) {
-        await apiClient('/admin/profiles/' + encodeURIComponent(editingProfileSlug), {
+        const response = await apiClient<ApiProfileResponse>('/admin/profiles/' + encodeURIComponent(editingProfileSlug), {
           method: 'PUT',
           body: JSON.stringify(payload),
         }, token)
+        savedProfile = toProfile(response)
         setNotice({ type: 'success', text: 'Perfil atualizado com sucesso.' })
       } else {
-        await apiClient('/admin/profiles', {
+        const response = await apiClient<ApiProfileResponse>('/admin/profiles', {
           method: 'POST',
           body: JSON.stringify({ ...payload, slug: profileForm.slug.trim() }),
         }, token)
+        savedProfile = toProfile(response)
         setNotice({ type: 'success', text: 'Perfil criado com sucesso.' })
       }
 
-      await refreshProfiles()
+      if (savedProfile) {
+        setProfiles((current) => upsertProfile(current, savedProfile))
+      }
+      const refreshedProfiles = await refreshProfiles()
+      if (savedProfile) {
+        setProfiles((current) => upsertProfile(refreshedProfiles.length ? refreshedProfiles : current, savedProfile))
+      }
       window.dispatchEvent(new Event('profiles:changed'))
       cancelProfileEditing()
     } catch (error) {
@@ -1272,6 +1293,28 @@ function toReviewDrafts(reviews: Review[]): Record<string, ReviewModerationState
     }
     return drafts
   }, {})
+}
+
+function toProfile(profile: ApiProfileResponse): Profile {
+  return {
+    id: profile.slug,
+    slug: profile.slug,
+    name: profile.name,
+    role: profile.role,
+    description: profile.description,
+    imageUrl: profile.profileImageUrl ?? undefined,
+    imagePosition: profile.profileImagePosition ?? '50% 50%',
+    imageZoom: profile.profileImageZoom ?? 1,
+    featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
+  }
+}
+
+function upsertProfile(profiles: Profile[], profile: Profile) {
+  const exists = profiles.some((item) => item.slug === profile.slug)
+  const nextProfiles = exists
+    ? profiles.map((item) => item.slug === profile.slug ? profile : item)
+    : [...profiles, profile]
+  return [...nextProfiles].sort((first, second) => first.name.localeCompare(second.name, 'pt-PT'))
 }
 
 function validateProfile(form: ProfileFormState) {

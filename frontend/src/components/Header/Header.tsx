@@ -1,6 +1,7 @@
 import { BrandMark } from '../BrandMark/BrandMark'
 import { NavIcon } from '../NavIcon/NavIcon'
 import type { AuthSession } from '../../types/auth'
+import { CroppedImage } from '../CroppedImage'
 import styles from './Header.module.css'
 
 export type AuthenticationMode = 'login' | 'register'
@@ -42,7 +43,12 @@ export function Header({
           {session?.role === 'ADMIN' && <button type="button" onClick={onAdminClick}><NavIcon name="admin" />Admin</button>}
           {session ? (
             <>
-              <button className={styles.accountButton} type="button" onClick={onAccountClick}><NavIcon name="account" />Conta</button>
+              <button className={styles.accountButton} type="button" onClick={onAccountClick}>
+                {session.profileImageUrl
+                  ? <CroppedImage className={styles.accountAvatar} position={session.profileImagePosition} src={session.profileImageUrl} zoom={session.profileImageZoom} />
+                  : <NavIcon name="account" />}
+                Conta
+              </button>
               <button className={styles.logoutButton} type="button" onClick={onLogout}><NavIcon name="logout" />Sair</button>
             </>
           ) : (

@@ -1,8 +1,8 @@
 .card {
   display: grid;
-  min-height: 360px;
+  min-height: 326px;
   border: 1px solid var(--color-line);
-  padding: 28px 24px 24px;
+  padding: 24px 20px 22px;
   color: var(--color-ink);
   background: var(--color-surface);
   text-align: left;
@@ -18,29 +18,14 @@
 .portrait {
   display: grid;
   place-items: center;
-  min-height: 214px;
+  min-height: 184px;
 }
 
 .image {
-  display: grid;
-  width: min(218px, 74%);
-  place-items: center;
+  width: min(184px, 76%);
   aspect-ratio: 1;
-  overflow: hidden;
   border: 1px solid rgb(35 34 32 / 10%);
-  border-radius: 50%;
-  color: #6d6b67;
-  background: #e6e3dd;
   font: 500 40px/1 Georgia, serif;
-}
-
-.image img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  transition: transform 180ms ease, object-position 180ms ease;
 }
 
 .details {
@@ -59,7 +44,7 @@
 }
 
 .details strong {
-  font: 600 29px/1.1 Georgia, serif;
+  font: 600 25px/1.1 Georgia, serif;
 }
 
 .details > span {

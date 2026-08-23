@@ -331,17 +331,23 @@ button:disabled {
   gap: 8px;
 }
 
-.profileRow button {
+.profileRow button,
+.rowActions button {
   border: 1px solid #b85c55;
   padding: 7px 10px;
   color: #9b332c;
   background: transparent;
   font-size: 12px;
+  font-family: inherit;
 }
 
 .rowActions button:first-child {
   border-color: var(--color-line);
   color: var(--color-ink);
+}
+
+.rowActions button:hover {
+  border-color: var(--color-ink);
 }
 
 .contactStack {

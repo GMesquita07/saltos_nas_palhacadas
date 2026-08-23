@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getPortfolioItems } from '../../services/portfolioService'
-import { imageCropStyle } from '../../components/imageCrop'
+import { CroppedImage } from '../../components/CroppedImage'
 import type { Profile } from '../../types/profile'
 import type { PortfolioItem, PortfolioItemType } from '../../types/portfolio'
 import { PortfolioCard } from './PortfolioCard'
@@ -34,9 +34,13 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
       <button className={styles.back} type="button" onClick={onBack}>← Todos os perfis</button>
       <header className={`${styles.hero} ${featuredVideo ? styles.heroWithVideo : ''}`}>
         <div className={styles.profileImage}>
-          {profile.imageUrl
-            ? <img key={profile.imageUrl + imagePosition + imageZoom} src={profile.imageUrl} alt="" style={imageCropStyle(imagePosition, imageZoom)} />
-            : profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+          <CroppedImage
+            className={styles.profileImageFrame}
+            fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+            position={imagePosition}
+            src={profile.imageUrl}
+            zoom={imageZoom}
+          />
         </div>
         <div className={styles.heroCopy}>
           <p className="eyebrow">{profile.role}</p>
