@@ -104,6 +104,12 @@
   font-size: 24px;
 }
 
+.subline {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
 .eyebrow,
 .details dt,
 .request h4,
@@ -143,6 +149,11 @@
 .statusCOUNTER_PROPOSED {
   border-color: #807199;
   color: #5e4d77;
+}
+
+.statusCANCELLED {
+  border-color: #9c8370;
+  color: #7b5f4d;
 }
 
 .details {
@@ -254,9 +265,9 @@
   line-height: 1.5;
 }
 
-.counterFields {
+.scheduleFields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -293,7 +304,7 @@
   }
 
   .details,
-  .counterFields {
+  .scheduleFields {
     grid-template-columns: 1fr;
   }
 }

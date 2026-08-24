@@ -71,7 +71,7 @@ A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca 
 | `GET` | `/api/v1/profiles` | Lista perfis ativos |
 | `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
 | `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
-| `GET` | `/api/v1/profiles/{slug}/availability?from=YYYY-MM-DD&to=YYYY-MM-DD` | Datas já reservadas para esse artista, sem expor dados do evento |
+| `GET` | `/api/v1/profiles/{slug}/availability?from=YYYY-MM-DD&to=YYYY-MM-DD` | Slots em stand by/confirmados para esse artista, sem expor dados privados |
 | `GET` | `/api/v1/contacts` | Lista os contactos visíveis no site |
 | `POST` | `/api/v1/auth/register` | Cria uma conta normal (`CUSTOMER`) |
 | `POST` | `/api/v1/auth/login` | Inicia sessão e devolve um JWT |
@@ -97,17 +97,20 @@ Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADM
 
 ## Agendamentos
 
-O visitante pode consultar o calendário de cada artista sem iniciar sessão. Apenas as datas de eventos **aceites** são públicas; nunca são expostos o cliente, contacto, orçamento, descrição ou notas.
+O visitante pode consultar o calendário de cada artista sem iniciar sessão. Os pedidos pendentes aparecem publicamente apenas como **Em stand by** e os eventos aceites como **Confirmado**; nunca são expostos cliente, contactos, descrição ou notas.
 
-Para enviar uma proposta, o utilizador inicia sessão e indica artista, data, tipo de evento, nome, contacto telefónico, orçamento, descrição e notas opcionais. Cada conta só pode consultar os seus próprios pedidos e respetiva resposta. O administrador vê todas as propostas no separador **Agendamentos** do painel e pode aceitar, recusar ou enviar uma contraproposta com nova data e/ou orçamento. O cliente pode então aceitar ou recusar essa contraproposta; ao aceitá-la, os valores propostos passam a ser a reserva efetiva.
+Para enviar um pedido de orçamento e agendamento, o utilizador inicia sessão e indica artista, data, tipo de evento, local, nome, email, telemóvel, descrição/serviços pretendidos e notas opcionais. As horas são opcionais; quando não existem horas, o pedido aceite bloqueia o dia inteiro. Em casamentos são pedidos os nomes dos noivos; em “Outro” é pedido o tipo de evento.
 
-- `POST /api/v1/bookings` — cria uma proposta; requer sessão autenticada.
-- `GET /api/v1/bookings/mine` — devolve apenas as propostas da conta autenticada.
-- `PUT /api/v1/bookings/{id}/counter-proposal/decision` — aceita ou recusa a contraproposta da própria conta.
-- `GET /api/v1/admin/bookings?status=PENDING` — lista propostas para o administrador.
-- `PUT /api/v1/admin/bookings/{id}/decision` — aceita, recusa ou envia contraproposta; requer `ADMIN`.
+O administrador vê todos os pedidos no separador **Agendamentos** do painel. A proposta de orçamento é tratada fora do site por email/telemóvel; dentro do site o administrador confirma, altera data/hora, regista o orçamento acordado para uso interno, rejeita ou cancela o evento com justificação. Ao cancelar, o slot deixa de contar para a disponibilidade. O orçamento acordado só aparece no painel de administração.
 
-O backend impede reservas aceites sobrepostas para o mesmo artista e data, incluindo decisões concorrentes, e bloqueia propostas ativas duplicadas do mesmo cliente. Para preservar o histórico, um perfil que tenha agendamentos associados não pode ser eliminado. A migration Flyway `V6__create_booking_requests.sql` é aplicada automaticamente no próximo arranque da API.
+- `POST /api/v1/bookings` — cria um pedido; requer sessão autenticada.
+- `GET /api/v1/bookings/mine` — devolve apenas os pedidos da conta autenticada.
+- `GET /api/v1/admin/bookings?status=PENDING` — lista pedidos para o administrador.
+- `PUT /api/v1/admin/bookings/{id}/decision` — confirma, altera, rejeita ou cancela; requer `ADMIN`.
+
+O backend impede reservas aceites sobrepostas para o mesmo artista e data/hora, incluindo decisões concorrentes, e bloqueia pedidos ativos duplicados do mesmo cliente no mesmo horário. Para preservar o histórico, um perfil que tenha agendamentos associados não pode ser eliminado. A migration Flyway `V11__booking_schedule_details.sql` é aplicada automaticamente no próximo arranque da API.
+
+O email de confirmação do pedido é disparado automaticamente pelo backend. Em desenvolvimento, sem SMTP configurado, fica registado nos logs. Para envio real, defina `BOOKING_EMAIL_ENABLED=true`, `BOOKING_EMAIL_SMTP_HOST`, `BOOKING_EMAIL_SMTP_PORT`, `BOOKING_EMAIL_SMTP_SSL` ou `BOOKING_EMAIL_SMTP_STARTTLS`, `BOOKING_EMAIL_USERNAME`, `BOOKING_EMAIL_PASSWORD` e `BOOKING_EMAIL_FROM`.
 
 Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 

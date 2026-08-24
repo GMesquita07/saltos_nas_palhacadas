@@ -2,6 +2,7 @@ package pt.saltosnaspalhacadas.backend.booking;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -23,48 +24,60 @@ public class BookingService {
     private final BookingRepository bookings;
     private final AppUserRepository users;
     private final ProfileRepository profiles;
+    private final BookingNotificationService notifications;
 
-    public BookingService(BookingRepository bookings, AppUserRepository users, ProfileRepository profiles) {
+    public BookingService(
+            BookingRepository bookings,
+            AppUserRepository users,
+            ProfileRepository profiles,
+            BookingNotificationService notifications) {
         this.bookings = bookings;
         this.users = users;
         this.profiles = profiles;
+        this.notifications = notifications;
     }
 
     @Transactional
     public Booking create(String email, CreateBookingCommand command) {
         validateProposalDate(command.eventDate());
+        validateTimeWindow(command.startTime(), command.endTime());
+        validateEventSpecificFields(command);
 
         AppUser user = findActiveUser(email);
         Profile profile = profiles.findBySlugAndActiveTrue(command.profileSlug())
                 .orElseThrow(() -> new ProfileNotFoundException(command.profileSlug()));
 
-        if (bookings.existsByProfileIdAndEventDateAndStatus(
-                profile.getId(), command.eventDate(), BookingStatus.ACCEPTED)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "O artista já tem um evento aceite nesta data. Escolhe outro dia.");
-        }
+        assertNoAcceptedScheduleConflict(
+                profile.getId(),
+                command.eventDate(),
+                command.startTime(),
+                command.endTime(),
+                null);
 
-        if (bookings.existsByUserIdAndProfileIdAndEventDateAndStatusIn(
+        assertNoDuplicateActiveRequest(
                 user.getId(),
                 profile.getId(),
                 command.eventDate(),
-                Set.of(BookingStatus.PENDING, BookingStatus.COUNTER_PROPOSED))) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Já tens uma proposta ativa para este artista nesta data.");
-        }
+                command.startTime(),
+                command.endTime());
 
-        return bookings.save(new Booking(
+        Booking booking = bookings.save(new Booking(
                 user,
                 profile,
                 command.eventDate(),
+                command.startTime(),
+                command.endTime(),
                 command.eventType(),
+                command.customEventType(),
+                command.weddingCoupleNames(),
+                command.location(),
                 command.contactName(),
+                command.contactEmail(),
                 command.contactPhone(),
-                command.budget(),
                 command.description(),
                 command.notes()));
+        notifications.sendReceivedConfirmation(booking);
+        return booking;
     }
 
     @Transactional(readOnly = true)
@@ -78,29 +91,40 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<LocalDate> findBookedDates(String profileSlug, LocalDate from, LocalDate to) {
+    public List<Booking> findAvailability(String profileSlug, LocalDate from, LocalDate to) {
         profiles.findBySlugAndActiveTrue(profileSlug).orElseThrow(() -> new ProfileNotFoundException(profileSlug));
         validateDateRange(from, to);
-        return bookings.findBookedDates(profileSlug, BookingStatus.ACCEPTED, from, to);
+        return bookings.findAvailabilitySlots(profileSlug, Set.of(BookingStatus.PENDING, BookingStatus.ACCEPTED), from, to);
     }
 
     @Transactional
     public Booking decide(Long bookingId, DecisionBookingCommand command) {
         Booking booking = bookings.findByIdWithProfile(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposta de agendamento não encontrada"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido de agendamento não encontrado"));
 
         if (command.status() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolhe a decisão para esta proposta");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolhe a decisão para este pedido");
         }
 
         if (command.status() == BookingStatus.PENDING) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolhe aceitar, recusar ou enviar uma contraproposta");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolhe confirmar, rejeitar, alterar ou cancelar o pedido");
+        }
+
+        if (command.status() == BookingStatus.CANCELLED) {
+            if (command.message() == null || command.message().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica a justificação do cancelamento");
+            }
+            if (booking.getStatus() == BookingStatus.CANCELLED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Este agendamento já está cancelado");
+            }
+            booking.cancel(command.message());
+            return bookings.save(booking);
         }
 
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Esta proposta já não está pendente de decisão da administração");
+                    "Este pedido já não está pendente de decisão da administração");
         }
 
         // Locking the profile serializes decisions for the same artist. It avoids two
@@ -109,20 +133,26 @@ public class BookingService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "O perfil deste artista já não está disponível"));
 
         if (command.status() == BookingStatus.ACCEPTED) {
-            validateProposalDate(booking.getEventDate());
-            assertDateIsFree(profile.getId(), booking.getEventDate(), booking.getId());
+            LocalDate finalEventDate = command.eventDate() == null ? booking.getEventDate() : command.eventDate();
+            LocalTime finalStartTime = command.hasScheduleOverride() ? command.startTime() : booking.getStartTime();
+            LocalTime finalEndTime = command.hasScheduleOverride() ? command.endTime() : booking.getEndTime();
+
+            validateProposalDate(finalEventDate);
+            validateTimeWindow(finalStartTime, finalEndTime);
+            assertNoAcceptedScheduleConflict(profile.getId(), finalEventDate, finalStartTime, finalEndTime, booking.getId());
             assertNoCounterValues(command);
+            validateAgreedBudget(command.agreedBudget());
+            booking.accept(finalEventDate, finalStartTime, finalEndTime, command.agreedBudget(), command.message());
         } else if (command.status() == BookingStatus.COUNTER_PROPOSED) {
+            assertNoAgreedBudget(command);
             validateCounterProposal(command, profile, booking.getId());
+            booking.counterPropose(command.message(), command.counterBudget(), command.counterEventDate());
         } else {
             assertNoCounterValues(command);
+            assertNoAgreedBudget(command);
+            booking.decline(command.message());
         }
 
-        booking.decide(
-                command.status(),
-                command.message(),
-                command.counterBudget(),
-                command.counterEventDate());
         return bookings.save(booking);
     }
 
@@ -130,14 +160,14 @@ public class BookingService {
     public Booking respondToCounterProposal(String email, Long bookingId, CounterProposalDecision decision) {
         AppUser user = findActiveUser(email);
         Booking booking = bookings.findByIdWithProfile(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposta de agendamento não encontrada"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido de agendamento não encontrado"));
 
         if (decision == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolhe se aceitas ou recusas a contraproposta");
         }
 
         if (!booking.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não tens permissão para responder a esta proposta");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não tens permissão para responder a este pedido");
         }
 
         if (booking.getStatus() != BookingStatus.COUNTER_PROPOSED) {
@@ -159,10 +189,12 @@ public class BookingService {
                 : booking.getCounterBudget();
 
         validateProposalDate(acceptedEventDate);
-        if (acceptedBudget == null || acceptedBudget.signum() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O orçamento acordado tem de ser superior a zero");
-        }
-        assertDateIsFree(profile.getId(), acceptedEventDate, booking.getId());
+        assertNoAcceptedScheduleConflict(
+                profile.getId(),
+                acceptedEventDate,
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getId());
 
         booking.acceptCounterProposal(acceptedEventDate, acceptedBudget);
         return bookings.save(booking);
@@ -183,7 +215,7 @@ public class BookingService {
             if (!command.counterEventDate().isAfter(LocalDate.now())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A nova data da contraproposta tem de ser futura");
             }
-            assertDateIsFree(profile.getId(), command.counterEventDate(), bookingId);
+            assertNoAcceptedScheduleConflict(profile.getId(), command.counterEventDate(), null, null, bookingId);
         }
     }
 
@@ -195,15 +227,88 @@ public class BookingService {
         }
     }
 
-    private void assertDateIsFree(Long profileId, LocalDate eventDate, Long currentBookingId) {
-        if (bookings.existsByProfileIdAndEventDateAndStatusAndIdNot(
-                profileId,
-                eventDate,
-                BookingStatus.ACCEPTED,
-                currentBookingId)) {
+    private static void validateAgreedBudget(BigDecimal agreedBudget) {
+        if (agreedBudget != null && agreedBudget.signum() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O orçamento acordado tem de ser superior a zero");
+        }
+    }
+
+    private static void assertNoAgreedBudget(DecisionBookingCommand command) {
+        if (command.agreedBudget() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O orçamento acordado só pode ser guardado ao confirmar o pedido");
+        }
+    }
+
+    private void assertNoDuplicateActiveRequest(
+            Long userId,
+            Long profileId,
+            LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime) {
+        boolean hasDuplicate = bookings.findUserBookingsOnDateWithStatuses(
+                        userId,
+                        profileId,
+                        eventDate,
+                        Set.of(BookingStatus.PENDING, BookingStatus.COUNTER_PROPOSED, BookingStatus.ACCEPTED))
+                .stream()
+                .anyMatch(existing -> overlaps(existing.getStartTime(), existing.getEndTime(), startTime, endTime));
+
+        if (hasDuplicate) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "O artista já tem um evento aceite nesta data. Escolhe outro dia.");
+                    "Já tens um pedido ativo para este artista nesse horário.");
+        }
+    }
+
+    private void assertNoAcceptedScheduleConflict(
+            Long profileId,
+            LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            Long currentBookingId) {
+        boolean hasConflict = bookings.findProfileBookingsOnDateWithStatuses(
+                        profileId,
+                        eventDate,
+                        Set.of(BookingStatus.ACCEPTED))
+                .stream()
+                .filter(existing -> currentBookingId == null || !existing.getId().equals(currentBookingId))
+                .anyMatch(existing -> overlaps(existing.getStartTime(), existing.getEndTime(), startTime, endTime));
+
+        if (hasConflict) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "O artista já tem um evento aceite nesse horário. Escolhe outro intervalo.");
+        }
+    }
+
+    private static boolean overlaps(
+            LocalTime existingStart,
+            LocalTime existingEnd,
+            LocalTime requestedStart,
+            LocalTime requestedEnd) {
+        if (existingStart == null || existingEnd == null || requestedStart == null || requestedEnd == null) {
+            return true;
+        }
+        return requestedStart.isBefore(existingEnd) && existingStart.isBefore(requestedEnd);
+    }
+
+    private static void validateTimeWindow(LocalTime startTime, LocalTime endTime) {
+        if ((startTime == null) != (endTime == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica a hora de início e a hora de fim, ou deixa ambas em branco");
+        }
+        if (startTime != null && !startTime.isBefore(endTime)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A hora de fim tem de ser posterior à hora de início");
+        }
+    }
+
+    private static void validateEventSpecificFields(CreateBookingCommand command) {
+        if (command.eventType() == BookingEventType.WEDDING
+                && (command.weddingCoupleNames() == null || command.weddingCoupleNames().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica os nomes dos noivos");
+        }
+        if (command.eventType() == BookingEventType.OTHER
+                && (command.customEventType() == null || command.customEventType().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica o tipo de evento");
         }
     }
 
@@ -233,10 +338,15 @@ public class BookingService {
     public record CreateBookingCommand(
             String profileSlug,
             LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
             BookingEventType eventType,
+            String customEventType,
+            String weddingCoupleNames,
+            String location,
             String contactName,
+            String contactEmail,
             String contactPhone,
-            BigDecimal budget,
             String description,
             String notes) {
     }
@@ -244,7 +354,15 @@ public class BookingService {
     public record DecisionBookingCommand(
             BookingStatus status,
             String message,
+            LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            BigDecimal agreedBudget,
             BigDecimal counterBudget,
             LocalDate counterEventDate) {
+
+        boolean hasScheduleOverride() {
+            return eventDate != null || startTime != null || endTime != null;
+        }
     }
 }

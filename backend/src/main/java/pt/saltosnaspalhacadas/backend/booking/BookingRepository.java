@@ -38,17 +38,42 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByProfileId(Long profileId);
 
-    boolean existsByUserIdAndProfileIdAndEventDateAndStatusIn(
-            Long userId,
-            Long profileId,
-            LocalDate eventDate,
-            java.util.Collection<BookingStatus> statuses);
+    @Query("""
+            select booking from Booking booking
+            where booking.user.id = :userId
+              and booking.profile.id = :profileId
+              and booking.eventDate = :eventDate
+              and booking.status in :statuses
+            """)
+    List<Booking> findUserBookingsOnDateWithStatuses(
+            @Param("userId") Long userId,
+            @Param("profileId") Long profileId,
+            @Param("eventDate") LocalDate eventDate,
+            @Param("statuses") java.util.Collection<BookingStatus> statuses);
 
-    boolean existsByProfileIdAndEventDateAndStatusAndIdNot(
-            Long profileId,
-            LocalDate eventDate,
-            BookingStatus status,
-            Long id);
+    @Query("""
+            select booking from Booking booking
+            where booking.profile.id = :profileId
+              and booking.eventDate = :eventDate
+              and booking.status in :statuses
+            """)
+    List<Booking> findProfileBookingsOnDateWithStatuses(
+            @Param("profileId") Long profileId,
+            @Param("eventDate") LocalDate eventDate,
+            @Param("statuses") java.util.Collection<BookingStatus> statuses);
+
+    @Query("""
+            select booking from Booking booking
+            where booking.profile.slug = :profileSlug
+              and booking.status in :statuses
+              and booking.eventDate between :from and :to
+            order by booking.eventDate asc, booking.startTime asc, booking.createdAt asc
+            """)
+    List<Booking> findAvailabilitySlots(
+            @Param("profileSlug") String profileSlug,
+            @Param("statuses") java.util.Collection<BookingStatus> statuses,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 
     @Query("""
             select distinct booking.eventDate from Booking booking

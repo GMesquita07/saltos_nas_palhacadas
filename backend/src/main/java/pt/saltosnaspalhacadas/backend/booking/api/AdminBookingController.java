@@ -2,6 +2,7 @@ package pt.saltosnaspalhacadas.backend.booking.api;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -34,25 +35,35 @@ public class AdminBookingController {
 
     @GetMapping
     List<BookingResponse> findBookings(@RequestParam(required = false) BookingStatus status) {
-        return bookings.findForAdmin(status).stream().map(BookingResponse::from).toList();
+        return bookings.findForAdmin(status).stream().map(BookingResponse::fromAdmin).toList();
     }
 
     @PutMapping("/{bookingId}/decision")
     BookingResponse decide(
             @PathVariable Long bookingId,
             @Valid @RequestBody DecisionBookingRequest request) {
-        return BookingResponse.from(bookings.decide(bookingId, new BookingService.DecisionBookingCommand(
+        return BookingResponse.fromAdmin(bookings.decide(bookingId, new BookingService.DecisionBookingCommand(
                 request.status(),
                 request.message(),
+                request.eventDate(),
+                request.startTime(),
+                request.endTime(),
+                request.agreedBudget(),
                 request.counterBudget(),
                 request.counterEventDate())));
     }
 
     record DecisionBookingRequest(
-            @NotNull(message = "Escolhe a decisão para esta proposta")
+            @NotNull(message = "Escolhe a decisão para este pedido")
             BookingStatus status,
             @Size(max = 1000, message = "A mensagem pode ter no máximo 1000 caracteres")
             String message,
+            LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            @DecimalMin(value = "0.01", message = "O orçamento acordado tem de ser superior a zero")
+            @Digits(integer = 8, fraction = 2, message = "O orçamento só pode ter duas casas decimais")
+            BigDecimal agreedBudget,
             @DecimalMin(value = "0.01", message = "O orçamento da contraproposta tem de ser superior a zero")
             @Digits(integer = 8, fraction = 2, message = "O orçamento só pode ter duas casas decimais")
             BigDecimal counterBudget,

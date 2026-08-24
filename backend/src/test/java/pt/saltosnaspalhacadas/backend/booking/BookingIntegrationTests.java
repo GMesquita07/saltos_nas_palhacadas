@@ -1,7 +1,8 @@
 package pt.saltosnaspalhacadas.backend.booking;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,7 +58,7 @@ class BookingIntegrationTests {
     }
 
     @Test
-    void customerCanCreateAProposalAndOnlyTheyAndAdminsCanSeeItsPrivateDetails() throws Exception {
+    void customerCanCreateARequestAndPendingSlotsAppearAsStandby() throws Exception {
         TestData data = createTestData();
         LocalDate eventDate = LocalDate.now().plusDays(20);
         String contactName = "Cliente " + data.suffix();
@@ -66,18 +67,23 @@ class BookingIntegrationTests {
             mockMvc.perform(post("/api/v1/bookings")
                             .header("Authorization", bearer(data.customer()))
                             .contentType("application/json")
-                            .content(bookingBody(data.profile().getSlug(), eventDate, contactName, "915 123 456")))
+                            .content(bookingBody(data.profile().getSlug(), eventDate, "WEDDING", contactName, "915 123 456", "10:00", "12:00")))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.profileSlug").value(data.profile().getSlug()))
                     .andExpect(jsonPath("$.eventType").value("WEDDING"))
-                    .andExpect(jsonPath("$.budget").value(450.00))
+                    .andExpect(jsonPath("$.weddingCoupleNames").value("Ana e Miguel"))
+                    .andExpect(jsonPath("$.location").value("Quinta de Viseu"))
+                    .andExpect(jsonPath("$.contactEmail").value("cliente-" + data.profile().getSlug() + "@example.test"))
+                    .andExpect(jsonPath("$.startTime").value("10:00:00"))
+                    .andExpect(jsonPath("$.endTime").value("12:00:00"))
                     .andExpect(jsonPath("$.status").value("PENDING"));
 
             mockMvc.perform(get("/api/v1/bookings/mine").header("Authorization", bearer(data.customer())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1))
                     .andExpect(jsonPath("$[0].contactName").value(contactName))
-                    .andExpect(jsonPath("$[0].contactPhone").value("915 123 456"));
+                    .andExpect(jsonPath("$[0].contactPhone").value("915 123 456"))
+                    .andExpect(jsonPath("$[0].location").value("Quinta de Viseu"));
 
             mockMvc.perform(get("/api/v1/bookings/mine").header("Authorization", bearer(data.otherCustomer())))
                     .andExpect(status().isOk())
@@ -86,18 +92,18 @@ class BookingIntegrationTests {
             mockMvc.perform(post("/api/v1/bookings")
                             .header("Authorization", bearer(data.customer()))
                             .contentType("application/json")
-                            .content(bookingBody(data.profile().getSlug(), eventDate, contactName, "915 123 456")))
+                            .content(bookingBody(data.profile().getSlug(), eventDate, "WEDDING", contactName, "915 123 456", "11:00", "13:00")))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("Já tens uma proposta ativa para este artista nesta data."));
-
-            mockMvc.perform(get("/api/v1/admin/bookings").header("Authorization", bearer(data.customer())))
-                    .andExpect(status().isForbidden());
+                    .andExpect(jsonPath("$.detail").value("Já tens um pedido ativo para este artista nesse horário."));
 
             mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
                             .param("from", eventDate.minusDays(1).toString())
                             .param("to", eventDate.plusDays(1).toString()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.bookedDates.length()").value(0));
+                    .andExpect(jsonPath("$.bookedDates.length()").value(0))
+                    .andExpect(jsonPath("$.slots.length()").value(1))
+                    .andExpect(jsonPath("$.slots[0].date").value(eventDate.toString()))
+                    .andExpect(jsonPath("$.slots[0].status").value("PENDING"));
 
             mockMvc.perform(get("/api/v1/admin/bookings?status=PENDING")
                             .header("Authorization", bearer(admin())))
@@ -115,13 +121,13 @@ class BookingIntegrationTests {
     }
 
     @Test
-    void acceptingOneProposalBlocksConflictsAndExposesOnlyTheBookedDatePublicly() throws Exception {
+    void acceptedTimedBookingsCanShareADayWhenTheyDoNotOverlap() throws Exception {
         TestData data = createTestData();
         LocalDate eventDate = LocalDate.now().plusDays(30);
 
         try {
-            createBooking(data.customer(), data.profile().getSlug(), eventDate, "Primeiro cliente " + data.suffix());
-            createBooking(data.otherCustomer(), data.profile().getSlug(), eventDate, "Segundo cliente " + data.suffix());
+            createBooking(data.customer(), data.profile().getSlug(), eventDate, "Primeiro cliente " + data.suffix(), "10:00", "12:00");
+            createBooking(data.otherCustomer(), data.profile().getSlug(), eventDate, "Segundo cliente " + data.suffix(), "18:00", "19:00");
 
             Long firstBookingId = bookingIdFor(data.customer());
             Long secondBookingId = bookingIdFor(data.otherCustomer());
@@ -129,174 +135,164 @@ class BookingIntegrationTests {
             mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", firstBookingId)
                             .header("Authorization", bearer(admin()))
                             .contentType("application/json")
-                            .content("{\"status\":\"ACCEPTED\",\"message\":\"Disponibilidade confirmada.\"}"))
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + eventDate + "\",\"startTime\":\"10:00\",\"endTime\":\"12:00\",\"message\":\"Disponibilidade confirmada.\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("ACCEPTED"))
                     .andExpect(jsonPath("$.message").value("Disponibilidade confirmada."));
 
+            mockMvc.perform(post("/api/v1/bookings")
+                            .header("Authorization", bearer(data.otherCustomer()))
+                            .contentType("application/json")
+                            .content(bookingBody(data.profile().getSlug(), eventDate, "BIRTHDAY", "Pedido sobreposto " + data.suffix(), "916 123 456", "11:00", "13:00")))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.detail").value("O artista já tem um evento aceite nesse horário. Escolhe outro intervalo."));
+
             mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", secondBookingId)
                             .header("Authorization", bearer(admin()))
                             .contentType("application/json")
-                            .content("{\"status\":\"ACCEPTED\"}"))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("O artista já tem um evento aceite nesta data. Escolhe outro dia."));
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + eventDate + "\",\"startTime\":\"18:00\",\"endTime\":\"19:00\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
 
             mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
                             .param("from", eventDate.minusDays(1).toString())
                             .param("to", eventDate.plusDays(1).toString()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.bookedDates[0]").value(eventDate.toString()))
-                    .andExpect(jsonPath("$.bookedDates.length()").value(1));
-
-            mockMvc.perform(get("/api/v1/bookings/mine").header("Authorization", bearer(data.customer())))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].status").value("ACCEPTED"));
+                    .andExpect(jsonPath("$.bookedDates.length()").value(0))
+                    .andExpect(jsonPath("$.slots.length()").value(2));
         } finally {
             cleanup(data);
         }
     }
 
     @Test
-    void counterProposalRequiresAValidFreeFutureDateOrBudget() throws Exception {
+    void wholeDayAcceptedBookingBlocksTheDateAndCancellationFreesIt() throws Exception {
         TestData data = createTestData();
-        LocalDate bookedDate = LocalDate.now().plusDays(35);
-        LocalDate requestedDate = LocalDate.now().plusDays(40);
-        LocalDate validCounterDate = LocalDate.now().plusDays(45);
+        LocalDate eventDate = LocalDate.now().plusDays(35);
 
         try {
-            createBooking(data.customer(), data.profile().getSlug(), bookedDate, "Evento aceite " + data.suffix());
-            Long acceptedBookingId = bookingIdFor(data.customer());
-            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", acceptedBookingId)
-                            .header("Authorization", bearer(admin()))
-                            .contentType("application/json")
-                            .content("{\"status\":\"ACCEPTED\"}"))
-                    .andExpect(status().isOk());
-
-            createBooking(data.otherCustomer(), data.profile().getSlug(), requestedDate, "Evento com contraproposta " + data.suffix());
-            Long counterBookingId = bookingIdFor(data.otherCustomer());
-
-            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", counterBookingId)
-                            .header("Authorization", bearer(admin()))
-                            .contentType("application/json")
-                            .content("{\"status\":\"COUNTER_PROPOSED\"}"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.detail").value("Indica um novo orçamento, uma nova data, ou ambos na contraproposta"));
-
-            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", counterBookingId)
-                            .header("Authorization", bearer(admin()))
-                            .contentType("application/json")
-                            .content("{\"status\":\"COUNTER_PROPOSED\",\"counterEventDate\":\"" + bookedDate + "\"}"))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("O artista já tem um evento aceite nesta data. Escolhe outro dia."));
-
-            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", counterBookingId)
-                            .header("Authorization", bearer(admin()))
-                            .contentType("application/json")
-                            .content("{\"status\":\"COUNTER_PROPOSED\",\"message\":\"Podemos nesta nova data.\",\"counterBudget\":525.00,\"counterEventDate\":\"" + validCounterDate + "\"}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("COUNTER_PROPOSED"))
-                    .andExpect(jsonPath("$.counterProposal.budget").value(525.00))
-                    .andExpect(jsonPath("$.counterProposal.eventDate").value(validCounterDate.toString()))
-                    .andExpect(jsonPath("$.message").value("Podemos nesta nova data."));
-
-            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", counterBookingId)
-                            .header("Authorization", bearer(admin()))
-                            .contentType("application/json")
-                            .content("{\"status\":\"ACCEPTED\"}"))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("Esta proposta já não está pendente de decisão da administração"));
-
-            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal/decision", counterBookingId)
-                            .header("Authorization", bearer(data.customer()))
-                            .contentType("application/json")
-                            .content("{\"decision\":\"ACCEPTED\"}"))
-                    .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.detail").value("Não tens permissão para responder a esta proposta"));
-
-            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal/decision", counterBookingId)
-                            .header("Authorization", bearer(data.otherCustomer()))
-                            .contentType("application/json")
-                            .content("{\"decision\":\"ACCEPTED\"}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
-                    .andExpect(jsonPath("$.eventDate").value(validCounterDate.toString()))
-                    .andExpect(jsonPath("$.budget").value(525.00));
-
-            mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
-                            .param("from", validCounterDate.toString())
-                            .param("to", validCounterDate.plusDays(1).toString()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.bookedDates.length()").value(1))
-                    .andExpect(jsonPath("$.bookedDates[0]").value(validCounterDate.toString()));
-
-            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal/decision", counterBookingId)
-                            .header("Authorization", bearer(data.otherCustomer()))
-                            .contentType("application/json")
-                            .content("{\"decision\":\"DECLINED\"}"))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("Esta proposta não tem uma contraproposta pendente"));
-        } finally {
-            cleanup(data);
-        }
-    }
-
-    @Test
-    void ownerCanDeclineAnActiveCounterProposal() throws Exception {
-        TestData data = createTestData();
-        LocalDate requestedDate = LocalDate.now().plusDays(50);
-
-        try {
-            createBooking(data.customer(), data.profile().getSlug(), requestedDate, "Cliente que recusa " + data.suffix());
+            createBooking(data.customer(), data.profile().getSlug(), eventDate, "Evento sem horas " + data.suffix(), null, null);
             Long bookingId = bookingIdFor(data.customer());
 
             mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", bookingId)
                             .header("Authorization", bearer(admin()))
                             .contentType("application/json")
-                            .content("{\"status\":\"COUNTER_PROPOSED\",\"counterBudget\":600.00}"))
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + eventDate + "\"}"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("COUNTER_PROPOSED"));
-
-            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal/decision", bookingId)
-                            .header("Authorization", bearer(data.customer()))
-                            .contentType("application/json")
-                            .content("{\"decision\":\"DECLINED\"}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("DECLINED"));
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
 
             mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
-                            .param("from", requestedDate.minusDays(1).toString())
-                            .param("to", requestedDate.plusDays(1).toString()))
+                            .param("from", eventDate.toString())
+                            .param("to", eventDate.toString()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.bookedDates.length()").value(0));
+                    .andExpect(jsonPath("$.bookedDates[0]").value(eventDate.toString()))
+                    .andExpect(jsonPath("$.slots[0].status").value("ACCEPTED"));
+
+            mockMvc.perform(post("/api/v1/bookings")
+                            .header("Authorization", bearer(data.otherCustomer()))
+                            .contentType("application/json")
+                            .content(bookingBody(data.profile().getSlug(), eventDate, "BIRTHDAY", "Tentativa bloqueada " + data.suffix(), "916 123 456", "18:00", "19:00")))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.detail").value("O artista já tem um evento aceite nesse horário. Escolhe outro intervalo."));
+
+            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", bookingId)
+                            .header("Authorization", bearer(admin()))
+                            .contentType("application/json")
+                            .content("{\"status\":\"CANCELLED\",\"message\":\"Cliente cancelou o evento.\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.message").value("Cliente cancelou o evento."));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
+                            .param("from", eventDate.toString())
+                            .param("to", eventDate.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.bookedDates.length()").value(0))
+                    .andExpect(jsonPath("$.slots.length()").value(0));
+
+            createBooking(data.otherCustomer(), data.profile().getSlug(), eventDate, "Agora livre " + data.suffix(), "18:00", "19:00");
         } finally {
             cleanup(data);
         }
     }
 
     @Test
-    void proposalValidationRejectsPastDatesAndInvalidBudget() throws Exception {
+    void adminCanConfirmWithAdjustedDateAndTime() throws Exception {
         TestData data = createTestData();
+        LocalDate requestedDate = LocalDate.now().plusDays(40);
+        LocalDate confirmedDate = requestedDate.plusDays(2);
+
         try {
-            mockMvc.perform(post("/api/v1/bookings")
-                            .header("Authorization", bearer(data.customer()))
+            createBooking(data.customer(), data.profile().getSlug(), requestedDate, "Cliente ajustado " + data.suffix(), "10:00", "12:00");
+            Long bookingId = bookingIdFor(data.customer());
+
+            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", bookingId)
+                            .header("Authorization", bearer(admin()))
                             .contentType("application/json")
-                            .content("""
-                                    {"profileSlug":"%s","eventDate":"%s","eventType":"BIRTHDAY","contactName":"Cliente","contactPhone":"......","budget":0,"description":"Festa"}
-                                    """.formatted(data.profile().getSlug(), LocalDate.now().minusDays(1))))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.eventDate").value("A data do evento não pode ser no passado"))
-                    .andExpect(jsonPath("$.errors.budget").value("O orçamento tem de ser superior a zero"))
-                    .andExpect(jsonPath("$.errors.contactPhone").value("Indica um contacto telefónico válido"));
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + confirmedDate + "\",\"startTime\":\"18:00\",\"endTime\":\"19:00\",\"agreedBudget\":725.00,\"message\":\"Horário ajustado por telefone.\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.eventDate").value(confirmedDate.toString()))
+                    .andExpect(jsonPath("$.startTime").value("18:00:00"))
+                    .andExpect(jsonPath("$.endTime").value("19:00:00"))
+                    .andExpect(jsonPath("$.budget").value(725.00))
+                    .andExpect(jsonPath("$.message").value("Horário ajustado por telefone."));
+
+            mockMvc.perform(get("/api/v1/bookings/mine").header("Authorization", bearer(data.customer())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].budget").value(nullValue()));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
+                            .param("from", confirmedDate.toString())
+                            .param("to", confirmedDate.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.slots[0].date").value(confirmedDate.toString()))
+                    .andExpect(jsonPath("$.slots[0].status").value("ACCEPTED"));
         } finally {
             cleanup(data);
         }
     }
 
-    private void createBooking(AppUser customer, String profileSlug, LocalDate eventDate, String contactName) throws Exception {
+    @Test
+    void requestValidationRejectsInvalidDatesPhonesTimesAndConditionalFields() throws Exception {
+        TestData data = createTestData();
+
+        try {
+            mockMvc.perform(post("/api/v1/bookings")
+                            .header("Authorization", bearer(data.customer()))
+                            .contentType("application/json")
+                            .content("""
+                                    {"profileSlug":"%s","eventDate":"%s","eventType":"BIRTHDAY","location":"","contactName":"Cliente","contactEmail":"email-invalido","contactPhone":"......","description":"Festa"}
+                                    """.formatted(data.profile().getSlug(), LocalDate.now().minusDays(1))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.eventDate").value("A data do evento não pode ser no passado"))
+                    .andExpect(jsonPath("$.errors.location").value("Indica o local do evento"))
+                    .andExpect(jsonPath("$.errors.contactEmail").value("Indica um email válido"))
+                    .andExpect(jsonPath("$.errors.contactPhone").value("Indica um contacto telefónico válido"));
+
+            mockMvc.perform(post("/api/v1/bookings")
+                            .header("Authorization", bearer(data.customer()))
+                            .contentType("application/json")
+                            .content(bookingBody(data.profile().getSlug(), LocalDate.now().plusDays(10), "WEDDING", "Sem noivos", "915 123 456", "13:00", "12:00").replace("\"weddingCoupleNames\":\"Ana e Miguel\",", "")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("A hora de fim tem de ser posterior à hora de início"));
+
+            mockMvc.perform(post("/api/v1/bookings")
+                            .header("Authorization", bearer(data.customer()))
+                            .contentType("application/json")
+                            .content(bookingBody(data.profile().getSlug(), LocalDate.now().plusDays(12), "OTHER", "Outro evento", "915 123 456", null, null).replace("\"customEventType\":\"Evento privado\",", "")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica o tipo de evento"));
+        } finally {
+            cleanup(data);
+        }
+    }
+
+    private void createBooking(AppUser customer, String profileSlug, LocalDate eventDate, String contactName, String startTime, String endTime) throws Exception {
         mockMvc.perform(post("/api/v1/bookings")
                         .header("Authorization", bearer(customer))
                         .contentType("application/json")
-                        .content(bookingBody(profileSlug, eventDate, contactName, "919 123 456")))
+                        .content(bookingBody(profileSlug, eventDate, "WEDDING", contactName, "919 123 456", startTime, endTime)))
                 .andExpect(status().isCreated());
     }
 
@@ -306,10 +302,31 @@ class BookingIntegrationTests {
                 .getId();
     }
 
-    private String bookingBody(String profileSlug, LocalDate eventDate, String contactName, String contactPhone) {
+    private String bookingBody(
+            String profileSlug,
+            LocalDate eventDate,
+            String eventType,
+            String contactName,
+            String contactPhone,
+            String startTime,
+            String endTime) {
         return """
-                {"profileSlug":"%s","eventDate":"%s","eventType":"WEDDING","contactName":"%s","contactPhone":"%s","budget":450.00,"description":"Cerimónia e festa durante a tarde.","notes":"Montagem a partir das 15h."}
-                """.formatted(profileSlug, eventDate, contactName, contactPhone);
+                {"profileSlug":"%s","eventDate":"%s","startTime":%s,"endTime":%s,"eventType":"%s",%s%s"location":"Quinta de Viseu","contactName":"%s","contactEmail":"cliente-%s@example.test","contactPhone":"%s","description":"Cerimónia e festa durante a tarde.","notes":"Montagem a partir das 15h."}
+                """.formatted(
+                profileSlug,
+                eventDate,
+                jsonNullable(startTime),
+                jsonNullable(endTime),
+                eventType,
+                "WEDDING".equals(eventType) ? "\"weddingCoupleNames\":\"Ana e Miguel\"," : "",
+                "OTHER".equals(eventType) ? "\"customEventType\":\"Evento privado\"," : "",
+                contactName,
+                profileSlug,
+                contactPhone);
+    }
+
+    private static String jsonNullable(String value) {
+        return value == null ? "null" : "\"" + value + "\"";
     }
 
     private AppUser admin() {

@@ -26,6 +26,6 @@ public class ProfileAvailabilityController {
             @PathVariable String slug,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return new AvailabilityResponse(bookings.findBookedDates(slug, from, to));
+        return AvailabilityResponse.from(bookings.findAvailability(slug, from, to));
     }
 }

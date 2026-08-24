@@ -29,12 +29,18 @@
 .day.outsideMonth { opacity: 0; pointer-events: none; }
 .day.booked { color: #8e514a; background: #f5e9e6; }
 .day.booked::after { position: absolute; top: 5px; right: 5px; width: 4px; height: 4px; border-radius: 50%; background: #a44f45; content: ''; }
+.day.standby { box-shadow: inset 0 -3px 0 #d6b45f; }
+.day.standby::before { position: absolute; bottom: 5px; left: 50%; width: 4px; height: 4px; border-radius: 50%; background: #b28a28; content: ''; transform: translateX(-50%); }
 .day.selected { color: white; background: var(--color-ink); }
+.day.selected::before, .day.selected::after { background: white; }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; color: var(--color-muted); font-size: 11px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 8px; height: 8px; border: 1px solid var(--color-line); }
 .legend .available { background: var(--color-surface); }
+.legend .pendingLegend { border-color: #d6b45f; background: #fbf4df; }
 .legend .unavailable { border-color: #d7b4ae; background: #f5e9e6; }
+.daySchedule { display: grid; gap: 5px; margin-top: 15px; border: 1px solid var(--color-line); padding: 12px; color: var(--color-muted); background: var(--color-paper); font-size: 12px; line-height: 1.4; }
+.daySchedule strong { color: var(--color-ink); font-size: 13px; }
 .calendarFeedback, .feedback, .loginHint { margin: 16px 0 0; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
 .selection { margin: -6px 0 23px; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
 .selection strong { color: var(--color-ink); font-weight: 600; }
@@ -56,6 +62,7 @@
 .accepted { color: #286644; background: #e5f1e9; }
 .declined { color: #964440; background: #f5e7e6; }
 .countered { color: #615391; background: #ece9f7; }
+.cancelled { color: #76665b; background: #eee8e2; }
 .bookingCard dl { display: flex; flex-wrap: wrap; gap: 12px 38px; margin: 0; }
 .bookingCard dl div { display: grid; gap: 4px; }
 .bookingCard dt { color: var(--color-muted); font-size: 10px; font-weight: 650; letter-spacing: .5px; text-transform: uppercase; }

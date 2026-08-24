@@ -3,6 +3,7 @@ package pt.saltosnaspalhacadas.backend.booking;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,17 +38,35 @@ public class Booking {
     @Column(name = "event_date", nullable = false)
     private LocalDate eventDate;
 
+    @Column(name = "start_time")
+    private LocalTime startTime;
+
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false, length = 32)
     private BookingEventType eventType;
 
+    @Column(name = "custom_event_type", length = 120)
+    private String customEventType;
+
+    @Column(name = "wedding_couple_names", length = 180)
+    private String weddingCoupleNames;
+
+    @Column(length = 180)
+    private String location;
+
     @Column(name = "contact_name", nullable = false, length = 120)
     private String contactName;
+
+    @Column(name = "contact_email", length = 254)
+    private String contactEmail;
 
     @Column(name = "contact_phone", nullable = false, length = 40)
     private String contactPhone;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(precision = 10, scale = 2)
     private BigDecimal budget;
 
     @Column(nullable = false, length = 2000)
@@ -69,6 +88,9 @@ public class Booking {
     @Column(name = "counter_event_date")
     private LocalDate counterEventDate;
 
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -82,19 +104,29 @@ public class Booking {
             AppUser user,
             Profile profile,
             LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
             BookingEventType eventType,
+            String customEventType,
+            String weddingCoupleNames,
+            String location,
             String contactName,
+            String contactEmail,
             String contactPhone,
-            BigDecimal budget,
             String description,
             String notes) {
         this.user = user;
         this.profile = profile;
         this.eventDate = eventDate;
+        this.startTime = startTime;
+        this.endTime = endTime;
         this.eventType = eventType;
+        this.customEventType = emptyToNull(customEventType);
+        this.weddingCoupleNames = emptyToNull(weddingCoupleNames);
+        this.location = emptyToNull(location);
         this.contactName = contactName.trim();
+        this.contactEmail = emptyToNull(contactEmail);
         this.contactPhone = contactPhone.trim();
-        this.budget = budget;
         this.description = description.trim();
         this.notes = emptyToNull(notes);
     }
@@ -110,15 +142,38 @@ public class Booking {
         updatedAt = Instant.now();
     }
 
-    public void decide(
-            BookingStatus status,
-            String adminMessage,
-            BigDecimal counterBudget,
-            LocalDate counterEventDate) {
-        this.status = status;
+    public void accept(LocalDate eventDate, LocalTime startTime, LocalTime endTime, BigDecimal budget, String adminMessage) {
+        this.eventDate = eventDate;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.budget = budget;
+        this.status = BookingStatus.ACCEPTED;
         this.adminMessage = emptyToNull(adminMessage);
-        this.counterBudget = status == BookingStatus.COUNTER_PROPOSED ? counterBudget : null;
-        this.counterEventDate = status == BookingStatus.COUNTER_PROPOSED ? counterEventDate : null;
+        this.counterBudget = null;
+        this.counterEventDate = null;
+        this.cancelledAt = null;
+    }
+
+    public void decline(String adminMessage) {
+        this.status = BookingStatus.DECLINED;
+        this.adminMessage = emptyToNull(adminMessage);
+        this.counterBudget = null;
+        this.counterEventDate = null;
+    }
+
+    public void cancel(String adminMessage) {
+        this.status = BookingStatus.CANCELLED;
+        this.adminMessage = emptyToNull(adminMessage);
+        this.counterBudget = null;
+        this.counterEventDate = null;
+        this.cancelledAt = Instant.now();
+    }
+
+    public void counterPropose(String adminMessage, BigDecimal counterBudget, LocalDate counterEventDate) {
+        this.status = BookingStatus.COUNTER_PROPOSED;
+        this.adminMessage = emptyToNull(adminMessage);
+        this.counterBudget = counterBudget;
+        this.counterEventDate = counterEventDate;
     }
 
     public void acceptCounterProposal(LocalDate acceptedEventDate, BigDecimal acceptedBudget) {
@@ -127,6 +182,7 @@ public class Booking {
         this.status = BookingStatus.ACCEPTED;
         this.counterBudget = null;
         this.counterEventDate = null;
+        this.cancelledAt = null;
     }
 
     public void declineCounterProposal() {
@@ -143,8 +199,14 @@ public class Booking {
     public AppUser getUser() { return user; }
     public Profile getProfile() { return profile; }
     public LocalDate getEventDate() { return eventDate; }
+    public LocalTime getStartTime() { return startTime; }
+    public LocalTime getEndTime() { return endTime; }
     public BookingEventType getEventType() { return eventType; }
+    public String getCustomEventType() { return customEventType; }
+    public String getWeddingCoupleNames() { return weddingCoupleNames; }
+    public String getLocation() { return location; }
     public String getContactName() { return contactName; }
+    public String getContactEmail() { return contactEmail; }
     public String getContactPhone() { return contactPhone; }
     public BigDecimal getBudget() { return budget; }
     public String getDescription() { return description; }
@@ -153,6 +215,7 @@ public class Booking {
     public String getAdminMessage() { return adminMessage; }
     public BigDecimal getCounterBudget() { return counterBudget; }
     public LocalDate getCounterEventDate() { return counterEventDate; }
+    public Instant getCancelledAt() { return cancelledAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }
