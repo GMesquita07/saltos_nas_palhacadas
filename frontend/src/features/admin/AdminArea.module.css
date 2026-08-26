@@ -272,6 +272,37 @@ button:disabled {
   font-size: 13px;
 }
 
+.thumbnailPreview {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.thumbnailPreview img {
+  width: 120px;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--color-line);
+  object-fit: cover;
+}
+
+.thumbnailPreview button {
+  width: fit-content;
+  border: 1px solid #b85c55;
+  padding: 9px 12px;
+  background: transparent;
+  color: #9b332c;
+  font: inherit;
+  font-size: 12px;
+}
+
+.thumbnailPreview button:hover {
+  border-color: #9b332c;
+}
+
 .formActions {
   display: flex;
   flex-wrap: wrap;
@@ -538,5 +569,13 @@ button:disabled {
 
   .contactRow .rowActions {
     grid-column: 2;
+  }
+
+  .thumbnailPreview {
+    grid-template-columns: 1fr;
+  }
+
+  .thumbnailPreview img {
+    width: 100%;
   }
 }

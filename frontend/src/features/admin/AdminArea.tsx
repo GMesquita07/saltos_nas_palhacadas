@@ -185,11 +185,21 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }, [token])
 
-  async function upload(event: ChangeEvent<HTMLInputElement>, onUploaded: (url: string, file: File) => void) {
+  async function upload(
+    event: ChangeEvent<HTMLInputElement>,
+    onUploaded: (url: string, file: File) => void,
+    options?: { imagesOnly?: boolean },
+  ) {
     const input = event.currentTarget
     const file = input.files?.[0]
 
     if (!file || !token) return
+
+    if (options?.imagesOnly && !file.type.startsWith('image/')) {
+      setNotice({ type: 'error', text: 'Seleciona uma imagem válida para a miniatura.' })
+      input.value = ''
+      return
+    }
 
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
       setNotice({ type: 'error', text: 'Seleciona um ficheiro de imagem ou vídeo válido.' })
@@ -618,6 +628,9 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
               mediaType: file.type.startsWith('video/') ? 'VIDEO' : 'PHOTO',
             }))
           })}
+          onThumbnailUpload={(event) => upload(event, (url) => {
+            setContentForm((current) => ({ ...current, thumbnailUrl: url }))
+          }, { imagesOnly: true })}
         />
       )}
 
@@ -849,6 +862,7 @@ function ContentManagement({
   onEdit,
   onDelete,
   onUpload,
+  onThumbnailUpload,
 }: {
   form: ContentFormState
   isEditing: boolean
@@ -862,6 +876,7 @@ function ContentManagement({
   onEdit: (item: PortfolioItem) => void
   onDelete: (item: PortfolioItem) => Promise<void>
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+  onThumbnailUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
   return (
     <div className={styles.page}>
@@ -944,6 +959,24 @@ function ContentManagement({
             value={form.thumbnailUrl}
           />
         </label>
+
+        <label>
+          Carregar miniatura do dispositivo
+          <input accept="image/*" type="file" onChange={onThumbnailUpload} />
+          <small className={styles.fieldHint}>Usada como capa dos vídeos e como imagem de pré-visualização do conteúdo.</small>
+        </label>
+
+        {form.thumbnailUrl && (
+          <div className={styles.thumbnailPreview}>
+            <img src={form.thumbnailUrl} alt="Pré-visualização da miniatura" />
+            <button
+              type="button"
+              onClick={() => onChange((current) => ({ ...current, thumbnailUrl: '' }))}
+            >
+              Remover miniatura
+            </button>
+          </div>
+        )}
 
         <FormActions
           isEditing={isEditing}
