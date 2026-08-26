@@ -40,6 +40,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("""
             select booking from Booking booking
+            join fetch booking.profile profile
+            where booking.status = :status
+              and booking.eventDate = :eventDate
+              and booking.reminderSentAt is null
+              and booking.contactEmail is not null
+              and trim(booking.contactEmail) <> ''
+            order by booking.startTime asc, booking.id asc
+            """)
+    List<Booking> findAcceptedBookingsDueForReminder(
+            @Param("status") BookingStatus status,
+            @Param("eventDate") LocalDate eventDate);
+
+    @Query("""
+            select booking from Booking booking
             where booking.user.id = :userId
               and booking.profile.id = :profileId
               and booking.eventDate = :eventDate

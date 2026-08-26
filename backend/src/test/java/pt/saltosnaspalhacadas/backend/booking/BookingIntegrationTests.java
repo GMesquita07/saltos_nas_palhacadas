@@ -1,5 +1,6 @@
 package pt.saltosnaspalhacadas.backend.booking;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -46,6 +47,9 @@ class BookingIntegrationTests {
 
     @Autowired
     private BookingRepository bookings;
+
+    @Autowired
+    private BookingReminderService reminders;
 
     @Autowired
     private PasswordEncoder passwords;
@@ -248,6 +252,31 @@ class BookingIntegrationTests {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.slots[0].date").value(confirmedDate.toString()))
                     .andExpect(jsonPath("$.slots[0].status").value("ACCEPTED"));
+        } finally {
+            cleanup(data);
+        }
+    }
+
+    @Test
+    void acceptedBookingsReceiveOneReminderFiveDaysBeforeTheEvent() throws Exception {
+        TestData data = createTestData();
+        LocalDate today = LocalDate.now();
+        LocalDate eventDate = today.plusDays(5);
+
+        try {
+            createBooking(data.customer(), data.profile().getSlug(), eventDate, "Cliente lembrete " + data.suffix(), "10:00", "12:00");
+            Long bookingId = bookingIdFor(data.customer());
+
+            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", bookingId)
+                            .header("Authorization", bearer(admin()))
+                            .contentType("application/json")
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + eventDate + "\",\"startTime\":\"10:00\",\"endTime\":\"12:00\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
+
+            assertThat(reminders.sendDueReminders(today)).isEqualTo(1);
+            assertThat(bookings.findById(bookingId).orElseThrow().getReminderSentAt()).isNotNull();
+            assertThat(reminders.sendDueReminders(today)).isZero();
         } finally {
             cleanup(data);
         }

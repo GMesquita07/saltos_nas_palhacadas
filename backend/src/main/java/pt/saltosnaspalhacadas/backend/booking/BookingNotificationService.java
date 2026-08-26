@@ -23,6 +23,7 @@ public class BookingNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(BookingNotificationService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", Locale.forLanguageTag("pt-PT"));
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     private final boolean enabled;
     private final String host;
@@ -81,6 +82,50 @@ public class BookingNotificationService {
         } catch (IOException exception) {
             log.warn("Não foi possível enviar o email de confirmação do pedido {}", booking.getId(), exception);
         }
+    }
+
+    public boolean sendEventReminder(Booking booking) {
+        if (booking.getContactEmail() == null || booking.getContactEmail().isBlank()) {
+            return false;
+        }
+
+        String subject = "Lembrete do teu evento";
+        String body = """
+                Olá %s,
+
+                Este é um lembrete do teu evento com %s, marcado para %s%s.
+
+                Se existir alguma alteração, questão ou detalhe de última hora, entra em contacto connosco por email ou telemóvel.
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                booking.getProfile().getName(),
+                DATE_FORMATTER.format(booking.getEventDate()),
+                formatSchedule(booking));
+
+        if (!enabled || host.isBlank()) {
+            log.info("Email de lembrete preparado para {} sobre o agendamento {}", booking.getContactEmail(), booking.getId());
+            return true;
+        }
+
+        try {
+            sendSmtp(booking.getContactEmail(), subject, body);
+            return true;
+        } catch (IOException exception) {
+            log.warn("Não foi possível enviar o email de lembrete do agendamento {}", booking.getId(), exception);
+            return false;
+        }
+    }
+
+    private static String formatSchedule(Booking booking) {
+        if (booking.getStartTime() == null || booking.getEndTime() == null) {
+            return "";
+        }
+        return " entre as %s e as %s".formatted(
+                TIME_FORMATTER.format(booking.getStartTime()),
+                TIME_FORMATTER.format(booking.getEndTime()));
     }
 
     private void sendSmtp(String to, String subject, String body) throws IOException {

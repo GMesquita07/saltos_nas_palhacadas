@@ -110,7 +110,7 @@ O administrador vê todos os pedidos no separador **Agendamentos** do painel. A 
 
 O backend impede reservas aceites sobrepostas para o mesmo artista e data/hora, incluindo decisões concorrentes, e bloqueia pedidos ativos duplicados do mesmo cliente no mesmo horário. Para preservar o histórico, um perfil que tenha agendamentos associados não pode ser eliminado. A migration Flyway `V11__booking_schedule_details.sql` é aplicada automaticamente no próximo arranque da API.
 
-O email de confirmação do pedido é disparado automaticamente pelo backend. Em desenvolvimento, sem SMTP configurado, fica registado nos logs. Para envio real, defina `BOOKING_EMAIL_ENABLED=true`, `BOOKING_EMAIL_SMTP_HOST`, `BOOKING_EMAIL_SMTP_PORT`, `BOOKING_EMAIL_SMTP_SSL` ou `BOOKING_EMAIL_SMTP_STARTTLS`, `BOOKING_EMAIL_USERNAME`, `BOOKING_EMAIL_PASSWORD` e `BOOKING_EMAIL_FROM`.
+O email de confirmação do pedido é disparado automaticamente pelo backend. Eventos aceites também recebem um lembrete automático 5 dias antes da data marcada, por defeito todos os dias às 09:00 em `Europe/Lisbon`. O backend guarda `reminder_sent_at` para não repetir o mesmo lembrete. Em desenvolvimento, sem SMTP configurado, fica registado nos logs. Para envio real, defina `BOOKING_EMAIL_ENABLED=true`, `BOOKING_EMAIL_SMTP_HOST`, `BOOKING_EMAIL_SMTP_PORT`, `BOOKING_EMAIL_SMTP_SSL` ou `BOOKING_EMAIL_SMTP_STARTTLS`, `BOOKING_EMAIL_USERNAME`, `BOOKING_EMAIL_PASSWORD` e `BOOKING_EMAIL_FROM`. Pode ajustar o lembrete com `BOOKING_REMINDER_DAYS_BEFORE`, `BOOKING_REMINDER_CRON` e `BOOKING_REMINDER_ZONE`.
 
 Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 

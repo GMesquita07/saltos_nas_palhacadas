@@ -91,6 +91,9 @@ public class Booking {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -152,6 +155,7 @@ public class Booking {
         this.counterBudget = null;
         this.counterEventDate = null;
         this.cancelledAt = null;
+        this.reminderSentAt = null;
     }
 
     public void decline(String adminMessage) {
@@ -183,12 +187,17 @@ public class Booking {
         this.counterBudget = null;
         this.counterEventDate = null;
         this.cancelledAt = null;
+        this.reminderSentAt = null;
     }
 
     public void declineCounterProposal() {
         this.status = BookingStatus.DECLINED;
         this.counterBudget = null;
         this.counterEventDate = null;
+    }
+
+    public void markReminderSent(Instant sentAt) {
+        this.reminderSentAt = sentAt == null ? Instant.now() : sentAt;
     }
 
     private static String emptyToNull(String value) {
@@ -216,6 +225,7 @@ public class Booking {
     public BigDecimal getCounterBudget() { return counterBudget; }
     public LocalDate getCounterEventDate() { return counterEventDate; }
     public Instant getCancelledAt() { return cancelledAt; }
+    public Instant getReminderSentAt() { return reminderSentAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }
