@@ -25,6 +25,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/materials").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/client-posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/media/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/support-chat").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/media").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/profiles/*/reviews").authenticated()

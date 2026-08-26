@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
+import { SupportChat } from './components/SupportChat/SupportChat'
 import { AccountPage } from './features/auth/AccountPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
@@ -189,6 +190,7 @@ function App() {
           {!isSessionReady ? <p className={styles.feedback}>A preparar a tua sessão...</p> : renderView()}
         </main>
         <Footer />
+        {!isSplashVisible && <SupportChat />}
       </div>
     </>
   )
