@@ -1,6 +1,7 @@
 package pt.saltosnaspalhacadas.backend.profile.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,12 +14,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import pt.saltosnaspalhacadas.backend.auth.JwtService;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
+import pt.saltosnaspalhacadas.backend.user.AppUser;
+import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
+import pt.saltosnaspalhacadas.backend.user.UserRole;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,6 +34,9 @@ class ProfileControllerIntegrationTests {
     @Autowired private MockMvc mockMvc;
     @Autowired private ProfileRepository profileRepository;
     @Autowired private PortfolioItemRepository portfolioItemRepository;
+    @Autowired private JwtService jwtService;
+    @Autowired private PasswordEncoder passwords;
+    @Autowired private AppUserRepository users;
 
     @BeforeEach
     void setUp() {
@@ -63,5 +72,29 @@ class ProfileControllerIntegrationTests {
     void returnsNotFoundForUnknownProfile() throws Exception {
         mockMvc.perform(get("/api/v1/profiles/desconhecido"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void adminCanChooseHomepageProfileDisplayOrder() throws Exception {
+        AppUser admin = users.findByEmailAndActiveTrue("admin@example.test")
+                .orElseGet(() -> users.save(new AppUser("admin@example.test", passwords.encode("change-me-now"), UserRole.ADMIN)));
+        String token = jwtService.createToken(admin);
+        profileRepository.save(new Profile("perfil-a", "Artista A", "DJ", "Descrição A", null));
+        profileRepository.save(new Profile("perfil-b", "Artista B", "DJ", "Descrição B", null));
+
+        mockMvc.perform(put("/api/v1/admin/profiles/order")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"profileSlugs":["perfil-b","perfil-a"]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].slug").value("perfil-b"))
+                .andExpect(jsonPath("$[1].slug").value("perfil-a"));
+
+        mockMvc.perform(get("/api/v1/profiles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].slug").value("perfil-b"))
+                .andExpect(jsonPath("$[1].slug").value("perfil-a"));
     }
 }

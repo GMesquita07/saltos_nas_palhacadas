@@ -8,4 +8,5 @@ export type Profile = {
   imagePosition?: string
   imageZoom?: number
   featuredVideoUrl?: string
+  displayOrder?: number
 }

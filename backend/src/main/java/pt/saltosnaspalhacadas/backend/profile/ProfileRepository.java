@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
     List<Profile> findAllByActiveTrueOrderByNameAsc();
+    List<Profile> findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
     Optional<Profile> findBySlugAndActiveTrue(String slug);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

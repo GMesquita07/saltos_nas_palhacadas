@@ -1,11 +1,16 @@
 package pt.saltosnaspalhacadas.backend.admin;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -58,9 +63,39 @@ public class AdminPortfolioController {
                 emptyToNull(request.profileImageUrl()),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()),
-                emptyToNull(request.featuredVideoUrl()));
+                emptyToNull(request.featuredVideoUrl()),
+                nextProfileDisplayOrder());
 
         return ProfileResponse.from(profiles.save(profile));
+    }
+
+    @PutMapping("/profiles/order")
+    List<ProfileResponse> reorderProfiles(@Valid @RequestBody ReorderProfilesRequest request) {
+        if (new HashSet<>(request.profileSlugs()).size() != request.profileSlugs().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de perfis contém repetidos");
+        }
+
+        List<Profile> currentProfiles = profiles.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
+        Map<String, Profile> bySlug = currentProfiles.stream().collect(Collectors.toMap(Profile::getSlug, profile -> profile));
+        int displayOrder = 0;
+
+        for (String slug : request.profileSlugs()) {
+            Profile profile = bySlug.remove(slug);
+            if (profile == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Perfil não encontrado");
+            }
+            profile.updateDisplayOrder(displayOrder++);
+        }
+
+        for (Profile profile : bySlug.values()) {
+            profile.updateDisplayOrder(displayOrder++);
+        }
+
+        return profiles.saveAll(currentProfiles)
+                .stream()
+                .sorted(java.util.Comparator.comparingInt(Profile::getDisplayOrder).thenComparing(Profile::getName).thenComparing(Profile::getId))
+                .map(ProfileResponse::from)
+                .toList();
     }
 
     @PutMapping("/profiles/{slug}")
@@ -159,6 +194,14 @@ public class AdminPortfolioController {
         return published == null || published;
     }
 
+    private int nextProfileDisplayOrder() {
+        return profiles.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc()
+                .stream()
+                .mapToInt(Profile::getDisplayOrder)
+                .max()
+                .orElse(-1) + 1;
+    }
+
     record CreateProfileRequest(
             @NotBlank(message = "O slug é obrigatório")
             @Size(max = 100, message = "O slug pode ter no máximo 100 caracteres")
@@ -182,6 +225,11 @@ public class AdminPortfolioController {
             Double profileImageZoom,
             @Size(max = 2048, message = "O URL do vídeo de destaque é demasiado longo")
             String featuredVideoUrl) {
+    }
+
+    record ReorderProfilesRequest(
+            @NotEmpty(message = "Envia a nova ordem dos perfis")
+            List<String> profileSlugs) {
     }
 
     record UpdateProfileRequest(

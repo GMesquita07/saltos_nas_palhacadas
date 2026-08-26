@@ -39,6 +39,7 @@ type ApiProfileResponse = {
   profileImagePosition: string | null
   profileImageZoom: number | null
   featuredVideoUrl: string | null
+  displayOrder: number | null
 }
 
 type ContentFormState = {
@@ -526,6 +527,28 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }
 
+  async function reorderProfileStack(profileSlugs: string[]) {
+    if (!token || isSaving) return
+    setIsSaving(true)
+
+    try {
+      const orderedProfiles = await apiClient<ApiProfileResponse[]>('/admin/profiles/order', {
+        method: 'PUT',
+        body: JSON.stringify({ profileSlugs }),
+      }, token)
+      setProfiles(orderedProfiles.map(toProfile))
+      window.dispatchEvent(new Event('profiles:changed'))
+      setNotice({ type: 'success', text: 'Ordem dos perfis atualizada.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível guardar a ordem dos perfis.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   async function saveReviewModeration(review: Review) {
     const draft = reviewDrafts[review.id] ?? { published: review.published }
 
@@ -603,6 +626,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           onCancel={cancelProfileEditing}
           onEdit={startProfileEditing}
           onDelete={deleteProfile}
+          onReorder={reorderProfileStack}
           onUpload={(event) => upload(event, (url) => {
             setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
           })}
@@ -710,6 +734,7 @@ function ProfileManagement({
   onCancel,
   onEdit,
   onDelete,
+  onReorder,
   onUpload,
   onFeaturedVideoUpload,
 }: {
@@ -722,6 +747,7 @@ function ProfileManagement({
   onCancel: () => void
   onEdit: (profile: Profile) => void
   onDelete: (profile: Profile) => Promise<void>
+  onReorder: (profileSlugs: string[]) => Promise<void>
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onFeaturedVideoUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
@@ -846,18 +872,76 @@ function ProfileManagement({
         />
       </form>
 
-      <ManagementList
-        empty="Não existem perfis."
-        items={profiles}
-        title="Perfis existentes"
-        getDetail={(profile) => profile.slug}
-        getId={(profile) => profile.id}
-        getTitle={(profile) => profile.name}
+      <ProfileOrderList
+        profiles={profiles}
         isSaving={isSaving}
         onDelete={onDelete}
         onEdit={onEdit}
+        onReorder={onReorder}
       />
     </div>
+  )
+}
+
+function ProfileOrderList({
+  profiles,
+  isSaving,
+  onDelete,
+  onEdit,
+  onReorder,
+}: {
+  profiles: Profile[]
+  isSaving: boolean
+  onDelete: (profile: Profile) => Promise<void>
+  onEdit: (profile: Profile) => void
+  onReorder: (profileSlugs: string[]) => Promise<void>
+}) {
+  const [draggingSlug, setDraggingSlug] = useState<string | null>(null)
+
+  function dropOn(profileSlug: string) {
+    if (draggingSlug === null || draggingSlug === profileSlug) return
+
+    const draggingIndex = profiles.findIndex((profile) => profile.slug === draggingSlug)
+    const targetIndex = profiles.findIndex((profile) => profile.slug === profileSlug)
+    if (draggingIndex < 0 || targetIndex < 0) return
+
+    const nextProfiles = [...profiles]
+    const [draggingProfile] = nextProfiles.splice(draggingIndex, 1)
+    nextProfiles.splice(targetIndex, 0, draggingProfile)
+    void onReorder(nextProfiles.map((profile) => profile.slug))
+  }
+
+  return (
+    <section className={styles.manage}>
+      <h2>Perfis na homepage</h2>
+      {profiles.length === 0 ? (
+        <p>Não existem perfis.</p>
+      ) : (
+        <div className={styles.contactStack}>
+          {profiles.map((profile, index) => (
+            <div
+              className={[styles.contactRow, draggingSlug === profile.slug ? styles.draggingRow : ''].join(' ')}
+              draggable={!isSaving}
+              key={profile.slug}
+              onDragEnd={() => setDraggingSlug(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDragStart={() => setDraggingSlug(profile.slug)}
+              onDrop={() => dropOn(profile.slug)}
+            >
+              <span className={styles.dragHandle} aria-hidden="true">☰</span>
+              <span>
+                <strong>{index + 1}. {profile.name}</strong>
+                <small>{profile.slug}</small>
+              </span>
+              <span className={styles.rowActions}>
+                <button disabled={isSaving} type="button" onClick={() => onEdit(profile)}>Editar</button>
+                <button disabled={isSaving} type="button" onClick={() => { void onDelete(profile) }}>Apagar</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -1351,6 +1435,7 @@ function toProfile(profile: ApiProfileResponse): Profile {
     imagePosition: profile.profileImagePosition ?? '50% 50%',
     imageZoom: profile.profileImageZoom ?? 1,
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
+    displayOrder: profile.displayOrder ?? 0,
   }
 }
 
@@ -1359,7 +1444,11 @@ function upsertProfile(profiles: Profile[], profile: Profile) {
   const nextProfiles = exists
     ? profiles.map((item) => item.slug === profile.slug ? profile : item)
     : [...profiles, profile]
-  return [...nextProfiles].sort((first, second) => first.name.localeCompare(second.name, 'pt-PT'))
+  return [...nextProfiles].sort(sortProfiles)
+}
+
+function sortProfiles(first: Profile, second: Profile) {
+  return (first.displayOrder ?? 0) - (second.displayOrder ?? 0) || first.name.localeCompare(second.name, 'pt-PT')
 }
 
 function validateProfile(form: ProfileFormState) {

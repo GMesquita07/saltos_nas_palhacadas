@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadFile } from '../../../services/apiClient'
-import { createMaterial, deleteMaterial, getAdminMaterials } from '../../../services/materialService'
+import { createMaterial, deleteMaterial, getAdminMaterials, reorderMaterials } from '../../../services/materialService'
 import type { Material } from '../../../types/material'
 import styles from './MaterialManagement.module.css'
 
@@ -114,6 +114,22 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
     }
   }
 
+  async function reorderMaterialStack(materialIds: number[]) {
+    if (isSaving || isUploading) return
+
+    setIsSaving(true)
+    try {
+      const orderedMaterials = await reorderMaterials(materialIds, token)
+      setMaterials(orderedMaterials)
+      window.dispatchEvent(new Event('materials:changed'))
+      onNotice({ type: 'success', text: 'Ordem dos materiais atualizada.' })
+    } catch (error) {
+      onNotice({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível guardar a ordem dos materiais.' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <form className={styles.form} onSubmit={(event) => { void submitMaterial(event) }}>
@@ -173,17 +189,62 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
         ) : materials.length === 0 ? (
           <p>Ainda não existem materiais publicados.</p>
         ) : (
-          <div className={styles.list}>
-            {materials.map((material) => (
-              <article className={styles.row} key={material.id}>
-                <img src={material.imageUrl} alt={material.name} />
-                <strong>{material.name}</strong>
-                <button disabled={isSaving} type="button" onClick={() => { void removeMaterial(material) }}>Apagar</button>
-              </article>
-            ))}
-          </div>
+          <MaterialOrderList
+            isSaving={isSaving}
+            materials={materials}
+            onDelete={removeMaterial}
+            onReorder={reorderMaterialStack}
+          />
         )}
       </section>
+    </div>
+  )
+}
+
+function MaterialOrderList({
+  isSaving,
+  materials,
+  onDelete,
+  onReorder,
+}: {
+  isSaving: boolean
+  materials: Material[]
+  onDelete: (material: Material) => Promise<void>
+  onReorder: (materialIds: number[]) => Promise<void>
+}) {
+  const [draggingId, setDraggingId] = useState<number | null>(null)
+
+  function dropOn(materialId: number) {
+    if (draggingId === null || draggingId === materialId) return
+
+    const draggingIndex = materials.findIndex((material) => material.id === draggingId)
+    const targetIndex = materials.findIndex((material) => material.id === materialId)
+    if (draggingIndex < 0 || targetIndex < 0) return
+
+    const nextMaterials = [...materials]
+    const [draggingMaterial] = nextMaterials.splice(draggingIndex, 1)
+    nextMaterials.splice(targetIndex, 0, draggingMaterial)
+    void onReorder(nextMaterials.map((material) => material.id))
+  }
+
+  return (
+    <div className={styles.list}>
+      {materials.map((material, index) => (
+        <article
+          className={[styles.row, draggingId === material.id ? styles.draggingRow : ''].join(' ')}
+          draggable={!isSaving}
+          key={material.id}
+          onDragEnd={() => setDraggingId(null)}
+          onDragOver={(event) => event.preventDefault()}
+          onDragStart={() => setDraggingId(material.id)}
+          onDrop={() => dropOn(material.id)}
+        >
+          <span className={styles.dragHandle} aria-hidden="true">☰</span>
+          <img src={material.imageUrl} alt={material.name} />
+          <strong>{index + 1}. {material.name}</strong>
+          <button disabled={isSaving} type="button" onClick={() => { void onDelete(material) }}>Apagar</button>
+        </article>
+      ))}
     </div>
   )
 }

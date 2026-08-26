@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -86,6 +87,36 @@ class MaterialIntegrationTests {
             if (materialId != null) {
                 materials.findById(materialId).ifPresent(materials::delete);
             }
+        }
+    }
+
+    @Test
+    void adminCanChooseMaterialDisplayOrder() throws Exception {
+        AppUser admin = users.findByEmailAndActiveTrue("admin@example.test")
+                .orElseGet(() -> users.save(new AppUser("admin@example.test", passwords.encode("change-me-now"), UserRole.ADMIN)));
+        String adminToken = jwtService.createToken(admin);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Material first = materials.save(new Material("Primeiro " + suffix, "https://example.test/primeiro.jpg", 0));
+        Material second = materials.save(new Material("Segundo " + suffix, "https://example.test/segundo.jpg", 1));
+
+        try {
+            mockMvc.perform(put("/api/v1/admin/materials/order")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"materialIds":[%d,%d]}
+                                    """.formatted(second.getId(), first.getId())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(second.getId()))
+                    .andExpect(jsonPath("$[1].id").value(first.getId()));
+
+            mockMvc.perform(get("/api/v1/materials"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(second.getId()))
+                    .andExpect(jsonPath("$[1].id").value(first.getId()));
+        } finally {
+            materials.findById(first.getId()).ifPresent(materials::delete);
+            materials.findById(second.getId()).ifPresent(materials::delete);
         }
     }
 }

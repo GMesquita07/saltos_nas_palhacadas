@@ -1,7 +1,7 @@
 .wrapper {
   position: fixed;
   right: 22px;
-  bottom: 22px;
+  bottom: 128px;
   z-index: 30;
 }
 
@@ -12,7 +12,7 @@
   aspect-ratio: 1;
   border: 0;
   border-radius: 999px;
-  background: #3a6848;
+  background: var(--color-ink);
   color: white;
   box-shadow: 0 16px 38px rgb(35 34 32 / 20%);
 }
@@ -26,15 +26,15 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   width: min(390px, calc(100vw - 32px));
-  max-height: min(680px, calc(100svh - 44px));
+  max-height: min(680px, calc(100svh - 160px));
   border: 1px solid rgb(35 34 32 / 16%);
-  background: #f3f1ec;
+  background: var(--color-paper);
   box-shadow: 0 24px 60px rgb(35 34 32 / 22%);
 }
 
 .expanded {
   width: min(560px, calc(100vw - 32px));
-  max-height: min(760px, calc(100svh - 44px));
+  max-height: min(760px, calc(100svh - 160px));
 }
 
 .header {
@@ -43,7 +43,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 15px 16px;
-  background: #3a6848;
+  background: var(--color-ink);
   color: white;
 }
 
@@ -78,7 +78,7 @@
   aspect-ratio: 1;
   border: 2px solid rgb(255 255 255 / 70%);
   border-radius: 999px;
-  background: #bde5c6;
+  background: var(--color-paper);
 }
 
 .headerActions {
@@ -139,9 +139,9 @@
 
 .user {
   justify-self: end;
-  border-color: #3a6848;
+  border-color: var(--color-ink);
   border-radius: 8px 8px 2px 8px;
-  background: #3a6848;
+  background: var(--color-ink);
   color: white;
 }
 
@@ -153,16 +153,17 @@
 
 .suggestions button {
   min-height: 38px;
-  border: 1px solid #3a6848;
+  border: 1px solid var(--color-ink);
   padding: 9px 12px;
-  background: #6fb34f;
-  color: white;
+  background: var(--color-surface);
+  color: var(--color-ink);
   font-size: 13px;
   line-height: 1.2;
 }
 
 .suggestions button:hover {
-  background: #3a6848;
+  background: var(--color-ink);
+  color: white;
 }
 
 .suggestions .moreButton {
@@ -170,8 +171,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: white;
-  color: #3a6848;
+  background: transparent;
+  color: var(--color-ink);
 }
 
 .moreButton svg {
@@ -188,7 +189,7 @@
   gap: 10px;
   padding: 14px 16px 16px;
   border-top: 1px solid var(--color-line);
-  background: #f8f7f4;
+  background: var(--color-surface);
 }
 
 .form input {
@@ -200,7 +201,7 @@
 }
 
 .form input:focus {
-  outline: 2px solid rgb(58 104 72 / 28%);
+  outline: 2px solid rgb(35 34 32 / 25%);
   outline-offset: 1px;
 }
 
@@ -209,7 +210,7 @@
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: #3a6848;
+  background: var(--color-ink);
   color: white;
 }
 
@@ -222,13 +223,13 @@
 @media (max-width: 560px) {
   .wrapper {
     right: 16px;
-    bottom: 16px;
+    bottom: 148px;
   }
 
   .panel,
   .expanded {
     width: calc(100vw - 32px);
-    max-height: calc(100svh - 32px);
+    max-height: calc(100svh - 176px);
   }
 
   .thread,

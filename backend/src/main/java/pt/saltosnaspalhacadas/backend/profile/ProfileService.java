@@ -15,7 +15,7 @@ public class ProfileService {
     }
 
     public List<Profile> findActiveProfiles() {
-        return profileRepository.findAllByActiveTrueOrderByNameAsc();
+        return profileRepository.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
     }
 
     public Profile findActiveProfile(String slug) {

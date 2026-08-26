@@ -66,4 +66,8 @@ public class Material {
     public int getDisplayOrder() {
         return displayOrder;
     }
+
+    public void updateDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
+    }
 }

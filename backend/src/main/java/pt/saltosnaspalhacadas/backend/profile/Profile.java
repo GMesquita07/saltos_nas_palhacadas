@@ -41,6 +41,9 @@ public class Profile {
     @Column(name = "featured_video_url", length = 2048)
     private String featuredVideoUrl;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -65,6 +68,10 @@ public class Profile {
     }
 
     public Profile(String slug, String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl) {
+        this(slug, name, role, description, profileImageUrl, profileImagePosition, profileImageZoom, featuredVideoUrl, 0);
+    }
+
+    public Profile(String slug, String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl, int displayOrder) {
         this.slug = slug;
         this.name = name;
         this.role = role;
@@ -73,6 +80,7 @@ public class Profile {
         this.profileImagePosition = profileImagePosition == null ? "50% 50%" : profileImagePosition;
         this.profileImageZoom = normalizeZoom(profileImageZoom);
         this.featuredVideoUrl = featuredVideoUrl;
+        this.displayOrder = displayOrder;
     }
 
     @jakarta.persistence.PrePersist
@@ -95,6 +103,7 @@ public class Profile {
     public String getProfileImagePosition() { return profileImagePosition; }
     public double getProfileImageZoom() { return profileImageZoom; }
     public String getFeaturedVideoUrl() { return featuredVideoUrl; }
+    public int getDisplayOrder() { return displayOrder; }
     public boolean isActive() { return active; }
     public void update(String name, String role, String description, String profileImageUrl, String profileImagePosition) {
         update(name, role, description, profileImageUrl, profileImagePosition, 1.0, null);
@@ -108,6 +117,7 @@ public class Profile {
         this.profileImageZoom = normalizeZoom(profileImageZoom);
         this.featuredVideoUrl = featuredVideoUrl;
     }
+    public void updateDisplayOrder(int displayOrder) { this.displayOrder = displayOrder; }
 
     private static double normalizeZoom(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) return 1.0;

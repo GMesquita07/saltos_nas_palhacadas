@@ -19,3 +19,10 @@ export function createMaterial(input: CreateMaterialInput, token: string) {
 export function deleteMaterial(id: number, token: string) {
   return apiClient<void>('/admin/materials/' + id, { method: 'DELETE' }, token)
 }
+
+export function reorderMaterials(materialIds: number[], token: string) {
+  return apiClient<Material[]>('/admin/materials/order', {
+    method: 'PUT',
+    body: JSON.stringify({ materialIds }),
+  }, token)
+}
