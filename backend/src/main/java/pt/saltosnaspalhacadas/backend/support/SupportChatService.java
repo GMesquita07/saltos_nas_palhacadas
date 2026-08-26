@@ -3,11 +3,34 @@ package pt.saltosnaspalhacadas.backend.support;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import pt.saltosnaspalhacadas.backend.contact.Contact;
+import pt.saltosnaspalhacadas.backend.contact.ContactRepository;
+import pt.saltosnaspalhacadas.backend.material.Material;
+import pt.saltosnaspalhacadas.backend.material.MaterialRepository;
+import pt.saltosnaspalhacadas.backend.profile.Profile;
+import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
+
 @Service
 public class SupportChatService {
+    private final OpenAiSupportChatClient aiClient;
+    private final ProfileRepository profiles;
+    private final ContactRepository contacts;
+    private final MaterialRepository materials;
+
+    public SupportChatService(
+            OpenAiSupportChatClient aiClient,
+            ProfileRepository profiles,
+            ContactRepository contacts,
+            MaterialRepository materials) {
+        this.aiClient = aiClient;
+        this.profiles = profiles;
+        this.contacts = contacts;
+        this.materials = materials;
+    }
 
     public SupportChatReply reply(String message) {
         String normalized = normalize(message);
@@ -72,6 +95,57 @@ public class SupportChatService {
                     List.of("Abrir contactos", "Alterar pedido enviado", "Cancelar evento"));
         }
 
+        if (aiClient.isConfigured()) {
+            return aiClient.ask(message, siteContext())
+                    .map(answer -> new SupportChatReply(answer, aiClient.defaultSuggestions()))
+                    .orElseGet(SupportChatService::fallbackReply);
+        }
+
+        return fallbackReply();
+    }
+
+    private String siteContext() {
+        String publicProfiles = profiles.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc()
+                .stream()
+                .map(SupportChatService::describeProfile)
+                .collect(Collectors.joining("; "));
+        String publicMaterials = materials.findAllByOrderByDisplayOrderAscNameAscIdAsc()
+                .stream()
+                .map(Material::getName)
+                .collect(Collectors.joining(", "));
+        String publicContacts = contacts.findAllByVisibleTrueOrderByDisplayOrderAscIdAsc()
+                .stream()
+                .map(SupportChatService::describeContact)
+                .collect(Collectors.joining("; "));
+
+        return """
+                O site tem as páginas Perfis, Agendar, Contactos, Materiais, Partilhas, Favoritos e Conta.
+                Só utilizadores com conta podem enviar pedidos de agendamento, guardar favoritos, avaliar artistas e submeter partilhas de clientes.
+                O cliente não envia orçamento; envia um pedido de orçamento e agendamento. O animador analisa e responde fora do site por email ou telemóvel.
+                O pedido de agendamento pede artista, data, tipo de evento, local, nome, email, telemóvel, descrição/serviços pretendidos, notas opcionais e horas opcionais. Casamento pede nomes dos noivos. Outro pede o tipo de evento.
+                Depois de enviado, o pedido fica em análise/em stand by. Se for aceite, a data/horário fica marcada no calendário. O admin pode alterar, rejeitar ou cancelar com justificação.
+                O site envia email automático de confirmação do pedido e lembrete 5 dias antes de eventos aceites, quando o email estiver configurado.
+                As partilhas de clientes são fotos/vídeos enviados por utilizadores com conta e só aparecem publicamente depois de aprovação do admin.
+                As avaliações são feitas por utilizadores nos perfis dos artistas e o admin escolhe quais aparecem.
+                Perfis publicados: %s
+                Materiais publicados: %s
+                Contactos públicos: %s
+                """.formatted(emptyLabel(publicProfiles), emptyLabel(publicMaterials), emptyLabel(publicContacts));
+    }
+
+    private static String describeProfile(Profile profile) {
+        return profile.getName() + " (" + profile.getRole() + ")";
+    }
+
+    private static String describeContact(Contact contact) {
+        return contact.getLabel() + " - " + contact.getType() + ": " + contact.getValue();
+    }
+
+    private static String emptyLabel(String value) {
+        return value == null || value.isBlank() ? "nenhum publicado neste momento" : value;
+    }
+
+    private static SupportChatReply fallbackReply() {
         return new SupportChatReply(
                 "Posso ajudar com agendamentos, orçamentos, materiais, perfis de artistas, contactos, partilhas de clientes, favoritos e avaliações. Escreve a tua dúvida ou escolhe uma das opções rápidas.",
                 List.of("Pedir orçamento", "Ver materiais", "Contactar a equipa", "Publicar fotos do evento"));

@@ -112,6 +112,18 @@ O backend impede reservas aceites sobrepostas para o mesmo artista e data/hora, 
 
 O email de confirmação do pedido é disparado automaticamente pelo backend. Eventos aceites também recebem um lembrete automático 5 dias antes da data marcada, por defeito todos os dias às 09:00 em `Europe/Lisbon`. O backend guarda `reminder_sent_at` para não repetir o mesmo lembrete. Em desenvolvimento, sem SMTP configurado, fica registado nos logs. Para envio real, defina `BOOKING_EMAIL_ENABLED=true`, `BOOKING_EMAIL_SMTP_HOST`, `BOOKING_EMAIL_SMTP_PORT`, `BOOKING_EMAIL_SMTP_SSL` ou `BOOKING_EMAIL_SMTP_STARTTLS`, `BOOKING_EMAIL_USERNAME`, `BOOKING_EMAIL_PASSWORD` e `BOOKING_EMAIL_FROM`. Pode ajustar o lembrete com `BOOKING_REMINDER_DAYS_BEFORE`, `BOOKING_REMINDER_CRON` e `BOOKING_REMINDER_ZONE`.
 
+## Chatbot com IA
+
+O chatbot funciona sempre com respostas automáticas locais. Para ativar IA quando a pergunta não encaixa nas respostas fixas, crie uma API key na OpenAI Platform e configure no `.env`:
+
+```bash
+SUPPORT_AI_ENABLED=true
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-5.4-mini
+```
+
+Depois reinicie o backend com o `.env` carregado. A chave fica apenas no backend; o frontend chama só `/api/v1/support-chat`.
+
 Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
 
 ## Deploy gratuito
