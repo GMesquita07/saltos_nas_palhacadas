@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type NavIconName = 'profiles' | 'booking' | 'contacts' | 'favorites' | 'admin' | 'account' | 'logout' | 'login'
+export type NavIconName = 'profiles' | 'booking' | 'contacts' | 'clientContent' | 'favorites' | 'admin' | 'account' | 'logout' | 'login'
 
 type NavIconProps = SVGProps<SVGSVGElement> & {
   name: NavIconName
@@ -22,6 +22,7 @@ export function NavIcon({ name, ...props }: NavIconProps) {
       {name === 'profiles' && <><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M15 5.5a3 3 0 0 1 0 5" /><path d="M18 20a4.6 4.6 0 0 0-2.3-4" /></>}
       {name === 'booking' && <><rect x="4" y="5" width="16" height="15" rx="1.5" /><path d="M8 3v4M16 3v4M4 10h16" /><path d="M8 14h3M8 17h6" /></>}
       {name === 'contacts' && <><path d="M20.5 16.2a2.2 2.2 0 0 1-2.4 2.4A16.4 16.4 0 0 1 5.4 5.9a2.2 2.2 0 0 1 2.4-2.4l2.1.4a1.8 1.8 0 0 1 1.4 1.3l.4 1.7a1.8 1.8 0 0 1-.5 1.7L10 9.8a12.1 12.1 0 0 0 4.2 4.2l1.2-1.2a1.8 1.8 0 0 1 1.7-.5l1.7.4a1.8 1.8 0 0 1 1.3 1.4Z" /></>}
+      {name === 'clientContent' && <><rect x="3.8" y="6.8" width="16.4" height="12.2" rx="1.8" /><path d="m8 6.8.9-1.8h6.2l.9 1.8" /><circle cx="12" cy="13" r="3" /></>}
       {name === 'favorites' && <path d="M20.8 8.7c0 5.1-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.3Z" />}
       {name === 'admin' && <><path d="M12 3 4.8 6.2v5.1c0 4.1 2.8 7.9 7.2 9.7 4.4-1.8 7.2-5.6 7.2-9.7V6.2L12 3Z" /><path d="m9.5 12 1.7 1.7 3.5-3.5" /></>}
       {name === 'account' && <><circle cx="12" cy="8" r="3.5" /><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" /></>}

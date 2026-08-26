@@ -17,6 +17,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class UserMediaController {
 
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+    private static final long MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 
     private final LocalMediaStorage storage;
 
@@ -28,11 +29,12 @@ public class UserMediaController {
     @ResponseStatus(HttpStatus.CREATED)
     MediaUploadResponse uploadProfileImage(@RequestParam MultipartFile file) throws IOException {
         String contentType = file.getContentType();
-        if (file.isEmpty() || contentType == null || !contentType.startsWith("image/")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleciona uma imagem válida");
+        if (file.isEmpty() || contentType == null || (!contentType.startsWith("image/") && !contentType.startsWith("video/"))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleciona uma imagem ou vídeo válido");
         }
-        if (file.getSize() > MAX_IMAGE_SIZE) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Imagem demasiado grande");
+        long limit = contentType.startsWith("image/") ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+        if (file.getSize() > limit) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Ficheiro demasiado grande");
         }
 
         String filename = storage.store(file);

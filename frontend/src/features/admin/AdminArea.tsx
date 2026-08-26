@@ -11,10 +11,11 @@ import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
 import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
+import { ClientContentModeration } from './clientContent/ClientContentModeration'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'profile' | 'content' | 'contacts' | 'reviews' | 'bookings'
+type AdminPage = 'profile' | 'content' | 'contacts' | 'reviews' | 'clientContent' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
@@ -585,6 +586,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
         <Tab active={page === 'reviews'} onClick={() => setPage('reviews')}>Avaliações</Tab>
+        <Tab active={page === 'clientContent'} onClick={() => setPage('clientContent')}>Partilhas de clientes</Tab>
         <Tab active={page === 'bookings'} onClick={() => setPage('bookings')}>Agendamentos</Tab>
       </nav>
 
@@ -662,6 +664,10 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
 
       {page === 'bookings' && (
         <BookingManagement token={token} onNotice={setNotice} />
+      )}
+
+      {page === 'clientContent' && (
+        <ClientContentModeration token={token} onNotice={setNotice} />
       )}
     </section>
   )

@@ -6,6 +6,7 @@ import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
 import { AdminArea } from './features/admin/AdminArea'
 import { BookingPage } from './features/booking/BookingPage'
+import { ClientContentPage } from './features/clientContent/ClientContentPage'
 import { ContactPage } from './features/contacts/ContactPage'
 import { FavoritesPage } from './features/favorites/FavoritesPage'
 import { PortfolioPage } from './features/portfolio/PortfolioPage'
@@ -18,7 +19,7 @@ import styles from './App.module.css'
 
 const SPLASH_DURATION_MS = 2200
 
-type View = 'profiles' | 'contacts' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking'
+type View = 'profiles' | 'contacts' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking'
 
 function App() {
   const { isSessionReady, logout, session } = useAuth()
@@ -83,6 +84,12 @@ function App() {
     setView('contacts')
   }
 
+  function showClientContent() {
+    setSelectedProfile(null)
+    setShouldReturnToBooking(false)
+    setView('clientContent')
+  }
+
   function openBooking(profile: Profile | null = null) {
     setSelectedProfile(null)
     setBookingProfile(profile)
@@ -143,6 +150,7 @@ function App() {
     }
 
     if (view === 'contacts') return <ContactPage />
+    if (view === 'clientContent') return <ClientContentPage profiles={profiles} onLogin={() => openAuthentication('login')} />
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
     if (view === 'account' && session) return <AccountPage onExit={showProfiles} onFavoritesClick={openFavorites} />
@@ -162,6 +170,7 @@ function App() {
           onAdminClick={openAdmin}
           onAuthenticationClick={openAuthentication}
           onBookingClick={() => openBooking()}
+          onClientContentClick={showClientContent}
           onContactsClick={showContacts}
           onFavoritesClick={openFavorites}
           onLogout={handleLogout}
