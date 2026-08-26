@@ -12,10 +12,11 @@ import type { Profile } from '../../types/profile'
 import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
 import { ClientContentModeration } from './clientContent/ClientContentModeration'
+import { MaterialManagement } from './materials/MaterialManagement'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'profile' | 'content' | 'contacts' | 'reviews' | 'clientContent' | 'bookings'
+type AdminPage = 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'clientContent' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
@@ -585,6 +586,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         <Tab active={page === 'profile'} onClick={() => setPage('profile')}>Novo perfil</Tab>
         <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
+        <Tab active={page === 'materials'} onClick={() => setPage('materials')}>Materiais</Tab>
         <Tab active={page === 'reviews'} onClick={() => setPage('reviews')}>Avaliações</Tab>
         <Tab active={page === 'clientContent'} onClick={() => setPage('clientContent')}>Partilhas de clientes</Tab>
         <Tab active={page === 'bookings'} onClick={() => setPage('bookings')}>Agendamentos</Tab>
@@ -660,6 +662,10 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           onModerate={saveReviewModeration}
           onDelete={deleteReview}
         />
+      )}
+
+      {page === 'materials' && (
+        <MaterialManagement token={token} onNotice={setNotice} />
       )}
 
       {page === 'bookings' && (

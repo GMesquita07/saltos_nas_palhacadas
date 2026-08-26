@@ -1,0 +1,133 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  gap: 48px;
+  margin-top: 30px;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.heading h2,
+.manage h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.heading p:last-child,
+.manage > p {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.form label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.form input:not([type='range']) {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  padding: 11px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.form input:focus {
+  outline: 2px solid rgb(35 34 32 / 25%);
+  outline-offset: 1px;
+}
+
+.form > button {
+  border: 0;
+  padding: 12px;
+  background: var(--color-ink);
+  color: white;
+  font: inherit;
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.preview img {
+  width: 118px;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-line);
+  background: #e6e3dd;
+  object-fit: cover;
+}
+
+.preview button,
+.row button {
+  width: fit-content;
+  border: 1px solid #b85c55;
+  padding: 8px 10px;
+  background: transparent;
+  color: #9b332c;
+  font: inherit;
+  font-size: 12px;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.row img {
+  width: 72px;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-line);
+  background: #e6e3dd;
+  object-fit: cover;
+}
+
+.row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 650px) {
+  .page {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .preview,
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .preview img,
+  .row img {
+    width: 100%;
+  }
+}

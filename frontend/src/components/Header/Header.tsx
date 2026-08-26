@@ -12,6 +12,7 @@ type HeaderProps = {
   onProfilesClick: () => void
   onBookingClick: () => void
   onContactsClick: () => void
+  onMaterialsClick: () => void
   onClientContentClick: () => void
   onFavoritesClick: () => void
   onAccountClick: () => void
@@ -25,6 +26,7 @@ export function Header({
   onProfilesClick,
   onBookingClick,
   onContactsClick,
+  onMaterialsClick,
   onClientContentClick,
   onFavoritesClick,
   onAccountClick,
@@ -41,6 +43,7 @@ export function Header({
           <button type="button" onClick={onProfilesClick}><NavIcon name="profiles" />Perfis</button>
           <button type="button" onClick={onBookingClick}><NavIcon name="booking" />Agendar</button>
           <button type="button" onClick={onContactsClick}><NavIcon name="contacts" />Contactos</button>
+          <button type="button" onClick={onMaterialsClick}><NavIcon name="materials" />Materiais</button>
           <button type="button" onClick={onClientContentClick}><NavIcon name="clientContent" />Partilhas</button>
           {session && <button type="button" onClick={onFavoritesClick}><NavIcon name="favorites" />Favoritos</button>}
           {session?.role === 'ADMIN' && <button type="button" onClick={onAdminClick}><NavIcon name="admin" />Admin</button>}
