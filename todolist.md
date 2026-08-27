@@ -2,6 +2,5 @@
 - motor de pesquisa, ao procurar por Dj kidg ou dj joao tomas se me leva ao site logo, pesquisar sobre isso
 - traduçao da pagina
 - email de confirmaçao "O animador" nao, deve ser "A equipa irá analisar", alterar isso
-- chatbot
-- lembrete antes dos eventos marcados ao cliente por email, 5 diias antes (falta testar)
-- o .env.example tem de ser alterado e já nao está seguro (mudar api keys e tudo)
+
+- corrigir pag partilhas dos clientes
