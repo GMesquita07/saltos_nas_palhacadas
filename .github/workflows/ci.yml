@@ -59,3 +59,45 @@ jobs:
 
       - name: Test
         run: ./mvnw -B test
+
+  backend-postgres:
+    name: Backend PostgreSQL
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: saltos_test
+          POSTGRES_USER: saltos
+          POSTGRES_PASSWORD: saltos_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U saltos -d saltos_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Test with PostgreSQL
+        run: ./mvnw -B test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/saltos_test
+          SPRING_DATASOURCE_USERNAME: saltos
+          SPRING_DATASOURCE_PASSWORD: saltos_test_password
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
