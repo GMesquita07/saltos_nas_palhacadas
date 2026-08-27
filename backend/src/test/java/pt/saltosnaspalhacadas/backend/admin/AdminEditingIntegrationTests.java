@@ -176,7 +176,7 @@ class AdminEditingIntegrationTests {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.profileSlug").value(slug))
                     .andExpect(jsonPath("$.profileName").value("Artista avaliado"))
-                    .andExpect(jsonPath("$.submittedByEmail").value(customer.getEmail()))
+                    .andExpect(jsonPath("$.submittedByEmail").doesNotExist())
                     .andExpect(jsonPath("$.reviewerName").value("Cliente teste"))
                     .andExpect(jsonPath("$.rating").value(5))
                     .andExpect(jsonPath("$.published").value(false))
@@ -198,11 +198,13 @@ class AdminEditingIntegrationTests {
                                     {"published":true}
                                     """))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.submittedByEmail").value(customer.getEmail()))
                     .andExpect(jsonPath("$.published").value(true));
 
             mockMvc.perform(get("/api/v1/profiles/{slug}/reviews", slug))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].submittedByEmail").doesNotExist())
                     .andExpect(jsonPath("$[0].title").value("Excelente festa"));
 
             mockMvc.perform(put("/api/v1/admin/reviews/{id}", reviewId)

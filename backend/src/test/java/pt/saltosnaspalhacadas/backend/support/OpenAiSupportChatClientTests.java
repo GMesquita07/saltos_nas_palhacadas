@@ -22,7 +22,7 @@ class OpenAiSupportChatClientTests {
                 String request = new String(requestBody, StandardCharsets.UTF_8);
                 assertThat(exchange.getRequestMethod()).isEqualTo("POST");
                 assertThat(exchange.getRequestHeaders().getFirst("Authorization")).isEqualTo("Bearer test-key");
-                assertThat(request).contains("\"model\":\"gpt-5.4-mini\"");
+                assertThat(request).contains("\"model\":\"gpt-5.6-luna\"");
                 assertThat(request).contains("Pergunta fora dos botões");
 
                 byte[] response = """
@@ -40,7 +40,7 @@ class OpenAiSupportChatClientTests {
                     true,
                     "test-key",
                     "http://127.0.0.1:" + server.getAddress().getPort() + "/v1/responses",
-                    "gpt-5.4-mini",
+                    "gpt-5.6-luna",
                     120);
 
             Optional<String> answer = client.ask("Pergunta fora dos botões", "contexto do site");

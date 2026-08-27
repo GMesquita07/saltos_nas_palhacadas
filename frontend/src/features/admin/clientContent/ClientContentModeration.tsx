@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useAuthenticatedMediaUrl } from '../../../components/AuthenticatedMedia'
 import { deleteClientContent, getAdminClientContent, moderateClientContent } from '../../../services/clientContentService'
 import type { ClientContentPost, ClientContentStatus } from '../../../types/clientContent'
 import styles from './ClientContentModeration.module.css'
@@ -104,9 +105,7 @@ export function ClientContentModeration({ token, onNotice }: ClientContentModera
           {posts.map((post) => (
             <article className={styles.row} key={post.id}>
               <div className={styles.preview}>
-                {post.mediaType === 'VIDEO'
-                  ? <video controls preload="metadata" poster={post.thumbnailUrl}><source src={post.mediaUrl} /></video>
-                  : <img src={post.mediaUrl} alt={post.title} />}
+                <ModerationMediaPreview post={post} token={token} />
                 <span>{post.type}</span>
               </div>
 
@@ -145,6 +144,19 @@ export function ClientContentModeration({ token, onNotice }: ClientContentModera
       )}
     </section>
   )
+}
+
+function ModerationMediaPreview({ post, token }: { post: ClientContentPost; token: string }) {
+  const mediaUrl = useAuthenticatedMediaUrl(post.mediaUrl, token)
+  const thumbnailUrl = useAuthenticatedMediaUrl(post.thumbnailUrl, token)
+
+  if (!mediaUrl) {
+    return <p className={styles.previewFallback}>Ficheiro privado</p>
+  }
+
+  return post.mediaType === 'VIDEO'
+    ? <video controls preload="metadata" poster={thumbnailUrl}><source src={mediaUrl} /></video>
+    : <img src={mediaUrl} alt={post.title} />
 }
 
 function toMessageDrafts(posts: ClientContentPost[]) {

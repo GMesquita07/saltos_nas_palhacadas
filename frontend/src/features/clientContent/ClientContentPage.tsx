@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { uploadUserMedia } from '../../services/apiClient'
+import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
+import { uploadClientContentMedia } from '../../services/apiClient'
 import { getMyClientContent, getPublishedClientContent, submitClientContent } from '../../services/clientContentService'
 import { useAuth } from '../auth/AuthContext'
 import type { ClientContentMediaType, ClientContentPost, ClientContentStatus } from '../../types/clientContent'
@@ -126,7 +127,7 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
 
     setUploading('media')
     try {
-      const result = await uploadUserMedia(file, session.token)
+      const result = await uploadClientContentMedia(file, session.token)
       setForm((current) => ({
         ...current,
         mediaUrl: result.url,
@@ -154,7 +155,7 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
 
     setUploading('thumbnail')
     try {
-      const result = await uploadUserMedia(file, session.token)
+      const result = await uploadClientContentMedia(file, session.token)
       setForm((current) => ({ ...current, thumbnailUrl: result.url }))
       setNotice({ type: 'success', text: 'Miniatura carregada.' })
     } catch (error) {
@@ -292,10 +293,11 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
               </label>
 
               {form.thumbnailUrl && (
-                <div className={styles.thumbnailPreview}>
-                  <img src={form.thumbnailUrl} alt="Miniatura carregada" />
-                  <button type="button" onClick={() => setForm((current) => ({ ...current, thumbnailUrl: '' }))}>Remover miniatura</button>
-                </div>
+                <UploadedThumbnailPreview
+                  onRemove={() => setForm((current) => ({ ...current, thumbnailUrl: '' }))}
+                  token={session.token}
+                  url={form.thumbnailUrl}
+                />
               )}
 
               <label>
@@ -381,6 +383,17 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
         )}
       </section>
     </section>
+  )
+}
+
+function UploadedThumbnailPreview({ onRemove, token, url }: { onRemove: () => void; token: string; url: string }) {
+  const resolvedUrl = useAuthenticatedMediaUrl(url, token)
+
+  return (
+    <div className={styles.thumbnailPreview}>
+      {resolvedUrl ? <img src={resolvedUrl} alt="Miniatura carregada" /> : <p>Miniatura carregada.</p>}
+      <button type="button" onClick={onRemove}>Remover miniatura</button>
+    </div>
   )
 }
 

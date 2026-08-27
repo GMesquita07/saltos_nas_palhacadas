@@ -182,6 +182,7 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login e registo. |
 | `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
+| `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
 | `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
 | `MEDIA_MAX_FILE_SIZE` | Não | Tamanho máximo por ficheiro. |
 | `MEDIA_MAX_REQUEST_SIZE` | Não | Tamanho máximo por pedido multipart. |
@@ -221,6 +222,7 @@ O backend inclui várias proteções importantes para deploy:
 - Rate limit por IP em login, registo, uploads e chatbot.
 - Validação de URLs públicas guardadas em conteúdos, materiais e perfis.
 - Uploads com allowlist de MIME, validação por assinatura do ficheiro, limites de tamanho e nome gerado pelo servidor.
+- Partilhas de clientes carregadas para zona privada e promovidas para media pública apenas após aprovação.
 - Migrations Flyway com `ddl-auto=validate` em produção.
 - Arranque em `prod` bloqueado quando faltam segredos ou quando o CORS está inseguro.
 - Open Session in View desativado.
@@ -248,6 +250,8 @@ No Render ou provider equivalente:
 4. Define todas as variáveis obrigatórias no painel do provider.
 5. Não coloques passwords, API keys ou connection strings diretamente no `render.yaml`.
 6. Confirma que o health check aponta para `/actuator/health`.
+
+O blueprint inclui região europeia, plano não-free e disco persistente para reduzir o risco de perda de uploads. Confirma custos e limites no provider antes de publicar. Para produção mais robusta, troca o armazenamento local por object storage.
 
 Se usares Render com Docker, evita usar segredos em build args ou no Dockerfile. Os segredos devem existir apenas como variáveis de runtime no painel do provider.
 
@@ -412,6 +416,12 @@ Todos os endpoints administrativos requerem token JWT com role `ADMIN`.
 - Validar frontend e backend antes de cada deploy.
 - Fazer deploy primeiro para ambiente de staging ou preview quando possível.
 - Rever logs após cada migration de base de dados.
+
+## Documentos Operacionais
+
+- [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) define o processo para responder a incidentes de segurança ou privacidade.
+- [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) descreve backups, restore e recuperação após falha.
+- [RGPD_REGISTER.md](RGPD_REGISTER.md) mantém o registo de tratamentos e tarefas RGPD a validar.
 
 ## Referências de Segurança
 

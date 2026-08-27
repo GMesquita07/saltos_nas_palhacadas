@@ -1,12 +1,18 @@
 package pt.saltosnaspalhacadas.backend.media;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,8 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class LocalMediaStorage {
+    public static final String PUBLIC_MEDIA_PATH = "/api/v1/media/";
+    public static final String PRIVATE_MEDIA_PATH = "/api/v1/private-media/";
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024;
     private static final long MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+    private static final Pattern SAFE_FILENAME = Pattern.compile("[0-9a-fA-F-]{36}\\.(jpg|png|webp|gif|mp4|webm|mov)");
     private static final Map<String, AllowedMedia> ALLOWED_MEDIA = Map.of(
             "image/jpeg", new AllowedMedia(".jpg", MAX_IMAGE_SIZE, LocalMediaStorage::isJpeg),
             "image/png", new AllowedMedia(".png", MAX_IMAGE_SIZE, LocalMediaStorage::isPng),
@@ -26,10 +35,76 @@ public class LocalMediaStorage {
             "video/webm", new AllowedMedia(".webm", MAX_VIDEO_SIZE, LocalMediaStorage::isWebm),
             "video/quicktime", new AllowedMedia(".mov", MAX_VIDEO_SIZE, LocalMediaStorage::isMp4Like));
 
-    private final Path directory;
-    public LocalMediaStorage(@Value("${app.media.local-directory}") String directory) { this.directory = Path.of(directory).toAbsolutePath().normalize(); }
+    private final Path publicDirectory;
+    private final Path privateDirectory;
+
+    public LocalMediaStorage(
+            @Value("${app.media.local-directory}") String directory,
+            @Value("${app.media.private-local-directory:}") String privateDirectory) {
+        this.publicDirectory = Path.of(directory).toAbsolutePath().normalize();
+        this.privateDirectory = privateDirectory == null || privateDirectory.isBlank()
+                ? defaultPrivateDirectory(this.publicDirectory)
+                : Path.of(privateDirectory).toAbsolutePath().normalize();
+    }
 
     public StoredMedia store(MultipartFile file) throws IOException {
+        return store(file, publicDirectory);
+    }
+
+    public StoredMedia storePrivate(MultipartFile file) throws IOException {
+        return store(file, privateDirectory);
+    }
+
+    public Path getDirectory() { return publicDirectory; }
+
+    public Path privatePath(String filename) {
+        return resolveSafe(privateDirectory, filename);
+    }
+
+    public Optional<String> privateFilenameFromUrl(String url) {
+        return filenameFromPathOrUrl(url, PRIVATE_MEDIA_PATH);
+    }
+
+    public Optional<String> publicFilenameFromUrl(String url) {
+        return filenameFromPathOrUrl(url, PUBLIC_MEDIA_PATH);
+    }
+
+    public String requirePrivateFilename(String url, String message) {
+        String filename = privateFilenameFromUrl(url)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, message));
+        if (!Files.exists(privatePath(filename))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O ficheiro enviado já não está disponível");
+        }
+        return url.trim();
+    }
+
+    public void publishPrivate(String filename) throws IOException {
+        Path source = privatePath(filename);
+        if (!Files.exists(source)) {
+            return;
+        }
+        Files.createDirectories(publicDirectory);
+        Files.move(source, resolveSafe(publicDirectory, filename), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public void deleteManagedUrl(String url) throws IOException {
+        Optional<String> privateFilename = privateFilenameFromUrl(url);
+        if (privateFilename.isPresent()) {
+            Files.deleteIfExists(privatePath(privateFilename.get()));
+            return;
+        }
+
+        Optional<String> publicFilename = publicFilenameFromUrl(url);
+        if (publicFilename.isPresent()) {
+            Files.deleteIfExists(resolveSafe(publicDirectory, publicFilename.get()));
+        }
+    }
+
+    public boolean isSafeFilename(String filename) {
+        return filename != null && SAFE_FILENAME.matcher(filename).matches();
+    }
+
+    private StoredMedia store(MultipartFile file, Path directory) throws IOException {
         AllowedMedia media = validate(file);
         Files.createDirectories(directory);
         String filename = UUID.randomUUID() + media.extension();
@@ -40,8 +115,6 @@ public class LocalMediaStorage {
         Files.copy(file.getInputStream(), target);
         return new StoredMedia(filename, normalizedContentType(file.getContentType()));
     }
-
-    public Path getDirectory() { return directory; }
 
     private static AllowedMedia validate(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
@@ -114,6 +187,48 @@ public class LocalMediaStorage {
 
     private static boolean startsWith(byte[] value, byte[] prefix) {
         return value.length >= prefix.length && Arrays.equals(Arrays.copyOf(value, prefix.length), prefix);
+    }
+
+    private static Optional<String> filenameFromPathOrUrl(String value, String prefix) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
+
+        String path;
+        String trimmed = value.trim();
+        try {
+            path = trimmed.startsWith("/") ? trimmed : URI.create(trimmed).getPath();
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+
+        if (path == null || !path.startsWith(prefix)) {
+            return Optional.empty();
+        }
+
+        String filename = URLDecoder.decode(path.substring(prefix.length()), StandardCharsets.UTF_8);
+        if (!SAFE_FILENAME.matcher(filename).matches()) {
+            return Optional.empty();
+        }
+        return Optional.of(filename);
+    }
+
+    private static Path resolveSafe(Path directory, String filename) {
+        if (!SAFE_FILENAME.matcher(filename).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome de ficheiro inválido");
+        }
+        Path target = directory.resolve(filename).normalize();
+        if (!target.startsWith(directory)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome de ficheiro inválido");
+        }
+        return target;
+    }
+
+    private static Path defaultPrivateDirectory(Path publicDirectory) {
+        Path filename = publicDirectory.getFileName();
+        String privateName = (filename == null ? "uploads" : filename.toString()) + "_private";
+        Path parent = publicDirectory.getParent();
+        return (parent == null ? Path.of(privateName) : parent.resolve(privateName)).toAbsolutePath().normalize();
     }
 
     public record StoredMedia(String filename, String contentType) {

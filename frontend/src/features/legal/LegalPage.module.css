@@ -1,0 +1,65 @@
+.page {
+  width: min(850px, calc(100% - 48px));
+  margin: auto;
+  padding: 76px 0 120px;
+}
+
+.backButton {
+  border: 1px solid var(--color-line);
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.backButton:hover {
+  border-color: var(--color-ink);
+}
+
+.page h1 {
+  max-width: 760px;
+  margin: 20px 0 18px;
+  letter-spacing: 0;
+}
+
+.intro {
+  max-width: 700px;
+  color: var(--color-muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.updated {
+  margin: 18px 0 42px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.sections {
+  display: grid;
+  gap: 18px;
+}
+
+.sections article {
+  border-top: 1px solid var(--color-line);
+  padding-top: 18px;
+}
+
+.sections h2 {
+  margin-bottom: 10px;
+  font-size: 25px;
+  letter-spacing: 0;
+}
+
+.sections p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+@media (max-width: 650px) {
+  .page {
+    width: min(100% - 32px, 850px);
+    padding: 48px 0 78px;
+  }
+}

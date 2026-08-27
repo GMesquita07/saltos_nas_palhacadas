@@ -91,6 +91,7 @@ export function SupportChat() {
           </div>
 
           <form className={styles.form} onSubmit={submit}>
+            <p className={styles.privacyNotice}>Não envies passwords, dados bancários ou informação sensível.</p>
             <input
               aria-label="Mensagem para o assistente"
               maxLength={700}

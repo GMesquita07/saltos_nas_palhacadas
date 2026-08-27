@@ -34,13 +34,13 @@ public class OpenAiSupportChatClient {
             @Value("${app.support.ai.enabled:false}") boolean enabled,
             @Value("${app.support.ai.api-key:}") String apiKey,
             @Value("${app.support.ai.endpoint:https://api.openai.com/v1/responses}") String endpoint,
-            @Value("${app.support.ai.model:gpt-5.4-mini}") String model,
+            @Value("${app.support.ai.model:gpt-5.6-luna}") String model,
             @Value("${app.support.ai.max-output-tokens:320}") int maxOutputTokens) {
         this.objectMapper = objectMapper;
         this.enabled = enabled;
-        this.apiKey = apiKey;
-        this.endpoint = endpoint;
-        this.model = model;
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
+        this.endpoint = endpoint == null ? "" : endpoint.trim();
+        this.model = model == null ? "" : model.trim();
         this.maxOutputTokens = maxOutputTokens;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(6))
@@ -48,7 +48,7 @@ public class OpenAiSupportChatClient {
     }
 
     public boolean isConfigured() {
-        return enabled && apiKey != null && !apiKey.isBlank();
+        return enabled && !apiKey.isBlank() && !endpoint.isBlank() && !model.isBlank();
     }
 
     public Optional<String> ask(String message, String siteContext) {

@@ -128,4 +128,9 @@ public class ClientContentPost {
         this.adminMessage = adminMessage == null || adminMessage.isBlank() ? null : adminMessage.trim();
         this.moderatedAt = Instant.now();
     }
+
+    public void updateMediaUrls(String mediaUrl, String thumbnailUrl) {
+        this.mediaUrl = mediaUrl;
+        this.thumbnailUrl = thumbnailUrl;
+    }
 }

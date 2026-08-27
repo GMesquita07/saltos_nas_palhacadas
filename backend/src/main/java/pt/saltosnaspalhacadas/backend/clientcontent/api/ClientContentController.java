@@ -21,11 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPostRepository;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
+import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
-import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 
@@ -36,11 +36,13 @@ public class ClientContentController {
     private final ClientContentPostRepository posts;
     private final ProfileRepository profiles;
     private final AppUserRepository users;
+    private final LocalMediaStorage storage;
 
-    public ClientContentController(ClientContentPostRepository posts, ProfileRepository profiles, AppUserRepository users) {
+    public ClientContentController(ClientContentPostRepository posts, ProfileRepository profiles, AppUserRepository users, LocalMediaStorage storage) {
         this.posts = posts;
         this.profiles = profiles;
         this.users = users;
+        this.storage = storage;
     }
 
     @GetMapping
@@ -82,8 +84,10 @@ public class ClientContentController {
                 request.location().trim(),
                 request.eventDate(),
                 request.caption().trim(),
-                PublicUrlValidator.required(request.mediaUrl(), "Indica um URL de ficheiro válido"),
-                PublicUrlValidator.optional(request.thumbnailUrl(), "Indica um URL de miniatura válido"));
+                storage.requirePrivateFilename(request.mediaUrl(), "Envia o ficheiro através do upload do site antes de publicar"),
+                request.thumbnailUrl() == null || request.thumbnailUrl().isBlank()
+                        ? null
+                        : storage.requirePrivateFilename(request.thumbnailUrl(), "Envia a miniatura através do upload do site"));
 
         return ClientContentPostResponse.mineFrom(posts.save(post));
     }

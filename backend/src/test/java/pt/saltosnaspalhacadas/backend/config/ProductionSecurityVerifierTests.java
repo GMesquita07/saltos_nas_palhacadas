@@ -46,6 +46,33 @@ class ProductionSecurityVerifierTests {
                 .doesNotThrowAnyException();
     }
 
+    @Test
+    void rejectsProductionEmailWithoutTls() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.booking.email.enabled", "true")
+                .withProperty("app.booking.email.smtp-host", "smtp.example.test")
+                .withProperty("app.booking.email.from", "no-reply@saltosnaspalhacadas.pt")
+                .withProperty("app.booking.email.smtp-ssl", "false")
+                .withProperty("app.booking.email.smtp-starttls", "false");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("SMTP");
+    }
+
+    @Test
+    void rejectsProductionAiWithoutModel() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.support.ai.enabled", "true")
+                .withProperty("app.support.ai.api-key", "sk-test")
+                .withProperty("app.support.ai.endpoint", "https://api.openai.com/v1/responses")
+                .withProperty("app.support.ai.model", "");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("OPENAI_MODEL");
+    }
+
     private static MockEnvironment validProductionEnvironment() {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("prod");

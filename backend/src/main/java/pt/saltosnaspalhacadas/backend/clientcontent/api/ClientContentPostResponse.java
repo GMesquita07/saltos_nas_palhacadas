@@ -68,6 +68,6 @@ public record ClientContentPostResponse(
         String fullName = ((user.getFirstName() == null ? "" : user.getFirstName()) + " " + (user.getLastName() == null ? "" : user.getLastName())).trim();
         if (!fullName.isBlank()) return fullName;
         if (user.getUsername() != null && !user.getUsername().isBlank()) return "@" + user.getUsername();
-        return user.getEmail();
+        return "Cliente";
     }
 }

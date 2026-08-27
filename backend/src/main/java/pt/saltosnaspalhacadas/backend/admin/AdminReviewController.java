@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.review.Review;
 import pt.saltosnaspalhacadas.backend.review.ReviewRepository;
-import pt.saltosnaspalhacadas.backend.review.api.ReviewResponse;
+import pt.saltosnaspalhacadas.backend.review.api.AdminReviewResponse;
 
 @RestController
 @RequestMapping("/api/v1/admin/reviews")
@@ -29,21 +29,21 @@ public class AdminReviewController {
     }
 
     @GetMapping
-    List<ReviewResponse> findAll() {
+    List<AdminReviewResponse> findAll() {
         return reviews.findAllByOrderByReviewDateDescIdDesc()
                 .stream()
-                .map(ReviewResponse::from)
+                .map(AdminReviewResponse::from)
                 .toList();
     }
 
     @PutMapping("/{id}")
-    ReviewResponse moderateReview(@PathVariable Long id, @Valid @RequestBody ModerateReviewRequest request) {
+    AdminReviewResponse moderateReview(@PathVariable Long id, @Valid @RequestBody ModerateReviewRequest request) {
         Review review = reviews.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Avaliação não encontrada"));
 
         review.moderate(request.published());
 
-        return ReviewResponse.from(reviews.save(review));
+        return AdminReviewResponse.from(reviews.save(review));
     }
 
     @DeleteMapping("/{id}")

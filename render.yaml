@@ -2,10 +2,15 @@ services:
   - type: web
     name: saltos-nas-palhacadas-api
     runtime: docker
-    plan: free
+    plan: starter
+    region: frankfurt
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /actuator/health
+    disk:
+      name: saltos-media
+      mountPath: /var/data
+      sizeGB: 10
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -23,6 +28,8 @@ services:
         value: "12"
       - key: MEDIA_LOCAL_DIRECTORY
         value: /var/data/uploads
+      - key: MEDIA_PRIVATE_LOCAL_DIRECTORY
+        value: /var/data/uploads-private
       - key: MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE
         value: "30"
       - key: DB_URL
@@ -52,6 +59,6 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
-        value: gpt-5.4-mini
+        value: gpt-5.6-luna
       - key: SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE
         value: "20"

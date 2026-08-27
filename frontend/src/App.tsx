@@ -10,6 +10,7 @@ import { BookingPage } from './features/booking/BookingPage'
 import { ClientContentPage } from './features/clientContent/ClientContentPage'
 import { ContactPage } from './features/contacts/ContactPage'
 import { FavoritesPage } from './features/favorites/FavoritesPage'
+import { LegalPage } from './features/legal/LegalPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
 import { PortfolioPage } from './features/portfolio/PortfolioPage'
 import { ProfileSelector } from './features/profiles/ProfileSelector'
@@ -21,7 +22,7 @@ import styles from './App.module.css'
 
 const SPLASH_DURATION_MS = 2200
 
-type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking'
+type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies'
 
 function App() {
   const { isSessionReady, logout, session } = useAuth()
@@ -148,6 +149,12 @@ function App() {
     setView('admin')
   }
 
+  function openLegal(view: Extract<View, 'privacy' | 'terms' | 'cookies'>) {
+    setSelectedProfile(null)
+    setShouldReturnToBooking(false)
+    setView(view)
+  }
+
   function renderView() {
     if (view === 'auth') {
       return <AuthPage key={authMode} initialMode={authMode} onAuthenticated={handleAuthenticated} onBack={() => shouldReturnToBooking ? openBooking(bookingProfile) : showProfiles()} />
@@ -160,6 +167,9 @@ function App() {
     if (view === 'contacts') return <ContactPage />
     if (view === 'materials') return <MaterialsPage />
     if (view === 'clientContent') return <ClientContentPage profiles={profiles} onLogin={() => openAuthentication('login')} />
+    if (view === 'privacy') return <LegalPage type="privacy" onBack={showProfiles} />
+    if (view === 'terms') return <LegalPage type="terms" onBack={showProfiles} />
+    if (view === 'cookies') return <LegalPage type="cookies" onBack={showProfiles} />
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
     if (view === 'account' && session) return <AccountPage onExit={showProfiles} onFavoritesClick={openFavorites} />
@@ -189,7 +199,11 @@ function App() {
         <main className={styles.main}>
           {!isSessionReady ? <p className={styles.feedback}>A preparar a tua sessão...</p> : renderView()}
         </main>
-        <Footer />
+        <Footer
+          onCookiesClick={() => openLegal('cookies')}
+          onPrivacyClick={() => openLegal('privacy')}
+          onTermsClick={() => openLegal('terms')}
+        />
         {!isSplashVisible && <SupportChat />}
       </div>
     </>

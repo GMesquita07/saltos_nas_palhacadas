@@ -73,7 +73,7 @@ public class BookingNotificationService {
                 DATE_FORMATTER.format(booking.getEventDate()));
 
         if (!enabled || host.isBlank()) {
-            log.info("Email de confirmação preparado para {} sobre o pedido {}", booking.getContactEmail(), booking.getId());
+            log.info("Email de confirmação preparado para {} sobre o pedido {}", maskEmail(booking.getContactEmail()), booking.getId());
             return;
         }
 
@@ -106,7 +106,7 @@ public class BookingNotificationService {
                 formatSchedule(booking));
 
         if (!enabled || host.isBlank()) {
-            log.info("Email de lembrete preparado para {} sobre o agendamento {}", booking.getContactEmail(), booking.getId());
+            log.info("Email de lembrete preparado para {} sobre o agendamento {}", maskEmail(booking.getContactEmail()), booking.getId());
             return true;
         }
 
@@ -126,6 +126,18 @@ public class BookingNotificationService {
         return " entre as %s e as %s".formatted(
                 TIME_FORMATTER.format(booking.getStartTime()),
                 TIME_FORMATTER.format(booking.getEndTime()));
+    }
+
+    private static String maskEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return "email-indisponivel";
+        }
+        String normalized = email.trim();
+        int atIndex = normalized.indexOf('@');
+        if (atIndex <= 0) {
+            return "***";
+        }
+        return normalized.charAt(0) + "***" + normalized.substring(atIndex);
     }
 
     private void sendSmtp(String to, String subject, String body) throws IOException {

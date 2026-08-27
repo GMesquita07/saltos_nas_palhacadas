@@ -76,11 +76,18 @@ class ProductionSecurityVerifier implements ApplicationRunner {
     private void requireExternalServicesWhenEnabled() {
         if (environment.getProperty("app.support.ai.enabled", Boolean.class, false)) {
             required("app.support.ai.api-key", "OPENAI_API_KEY é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
+            required("app.support.ai.endpoint", "OPENAI_API_ENDPOINT é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
+            required("app.support.ai.model", "OPENAI_MODEL é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
         }
 
         if (environment.getProperty("app.booking.email.enabled", Boolean.class, false)) {
             required("app.booking.email.smtp-host", "BOOKING_EMAIL_SMTP_HOST é obrigatório quando BOOKING_EMAIL_ENABLED=true em produção");
             required("app.booking.email.from", "BOOKING_EMAIL_FROM é obrigatório quando BOOKING_EMAIL_ENABLED=true em produção");
+            boolean ssl = environment.getProperty("app.booking.email.smtp-ssl", Boolean.class, false);
+            boolean startTls = environment.getProperty("app.booking.email.smtp-starttls", Boolean.class, false);
+            if (!ssl && !startTls) {
+                throw new IllegalStateException("SMTP em produção deve usar SSL ou STARTTLS");
+            }
         }
     }
 

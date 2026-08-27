@@ -6,12 +6,12 @@ type ApiReview = {
   profileSlug: string | null
   profileName: string | null
   reviewerName: string
-  submittedByEmail: string | null
+  submittedByEmail?: string | null
   title: string
   comment: string
   rating: number
   reviewDate: string
-  displayOrder: number
+  displayOrder?: number
   published: boolean
 }
 
@@ -62,7 +62,7 @@ function toReview(review: ApiReview): Review {
     rating: review.rating,
     reviewDate: formatDate(review.reviewDate),
     reviewDateIso: review.reviewDate,
-    displayOrder: review.displayOrder,
+    displayOrder: review.displayOrder ?? 0,
     published: review.published,
   }
 }
