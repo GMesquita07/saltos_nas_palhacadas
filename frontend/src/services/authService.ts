@@ -32,6 +32,7 @@ export type UpdateAccountInput = {
   lastName: string
   phone: string
   profileImageUrl: string | null
+  profileImageMediaId?: string | null
   profileImagePosition: string
   profileImageZoom: number
 }

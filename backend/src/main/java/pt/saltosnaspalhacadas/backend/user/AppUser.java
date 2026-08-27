@@ -3,6 +3,7 @@ package pt.saltosnaspalhacadas.backend.user;
 import java.time.Instant;
 import java.util.Locale;
 import jakarta.persistence.*;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 
 @Entity
 @Table(name = "app_users")
@@ -14,6 +15,9 @@ public class AppUser {
     @Column(name = "last_name", length = 80) private String lastName;
     @Column(length = 30) private String phone;
     @Column(name = "profile_image_url", length = 2048) private String profileImageUrl;
+    @ManyToOne
+    @JoinColumn(name = "profile_media_id")
+    private ManagedMedia profileMedia;
     @Column(name = "profile_image_position", nullable = false, length = 32) private String profileImagePosition = "50% 50%";
     @Column(name = "profile_image_zoom", nullable = false) private double profileImageZoom = 1.0;
     @Column(name = "password_hash", nullable = false, length = 100) private String passwordHash;
@@ -42,13 +46,18 @@ public class AppUser {
     }
     @PrePersist void onCreate() { createdAt = Instant.now(); updatedAt = createdAt; }
     @PreUpdate void onUpdate() { updatedAt = Instant.now(); }
-    public Long getId() { return id; } public String getEmail() { return email; } public String getUsername() { return username; } public String getFirstName() { return firstName; } public String getLastName() { return lastName; } public String getPhone() { return phone; } public String getProfileImageUrl() { return profileImageUrl; } public String getProfileImagePosition() { return profileImagePosition; } public double getProfileImageZoom() { return profileImageZoom; } public String getPasswordHash() { return passwordHash; } public UserRole getRole() { return role; } public boolean isActive() { return active; }
+    public Long getId() { return id; } public String getEmail() { return email; } public String getUsername() { return username; } public String getFirstName() { return firstName; } public String getLastName() { return lastName; } public String getPhone() { return phone; } public String getProfileImageUrl() { return profileImageUrl; } public ManagedMedia getProfileMedia() { return profileMedia; } public String getProfileImagePosition() { return profileImagePosition; } public double getProfileImageZoom() { return profileImageZoom; } public String getPasswordHash() { return passwordHash; } public UserRole getRole() { return role; } public boolean isActive() { return active; }
     public void updateProfile(String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom) {
+        updateProfile(username, firstName, lastName, phone, profileImageUrl, null, profileImagePosition, profileImageZoom);
+    }
+
+    public void updateProfile(String username, String firstName, String lastName, String phone, String profileImageUrl, ManagedMedia profileMedia, String profileImagePosition, double profileImageZoom) {
         this.username = normalizeUsername(username);
         this.firstName = normalize(firstName);
         this.lastName = normalize(lastName);
         this.phone = normalize(phone);
         this.profileImageUrl = normalize(profileImageUrl);
+        this.profileMedia = profileMedia;
         this.profileImagePosition = normalizeImagePosition(profileImagePosition);
         this.profileImageZoom = normalizeImageZoom(profileImageZoom);
     }

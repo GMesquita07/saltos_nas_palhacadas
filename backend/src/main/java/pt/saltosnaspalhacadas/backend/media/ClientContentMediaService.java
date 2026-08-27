@@ -53,7 +53,7 @@ public class ClientContentMediaService {
         assertQuotaAvailable(owner, file.getSize());
         LocalMediaStorage.StoredMedia stored = storage.storePrivate(file);
         try {
-            return media.save(new ManagedMedia(owner, stored.filename(), stored.contentType(), file.getSize()));
+            return media.save(new ManagedMedia(owner, stored.filename(), stored.contentType(), file.getSize(), ManagedMediaPurpose.CLIENT_CONTENT));
         } catch (RuntimeException exception) {
             storage.deletePrivate(stored.filename());
             throw exception;
@@ -61,7 +61,34 @@ public class ClientContentMediaService {
     }
 
     @Transactional
+    public ManagedMedia uploadPrivateAvatar(AppUser owner, MultipartFile file) throws IOException {
+        for (ManagedMedia pendingAvatar : media.findAllByOwnerIdAndPurposeAndStatusAndDeletedAtIsNull(
+                owner.getId(),
+                ManagedMediaPurpose.PROFILE_AVATAR,
+                ManagedMediaStatus.PENDING)) {
+            delete(pendingAvatar);
+        }
+
+        LocalMediaStorage.StoredMedia stored = storage.storePrivate(file);
+        if (!stored.contentType().startsWith("image/")) {
+            storage.deletePrivate(stored.filename());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleciona uma imagem válida");
+        }
+
+        try {
+            return media.save(new ManagedMedia(owner, stored.filename(), stored.contentType(), file.getSize(), ManagedMediaPurpose.PROFILE_AVATAR));
+        } catch (RuntimeException exception) {
+            storage.deletePrivate(stored.filename());
+            throw exception;
+        }
+    }
+
     public ManagedMedia attachOwnedPendingMedia(UUID mediaId, AppUser owner, MediaType expectedType, String missingMessage) {
+        return attachOwnedPendingMedia(mediaId, owner, expectedType, ManagedMediaPurpose.CLIENT_CONTENT, missingMessage);
+    }
+
+    @Transactional
+    public ManagedMedia attachOwnedPendingMedia(UUID mediaId, AppUser owner, MediaType expectedType, ManagedMediaPurpose expectedPurpose, String missingMessage) {
         if (mediaId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, missingMessage);
         }
@@ -74,6 +101,9 @@ public class ClientContentMediaService {
         }
         if (managedMedia.getStatus() != ManagedMediaStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este ficheiro já foi usado noutra publicação");
+        }
+        if (managedMedia.getPurpose() != expectedPurpose) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este ficheiro não pode ser usado aqui");
         }
         if (!matchesExpectedType(managedMedia, expectedType)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O tipo do ficheiro não corresponde à publicação");
@@ -150,12 +180,12 @@ public class ClientContentMediaService {
     }
 
     private void assertQuotaAvailable(AppUser owner, long nextUploadBytes) {
-        long pendingUploads = media.countByOwnerIdAndStatusInAndDeletedAtIsNull(owner.getId(), QUOTA_STATUSES);
+        long pendingUploads = media.countByOwnerIdAndPurposeAndStatusInAndDeletedAtIsNull(owner.getId(), ManagedMediaPurpose.CLIENT_CONTENT, QUOTA_STATUSES);
         if (pendingUploads >= maxPendingUploadsPerUser) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Tens demasiados uploads pendentes. Aguarda aprovação ou tenta mais tarde.");
         }
 
-        long usedBytes = media.sumSizeBytesByOwnerIdAndStatusIn(owner.getId(), QUOTA_STATUSES);
+        long usedBytes = media.sumSizeBytesByOwnerIdAndPurposeAndStatusIn(owner.getId(), ManagedMediaPurpose.CLIENT_CONTENT, QUOTA_STATUSES);
         if (usedBytes + Math.max(0, nextUploadBytes) > maxPendingUploadBytesPerUser) {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "A tua conta atingiu o limite temporário de uploads pendentes.");
         }

@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { CroppedImage } from '../../components/CroppedImage'
+import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { uploadUserImage } from '../../services/apiClient'
 import { useAuth } from './AuthContext'
@@ -17,6 +18,7 @@ type AccountForm = {
   lastName: string
   phone: string
   profileImageUrl: string
+  profileImageMediaId: string
   imageCrop: ImageCrop
 }
 
@@ -28,16 +30,18 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
+  const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
+
   if (!session) return null
 
-  const visibleForm = isEditing ? form : emptyForm(session)
   const accountName = displayName(visibleForm.firstName, visibleForm.lastName) || visibleForm.username || session.email
   const avatar = (
     <CroppedImage
       className={styles.avatar}
       fallback={initials(visibleForm.firstName, visibleForm.lastName, session.email)}
       position={formatImagePosition(visibleForm.imageCrop)}
-      src={visibleForm.profileImageUrl}
+      src={resolvedProfileImageUrl}
       zoom={visibleForm.imageCrop.zoom}
     />
   )
@@ -72,7 +76,7 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
     setIsSaving(true)
     try {
       const result = await uploadUserImage(file, session.token)
-      setForm((current) => ({ ...current, profileImageUrl: result.url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
+      setForm((current) => ({ ...current, profileImageUrl: result.url, profileImageMediaId: result.id, imageCrop: { x: 50, y: 50, zoom: 1 } }))
       setNotice('Foto carregada. Ajusta o enquadramento e guarda o perfil.')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível carregar a foto.')
@@ -100,6 +104,7 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
         lastName: form.lastName.trim(),
         phone: form.phone.trim(),
         profileImageUrl: form.profileImageUrl.trim() || null,
+        profileImageMediaId: form.profileImageMediaId || null,
         profileImagePosition: formatImagePosition(form.imageCrop),
         profileImageZoom: form.imageCrop.zoom,
       })
@@ -155,12 +160,12 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
               </label>
             </div>
 
-            {form.profileImageUrl && (
+            {form.profileImageUrl && resolvedProfileImageUrl && (
               <ImageCropEditor
                 crop={form.imageCrop}
                 description="Arrasta a fotografia e ajusta o zoom para escolher como a tua foto aparece na conta."
                 shape="circle"
-                src={form.profileImageUrl}
+                src={resolvedProfileImageUrl}
                 title="Ajustar foto de perfil"
                 onChange={(imageCrop) => setForm((current) => ({ ...current, imageCrop }))}
               />
@@ -232,7 +237,7 @@ export function AccountPage({ onFavoritesClick, onExit }: AccountPageProps) {
 
 function emptyForm(session: { email: string; username?: string; firstName?: string; lastName?: string; phone?: string; profileImageUrl?: string; profileImagePosition?: string; profileImageZoom?: number } | null): AccountForm {
   if (!session) {
-    return { username: '', firstName: '', lastName: '', phone: '', profileImageUrl: '', imageCrop: { x: 50, y: 50, zoom: 1 } }
+    return { username: '', firstName: '', lastName: '', phone: '', profileImageUrl: '', profileImageMediaId: '', imageCrop: { x: 50, y: 50, zoom: 1 } }
   }
 
   return {
@@ -241,6 +246,7 @@ function emptyForm(session: { email: string; username?: string; firstName?: stri
     lastName: session.lastName ?? '',
     phone: session.phone ?? '',
     profileImageUrl: session.profileImageUrl ?? '',
+    profileImageMediaId: '',
     imageCrop: parseImageCrop(session.profileImagePosition, session.profileImageZoom),
   }
 }

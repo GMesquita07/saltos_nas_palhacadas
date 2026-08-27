@@ -24,8 +24,10 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.auth.JwtService;
 import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
@@ -45,6 +47,7 @@ class ClientContentIntegrationTests {
     @Autowired private ProfileRepository profiles;
     @Autowired private ClientContentPostRepository posts;
     @Autowired private ManagedMediaRepository managedMedia;
+    @Autowired private ClientContentMediaService mediaService;
     @Autowired private LocalMediaStorage storage;
 
     @Test
@@ -172,6 +175,8 @@ class ClientContentIntegrationTests {
             if (postId != null) {
                 posts.findById(postId).ifPresent(posts::delete);
             }
+            deleteManagedMediaFor(customer);
+            deleteManagedMediaFor(otherCustomer);
             profiles.deleteById(profile.getId());
             users.deleteById(customer.getId());
             users.deleteById(otherCustomer.getId());
@@ -198,6 +203,7 @@ class ClientContentIntegrationTests {
                     .andExpect(jsonPath("$.contentType").value("video/mp4"))
                     .andExpect(jsonPath("$.url", containsString("/api/v1/private-media/")));
         } finally {
+            deleteManagedMediaFor(customer);
             users.deleteById(customer.getId());
         }
     }
@@ -266,6 +272,8 @@ class ClientContentIntegrationTests {
             if (filename != null) {
                 storage.deletePrivate(filename);
             }
+            deleteManagedMediaFor(customer);
+            deleteManagedMediaFor(otherCustomer);
             profiles.deleteById(profile.getId());
             users.deleteById(customer.getId());
             users.deleteById(otherCustomer.getId());
@@ -289,6 +297,7 @@ class ClientContentIntegrationTests {
                             .header("Authorization", "Bearer " + customerToken))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.contentType").value("image/png"))
+                    .andExpect(jsonPath("$.url", containsString("/api/v1/private-media/")))
                     .andExpect(jsonPath("$.url", endsWith(".png")));
 
             MockMultipartFile svg = new MockMultipartFile(
@@ -302,6 +311,7 @@ class ClientContentIntegrationTests {
                             .header("Authorization", "Bearer " + customerToken))
                     .andExpect(status().isBadRequest());
         } finally {
+            deleteManagedMediaFor(customer);
             users.deleteById(customer.getId());
         }
     }
@@ -374,6 +384,13 @@ class ClientContentIntegrationTests {
     }
 
     private record UploadedMedia(String id, String url) {
+    }
+
+    private void deleteManagedMediaFor(AppUser user) throws Exception {
+        for (ManagedMedia ownedMedia : managedMedia.findAllByOwnerId(user.getId())) {
+            mediaService.delete(ownedMedia);
+            managedMedia.delete(ownedMedia);
+        }
     }
 
     private static byte[] mp4Header() {

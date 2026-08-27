@@ -42,10 +42,11 @@ export function useAuthenticatedMediaUrl(url?: string, token?: string) {
   }, [privateMedia?.objectUrl])
 
   if (!url) return undefined
-  if (!isPrivateMediaUrl(url) || !token) return url
+  if (!isPrivateMediaUrl(url)) return url
+  if (!token) return undefined
   return privateMedia?.sourceUrl === url ? privateMedia.objectUrl : undefined
 }
 
 function isPrivateMediaUrl(url?: string) {
-  return Boolean(url?.includes('/api/v1/private-media/'))
+  return Boolean(url?.includes('/api/v1/private-media/') || url?.includes('/api/v1/auth/me/avatar'))
 }

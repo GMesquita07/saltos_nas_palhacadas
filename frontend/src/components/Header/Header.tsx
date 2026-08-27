@@ -1,6 +1,7 @@
 import { BrandMark } from '../BrandMark/BrandMark'
 import { NavIcon } from '../NavIcon/NavIcon'
 import type { AuthSession } from '../../types/auth'
+import { useAuthenticatedMediaUrl } from '../AuthenticatedMedia'
 import { CroppedImage } from '../CroppedImage'
 import styles from './Header.module.css'
 
@@ -33,6 +34,8 @@ export function Header({
   onAuthenticationClick,
   onLogout,
 }: HeaderProps) {
+  const accountAvatarUrl = useAuthenticatedMediaUrl(session?.profileImageUrl, session?.token)
+
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
@@ -50,8 +53,8 @@ export function Header({
           {session ? (
             <>
               <button className={styles.accountButton} type="button" onClick={onAccountClick}>
-                {session.profileImageUrl
-                  ? <CroppedImage className={styles.accountAvatar} position={session.profileImagePosition} src={session.profileImageUrl} zoom={session.profileImageZoom} />
+                {session.profileImageUrl && accountAvatarUrl
+                  ? <CroppedImage className={styles.accountAvatar} position={session.profileImagePosition} src={accountAvatarUrl} zoom={session.profileImageZoom} />
                   : <NavIcon name="account" />}
                 Conta
               </button>

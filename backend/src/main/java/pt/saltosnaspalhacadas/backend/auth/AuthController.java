@@ -1,7 +1,9 @@
 package pt.saltosnaspalhacadas.backend.auth;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Locale;
+import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,11 +17,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
+import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
-import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 import pt.saltosnaspalhacadas.backend.user.*;
 
 @RestController
@@ -29,6 +38,8 @@ public class AuthController {
     private final PasswordEncoder passwords;
     private final JwtService jwt;
     private final IpRateLimiter rateLimiter;
+    private final ClientContentMediaService mediaService;
+    private final LocalMediaStorage storage;
     private final int authRateLimitPerMinute;
 
     public AuthController(
@@ -36,11 +47,15 @@ public class AuthController {
             PasswordEncoder passwords,
             JwtService jwt,
             IpRateLimiter rateLimiter,
+            ClientContentMediaService mediaService,
+            LocalMediaStorage storage,
             @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute) {
         this.users = users;
         this.passwords = passwords;
         this.jwt = jwt;
         this.rateLimiter = rateLimiter;
+        this.mediaService = mediaService;
+        this.storage = storage;
         this.authRateLimitPerMinute = authRateLimitPerMinute;
     }
 
@@ -51,7 +66,7 @@ public class AuthController {
                 .filter(candidate -> passwords.matches(request.password(), candidate.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou palavra-passe inválidos"));
 
-        return TokenResponse.from(user, jwt.createToken(user));
+        return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
     }
 
     @PostMapping("/register")
@@ -79,7 +94,7 @@ public class AuthController {
                 1.0,
                 passwords.encode(request.password()),
                 UserRole.CUSTOMER));
-        return TokenResponse.from(user, jwt.createToken(user));
+        return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
     }
 
     @GetMapping("/me")
@@ -90,14 +105,18 @@ public class AuthController {
 
         AppUser user = users.findByEmailAndActiveTrue(normalizeEmail(authentication.getName()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
-        return AuthenticatedUserResponse.from(user);
+        return AuthenticatedUserResponse.from(user, profileImageUrl(user));
     }
 
     @PutMapping("/me")
-    AuthenticatedUserResponse updateCurrentUser(Authentication authentication, @Valid @RequestBody UpdateUserRequest request) {
+    @Transactional(rollbackFor = IOException.class)
+    AuthenticatedUserResponse updateCurrentUser(Authentication authentication, @Valid @RequestBody UpdateUserRequest request) throws IOException {
         AppUser user = findCurrentUser(authentication);
         validatePhone(request.phone());
         String username = normalizeUsername(request.username());
+        ManagedMedia previousAvatar = user.getProfileMedia();
+        String previousLegacyUrl = user.getProfileImageUrl();
+        ProfileImageSelection profileImage = resolveProfileImage(user, request);
 
         users.findByEmailAndActiveTrue(user.getEmail())
                 .filter(current -> current.getId().equals(user.getId()))
@@ -112,11 +131,15 @@ public class AuthController {
                 request.firstName().trim(),
                 request.lastName().trim(),
                 request.phone().trim(),
-                PublicUrlValidator.optional(request.profileImageUrl(), "Indica um URL de foto válido"),
+                profileImage.legacyUrl(),
+                profileImage.media(),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()));
 
-        return AuthenticatedUserResponse.from(users.save(user));
+        AppUser savedUser = users.save(user);
+        cleanupPreviousProfileImage(previousAvatar, previousLegacyUrl, profileImage);
+
+        return AuthenticatedUserResponse.from(savedUser, profileImageUrl(savedUser));
     }
 
     private void assertAuthAllowed(HttpServletRequest servletRequest) {
@@ -148,6 +171,71 @@ public class AuthController {
 
     private static double defaultImageZoom(Double value) {
         return value == null ? 1.0 : value;
+    }
+
+    private ProfileImageSelection resolveProfileImage(AppUser user, UpdateUserRequest request) {
+        if (request.profileImageMediaId() != null) {
+            ManagedMedia media = mediaService.attachOwnedPendingMedia(
+                    request.profileImageMediaId(),
+                    user,
+                    MediaType.PHOTO,
+                    ManagedMediaPurpose.PROFILE_AVATAR,
+                    "Carrega a foto através do upload da conta antes de guardar");
+            return new ProfileImageSelection(null, media);
+        }
+
+        String requestedUrl = blankToNull(request.profileImageUrl());
+        if (requestedUrl == null) {
+            return new ProfileImageSelection(null, null);
+        }
+
+        if (user.getProfileMedia() != null && isCurrentAvatarUrl(requestedUrl)) {
+            return new ProfileImageSelection(null, user.getProfileMedia());
+        }
+
+        if (user.getProfileImageUrl() != null && user.getProfileImageUrl().equals(requestedUrl)) {
+            return new ProfileImageSelection(user.getProfileImageUrl(), null);
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Carrega a foto através do upload da conta antes de guardar");
+    }
+
+    private void cleanupPreviousProfileImage(ManagedMedia previousAvatar, String previousLegacyUrl, ProfileImageSelection nextProfileImage) throws IOException {
+        if (previousAvatar != null && !sameMedia(previousAvatar, nextProfileImage.media())) {
+            mediaService.delete(previousAvatar);
+        }
+
+        if (previousLegacyUrl != null && !previousLegacyUrl.equals(nextProfileImage.legacyUrl())) {
+            storage.deleteManagedUrl(previousLegacyUrl);
+        }
+    }
+
+    private static String profileImageUrl(AppUser user) {
+        ManagedMedia media = user.getProfileMedia();
+        if (media != null
+                && media.getPurpose() == ManagedMediaPurpose.PROFILE_AVATAR
+                && media.getStatus() != ManagedMediaStatus.DELETED
+                && media.getDeletedAt() == null) {
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/api/v1/auth/me/avatar")
+                    .toUriString();
+        }
+        return user.getProfileImageUrl();
+    }
+
+    private static boolean sameMedia(ManagedMedia first, ManagedMedia second) {
+        return first != null
+                && second != null
+                && first.getId() != null
+                && first.getId().equals(second.getId());
+    }
+
+    private static boolean isCurrentAvatarUrl(String value) {
+        return value.equals("/api/v1/auth/me/avatar") || value.endsWith("/api/v1/auth/me/avatar");
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static void validatePhone(String phone) {
@@ -208,6 +296,7 @@ public class AuthController {
             String phone,
             @Size(max = 2048, message = "O URL da foto é demasiado longo")
             String profileImageUrl,
+            UUID profileImageMediaId,
             @Pattern(regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%", message = "A posição da foto é inválida")
             String profileImagePosition,
             @DecimalMin(value = "1.0", message = "O zoom mínimo da foto é 1")
@@ -215,15 +304,18 @@ public class AuthController {
             Double profileImageZoom) {
     }
 
+    record ProfileImageSelection(String legacyUrl, ManagedMedia media) {
+    }
+
     record TokenResponse(String accessToken, String tokenType, String email, String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom, String role) {
-        static TokenResponse from(AppUser user, String token) {
-            return new TokenResponse(token, "Bearer", user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), user.getProfileImageUrl(), user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
+        static TokenResponse from(AppUser user, String token, String profileImageUrl) {
+            return new TokenResponse(token, "Bearer", user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), profileImageUrl, user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
         }
     }
 
     record AuthenticatedUserResponse(String email, String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom, String role) {
-        static AuthenticatedUserResponse from(AppUser user) {
-            return new AuthenticatedUserResponse(user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), user.getProfileImageUrl(), user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
+        static AuthenticatedUserResponse from(AppUser user, String profileImageUrl) {
+            return new AuthenticatedUserResponse(user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), profileImageUrl, user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
         }
     }
 }

@@ -36,6 +36,10 @@ public class ManagedMedia {
     private long sizeBytes;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ManagedMediaPurpose purpose = ManagedMediaPurpose.CLIENT_CONTENT;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ManagedMediaStatus status = ManagedMediaStatus.PENDING;
 
@@ -54,11 +58,16 @@ public class ManagedMedia {
     protected ManagedMedia() { }
 
     public ManagedMedia(AppUser owner, String storageKey, String contentType, long sizeBytes) {
+        this(owner, storageKey, contentType, sizeBytes, ManagedMediaPurpose.CLIENT_CONTENT);
+    }
+
+    public ManagedMedia(AppUser owner, String storageKey, String contentType, long sizeBytes, ManagedMediaPurpose purpose) {
         this.id = UUID.randomUUID();
         this.owner = owner;
         this.storageKey = storageKey;
         this.contentType = contentType;
         this.sizeBytes = Math.max(0, sizeBytes);
+        this.purpose = purpose == null ? ManagedMediaPurpose.CLIENT_CONTENT : purpose;
         this.status = ManagedMediaStatus.PENDING;
     }
 
@@ -74,6 +83,7 @@ public class ManagedMedia {
     public String getStorageKey() { return storageKey; }
     public String getContentType() { return contentType; }
     public long getSizeBytes() { return sizeBytes; }
+    public ManagedMediaPurpose getPurpose() { return purpose; }
     public ManagedMediaStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getAttachedAt() { return attachedAt; }
