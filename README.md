@@ -184,6 +184,10 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
 | `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
 | `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
+| `CLIENT_CONTENT_MAX_PENDING_UPLOADS_PER_USER` | Não | Máximo de uploads pendentes/anexados por cliente antes de aprovação. |
+| `CLIENT_CONTENT_MAX_PENDING_UPLOAD_BYTES_PER_USER` | Não | Limite total temporário, em bytes, dos uploads pendentes/anexados por cliente. |
+| `CLIENT_CONTENT_PRIVATE_UPLOAD_RETENTION_HOURS` | Não | Horas até apagar automaticamente uploads privados pendentes que nunca foram submetidos. |
+| `CLIENT_CONTENT_PRIVATE_UPLOAD_CLEANUP_CRON` | Não | Cron do job que limpa uploads privados órfãos. |
 | `MEDIA_MAX_FILE_SIZE` | Não | Tamanho máximo por ficheiro. |
 | `MEDIA_MAX_REQUEST_SIZE` | Não | Tamanho máximo por pedido multipart. |
 | `BOOKING_EMAIL_ENABLED` | Não | Ativa envio real de emails de agendamento. |
@@ -223,6 +227,9 @@ O backend inclui várias proteções importantes para deploy:
 - Validação de URLs públicas guardadas em conteúdos, materiais e perfis.
 - Uploads com allowlist de MIME, validação por assinatura do ficheiro, limites de tamanho e nome gerado pelo servidor.
 - Partilhas de clientes carregadas para zona privada e promovidas para media pública apenas após aprovação.
+- Ficheiros privados de partilhas ligados ao utilizador dono; outro cliente recebe `404` mesmo que tente adivinhar o URL.
+- Quotas temporárias por cliente e limpeza automática de uploads privados órfãos.
+- Partilhas públicas escondem email, local e data completa por defeito; o cliente escolhe nome público e consente antes de submeter.
 - Migrations Flyway com `ddl-auto=validate` em produção.
 - Arranque em `prod` bloqueado quando faltam segredos ou quando o CORS está inseguro.
 - Open Session in View desativado.
@@ -267,6 +274,14 @@ Para Cloudflare Pages:
 | Environment variable | `VITE_API_URL=https://<api-publica>/api/v1` |
 
 Depois do primeiro deploy, copia o domínio público do frontend e atualiza `CORS_ALLOWED_ORIGINS` na API.
+
+O ficheiro `frontend/public/_headers` inclui uma Content Security Policy funcional para deploy estático. Antes da publicação final, troca o `connect-src 'self' https:` por uma lista explícita com o domínio real da API, por exemplo:
+
+```text
+connect-src 'self' https://api.exemplo.pt;
+```
+
+Mantém `frame-src` apenas para os domínios usados nos vídeos incorporados, como YouTube ou YouTube NoCookie.
 
 ### 4. CORS e Domínios
 

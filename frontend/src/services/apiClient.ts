@@ -37,12 +37,12 @@ export async function uploadUserMedia(file: File, token: string): Promise<{ url:
   return response.json() as Promise<{ url: string; contentType: string }>
 }
 
-export async function uploadClientContentMedia(file: File, token: string): Promise<{ url: string; contentType: string }> {
+export async function uploadClientContentMedia(file: File, token: string): Promise<{ id: string; url: string; contentType: string }> {
   const body = new FormData()
   body.append('file', file)
   const response = await fetch(`${apiUrl}/client-posts/media`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body })
   if (!response.ok) throw new Error(parseError(await response.text()) || 'Não foi possível enviar o ficheiro.')
-  return response.json() as Promise<{ url: string; contentType: string }>
+  return response.json() as Promise<{ id: string; url: string; contentType: string }>
 }
 
 function parseError(body: string) {

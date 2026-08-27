@@ -2,6 +2,8 @@ package pt.saltosnaspalhacadas.backend.clientcontent.api;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,37 +16,46 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
+import pt.saltosnaspalhacadas.backend.user.AppUser;
+import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/client-posts/media")
 public class ClientContentMediaController {
 
-    private final LocalMediaStorage storage;
+    private final ClientContentMediaService mediaService;
+    private final AppUserRepository users;
     private final IpRateLimiter rateLimiter;
     private final int uploadRateLimitPerMinute;
 
     public ClientContentMediaController(
-            LocalMediaStorage storage,
+            ClientContentMediaService mediaService,
+            AppUserRepository users,
             IpRateLimiter rateLimiter,
             @Value("${app.media.upload.rate-limit-per-minute:30}") int uploadRateLimitPerMinute) {
-        this.storage = storage;
+        this.mediaService = mediaService;
+        this.users = users;
         this.rateLimiter = rateLimiter;
         this.uploadRateLimitPerMinute = uploadRateLimitPerMinute;
     }
 
     @PostMapping(consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
-    MediaUploadResponse upload(HttpServletRequest request, @RequestParam MultipartFile file) throws IOException {
+    MediaUploadResponse upload(Authentication authentication, HttpServletRequest request, @RequestParam MultipartFile file) throws IOException {
+        AppUser user = findCurrentUser(authentication);
         assertUploadAllowed(request);
-        LocalMediaStorage.StoredMedia media = storage.storePrivate(file);
+        ManagedMedia media = mediaService.uploadPrivate(user, file);
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path(LocalMediaStorage.PRIVATE_MEDIA_PATH)
-                .path(media.filename())
+                .path(media.getStorageKey())
                 .toUriString();
-        return new MediaUploadResponse(url, media.contentType());
+        return new MediaUploadResponse(media.getId(), url, media.getContentType());
     }
 
     private void assertUploadAllowed(HttpServletRequest request) {
@@ -53,6 +64,15 @@ public class ClientContentMediaController {
         }
     }
 
-    record MediaUploadResponse(String url, String contentType) {
+    private AppUser findCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para carregar ficheiros");
+        }
+
+        return users.findByEmailAndActiveTrue(authentication.getName().trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A tua sessão já não é válida"));
+    }
+
+    record MediaUploadResponse(UUID id, String url, String contentType) {
     }
 }

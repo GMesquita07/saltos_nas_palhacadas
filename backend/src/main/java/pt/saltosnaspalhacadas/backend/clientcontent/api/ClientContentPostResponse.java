@@ -2,17 +2,22 @@ package pt.saltosnaspalhacadas.backend.clientcontent.api;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ClientContentPostResponse(
         Long id,
         String type,
         String title,
         String location,
         LocalDate eventDate,
+        String eventMonth,
         String caption,
         String mediaUrl,
         String thumbnailUrl,
@@ -24,30 +29,42 @@ public record ClientContentPostResponse(
         String profileSlug,
         String profileName,
         String submittedByName,
-        String submittedByEmail) {
+        String submittedByEmail,
+        String publicDisplayName,
+        boolean showLocation,
+        boolean showEventDate,
+        String consentVersion,
+        Instant consentedAt) {
 
     public static ClientContentPostResponse publicFrom(ClientContentPost post) {
-        return from(post, false, false);
+        return from(post, false, false, true);
     }
 
     public static ClientContentPostResponse mineFrom(ClientContentPost post) {
-        return from(post, false, true);
+        return from(post, false, true, false);
     }
 
     public static ClientContentPostResponse adminFrom(ClientContentPost post) {
-        return from(post, true, true);
+        return from(post, true, true, false);
     }
 
-    private static ClientContentPostResponse from(ClientContentPost post, boolean includeSubmittedByEmail, boolean includeAdminMessage) {
+    private static ClientContentPostResponse from(ClientContentPost post, boolean includeSubmittedByEmail, boolean includeAdminMessage, boolean publicView) {
         Profile profile = post.getProfile();
         AppUser user = post.getUser();
+        LocalDate eventDate = publicView ? null : post.getEventDate();
+        String eventMonth = publicView && post.isShowEventDate() && post.getEventDate() != null
+                ? YearMonth.from(post.getEventDate()).toString()
+                : null;
+        String location = publicView && !post.isShowLocation() ? null : post.getLocation();
+        String submittedByName = publicView ? post.getPublicDisplayName() : displayName(user);
 
         return new ClientContentPostResponse(
                 post.getId(),
                 post.getMediaType().name(),
                 post.getTitle(),
-                post.getLocation(),
-                post.getEventDate(),
+                location,
+                eventDate,
+                eventMonth,
                 post.getCaption(),
                 post.getMediaUrl(),
                 post.getThumbnailUrl(),
@@ -58,8 +75,13 @@ public record ClientContentPostResponse(
                 profile == null ? null : profile.getId(),
                 profile == null ? null : profile.getSlug(),
                 profile == null ? null : profile.getName(),
-                displayName(user),
-                includeSubmittedByEmail && user != null ? user.getEmail() : null);
+                submittedByName,
+                includeSubmittedByEmail && user != null ? user.getEmail() : null,
+                post.getPublicDisplayName(),
+                post.isShowLocation(),
+                post.isShowEventDate(),
+                includeAdminMessage ? post.getConsentVersion() : null,
+                includeAdminMessage ? post.getConsentedAt() : null);
     }
 
     private static String displayName(AppUser user) {

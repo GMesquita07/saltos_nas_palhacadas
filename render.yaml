@@ -32,6 +32,14 @@ services:
         value: /var/data/uploads-private
       - key: MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE
         value: "30"
+      - key: CLIENT_CONTENT_MAX_PENDING_UPLOADS_PER_USER
+        value: "12"
+      - key: CLIENT_CONTENT_MAX_PENDING_UPLOAD_BYTES_PER_USER
+        value: "314572800"
+      - key: CLIENT_CONTENT_PRIVATE_UPLOAD_RETENTION_HOURS
+        value: "24"
+      - key: CLIENT_CONTENT_PRIVATE_UPLOAD_CLEANUP_CRON
+        value: "0 30 3 * * *"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
@@ -58,7 +66,11 @@ services:
         value: "false"
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_API_ENDPOINT
+        value: https://api.openai.com/v1/responses
       - key: OPENAI_MODEL
         value: gpt-5.6-luna
+      - key: OPENAI_MAX_OUTPUT_TOKENS
+        value: "320"
       - key: SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE
         value: "20"

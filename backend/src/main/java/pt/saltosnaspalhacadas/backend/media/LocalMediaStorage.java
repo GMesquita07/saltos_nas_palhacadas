@@ -61,6 +61,14 @@ public class LocalMediaStorage {
         return resolveSafe(privateDirectory, filename);
     }
 
+    public Path publicPath(String filename) {
+        return resolveSafe(publicDirectory, filename);
+    }
+
+    public boolean privateExists(String filename) {
+        return Files.exists(privatePath(filename));
+    }
+
     public Optional<String> privateFilenameFromUrl(String url) {
         return filenameFromPathOrUrl(url, PRIVATE_MEDIA_PATH);
     }
@@ -87,16 +95,24 @@ public class LocalMediaStorage {
         Files.move(source, resolveSafe(publicDirectory, filename), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    public void deletePrivate(String filename) throws IOException {
+        Files.deleteIfExists(privatePath(filename));
+    }
+
+    public void deletePublic(String filename) throws IOException {
+        Files.deleteIfExists(publicPath(filename));
+    }
+
     public void deleteManagedUrl(String url) throws IOException {
         Optional<String> privateFilename = privateFilenameFromUrl(url);
         if (privateFilename.isPresent()) {
-            Files.deleteIfExists(privatePath(privateFilename.get()));
+            deletePrivate(privateFilename.get());
             return;
         }
 
         Optional<String> publicFilename = publicFilenameFromUrl(url);
         if (publicFilename.isPresent()) {
-            Files.deleteIfExists(resolveSafe(publicDirectory, publicFilename.get()));
+            deletePublic(publicFilename.get());
         }
     }
 

@@ -18,11 +18,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.transaction.annotation.Transactional;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPostRepository;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.clientcontent.api.ClientContentPostResponse;
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 
 @RestController
 @RequestMapping("/api/v1/admin/client-posts")
@@ -30,10 +33,12 @@ public class AdminClientContentController {
 
     private final ClientContentPostRepository posts;
     private final LocalMediaStorage storage;
+    private final ClientContentMediaService mediaService;
 
-    public AdminClientContentController(ClientContentPostRepository posts, LocalMediaStorage storage) {
+    public AdminClientContentController(ClientContentPostRepository posts, LocalMediaStorage storage, ClientContentMediaService mediaService) {
         this.posts = posts;
         this.storage = storage;
+        this.mediaService = mediaService;
     }
 
     @GetMapping
@@ -45,6 +50,7 @@ public class AdminClientContentController {
     }
 
     @PutMapping("/{id}")
+    @Transactional(rollbackFor = IOException.class)
     ResponseEntity<ClientContentPostResponse> moderate(@PathVariable Long id, @Valid @RequestBody ModerateClientContentRequest request) throws IOException {
         ClientContentPost post = posts.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Publicação não encontrada"));
@@ -56,7 +62,9 @@ public class AdminClientContentController {
         }
 
         if (request.status() == ClientContentStatus.APPROVED) {
-            post.updateMediaUrls(promoteIfPrivate(post.getMediaUrl()), promoteIfPrivate(post.getThumbnailUrl()));
+            post.updateMediaUrls(
+                    publishMedia(post.getMediaObject(), post.getMediaUrl()),
+                    publishMedia(post.getThumbnailObject(), post.getThumbnailUrl()));
         }
 
         post.moderate(request.status(), request.adminMessage());
@@ -66,11 +74,19 @@ public class AdminClientContentController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional(rollbackFor = IOException.class)
     void delete(@PathVariable Long id) throws IOException {
         ClientContentPost post = posts.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Publicação não encontrada"));
         deleteMedia(post);
         posts.delete(post);
+    }
+
+    private String publishMedia(ManagedMedia media, String fallbackUrl) throws IOException {
+        if (media == null) {
+            return promoteIfPrivate(fallbackUrl);
+        }
+        return publicUrl(mediaService.publish(media));
     }
 
     private String promoteIfPrivate(String url) throws IOException {
@@ -84,15 +100,30 @@ public class AdminClientContentController {
         }
 
         storage.publishPrivate(filename);
+        return publicUrl(LocalMediaStorage.PUBLIC_MEDIA_PATH + filename);
+    }
+
+    private String publicUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
         return ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path(LocalMediaStorage.PUBLIC_MEDIA_PATH)
-                .path(filename)
+                .path(path)
                 .toUriString();
     }
 
     private void deleteMedia(ClientContentPost post) throws IOException {
-        storage.deleteManagedUrl(post.getMediaUrl());
-        storage.deleteManagedUrl(post.getThumbnailUrl());
+        if (post.getMediaObject() != null) {
+            mediaService.delete(post.getMediaObject());
+        } else {
+            storage.deleteManagedUrl(post.getMediaUrl());
+        }
+
+        if (post.getThumbnailObject() != null) {
+            mediaService.delete(post.getThumbnailObject());
+        } else {
+            storage.deleteManagedUrl(post.getThumbnailUrl());
+        }
     }
 
     record ModerateClientContentRequest(

@@ -3,7 +3,7 @@ import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
 import { uploadClientContentMedia } from '../../services/apiClient'
 import { getMyClientContent, getPublishedClientContent, submitClientContent } from '../../services/clientContentService'
 import { useAuth } from '../auth/AuthContext'
-import type { ClientContentMediaType, ClientContentPost, ClientContentStatus } from '../../types/clientContent'
+import type { ClientContentMediaType, ClientContentPost, ClientContentPublicIdentity, ClientContentStatus } from '../../types/clientContent'
 import type { Profile } from '../../types/profile'
 import styles from './ClientContentPage.module.css'
 
@@ -18,9 +18,16 @@ type ClientContentFormState = {
   location: string
   eventDate: string
   caption: string
+  mediaId: string
   mediaUrl: string
   mediaType: ClientContentMediaType | null
+  thumbnailId: string
   thumbnailUrl: string
+  publicIdentity: ClientContentPublicIdentity
+  customDisplayName: string
+  showLocation: boolean
+  showEventDate: boolean
+  consentToPublish: boolean
 }
 
 type Notice = {
@@ -36,9 +43,16 @@ const emptyForm = (): ClientContentFormState => ({
   location: '',
   eventDate: '',
   caption: '',
+  mediaId: '',
   mediaUrl: '',
   mediaType: null,
+  thumbnailId: '',
   thumbnailUrl: '',
+  publicIdentity: 'ANONYMOUS',
+  customDisplayName: '',
+  showLocation: false,
+  showEventDate: false,
+  consentToPublish: false,
 })
 
 const statusLabels: Record<ClientContentStatus, string> = {
@@ -130,6 +144,7 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
       const result = await uploadClientContentMedia(file, session.token)
       setForm((current) => ({
         ...current,
+        mediaId: result.id,
         mediaUrl: result.url,
         mediaType: result.contentType.startsWith('video/') ? 'VIDEO' : 'PHOTO',
       }))
@@ -156,7 +171,7 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
     setUploading('thumbnail')
     try {
       const result = await uploadClientContentMedia(file, session.token)
-      setForm((current) => ({ ...current, thumbnailUrl: result.url }))
+      setForm((current) => ({ ...current, thumbnailId: result.id, thumbnailUrl: result.url }))
       setNotice({ type: 'success', text: 'Miniatura carregada.' })
     } catch (error) {
       setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível carregar a miniatura.' })
@@ -183,12 +198,17 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
       await submitClientContent({
         profileSlug: form.profileSlug,
         type: form.mediaType as ClientContentMediaType,
+        mediaId: form.mediaId,
+        thumbnailId: form.thumbnailId || null,
         title: form.title.trim(),
         location: form.location.trim(),
         eventDate: form.eventDate,
         caption: form.caption.trim(),
-        mediaUrl: form.mediaUrl,
-        thumbnailUrl: form.thumbnailUrl.trim() || null,
+        publicIdentity: form.publicIdentity,
+        customDisplayName: form.publicIdentity === 'CUSTOM' ? form.customDisplayName.trim() : null,
+        showLocation: form.showLocation,
+        showEventDate: form.showEventDate,
+        consentToPublish: form.consentToPublish,
       }, session.token)
       setForm(emptyForm())
       formElement.reset()
@@ -294,7 +314,7 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
 
               {form.thumbnailUrl && (
                 <UploadedThumbnailPreview
-                  onRemove={() => setForm((current) => ({ ...current, thumbnailUrl: '' }))}
+                  onRemove={() => setForm((current) => ({ ...current, thumbnailId: '', thumbnailUrl: '' }))}
                   token={session.token}
                   url={form.thumbnailUrl}
                 />
@@ -311,6 +331,79 @@ export function ClientContentPage({ profiles, onLogin }: ClientContentPageProps)
                   value={form.caption}
                 />
               </label>
+
+              <fieldset className={styles.privacyChoices}>
+                <legend>Como queres aparecer?</legend>
+                <label>
+                  <input
+                    checked={form.publicIdentity === 'ANONYMOUS'}
+                    name="publicIdentity"
+                    onChange={() => setForm((current) => ({ ...current, publicIdentity: 'ANONYMOUS' }))}
+                    type="radio"
+                  />
+                  Anónimo
+                </label>
+                <label>
+                  <input
+                    checked={form.publicIdentity === 'USERNAME'}
+                    name="publicIdentity"
+                    onChange={() => setForm((current) => ({ ...current, publicIdentity: 'USERNAME' }))}
+                    type="radio"
+                  />
+                  @{session.username ?? 'username'}
+                </label>
+                <label>
+                  <input
+                    checked={form.publicIdentity === 'CUSTOM'}
+                    name="publicIdentity"
+                    onChange={() => setForm((current) => ({ ...current, publicIdentity: 'CUSTOM' }))}
+                    type="radio"
+                  />
+                  Nome personalizado
+                </label>
+              </fieldset>
+
+              {form.publicIdentity === 'CUSTOM' && (
+                <label>
+                  Nome público
+                  <input
+                    maxLength={80}
+                    minLength={2}
+                    onChange={(event) => setForm((current) => ({ ...current, customDisplayName: event.target.value }))}
+                    placeholder="Ex.: Cliente feliz"
+                    required
+                    value={form.customDisplayName}
+                  />
+                </label>
+              )}
+
+              <div className={styles.checkboxGroup}>
+                <label>
+                  <input
+                    checked={form.showLocation}
+                    onChange={(event) => setForm((current) => ({ ...current, showLocation: event.target.checked }))}
+                    type="checkbox"
+                  />
+                  Mostrar local na publicação pública
+                </label>
+                <label>
+                  <input
+                    checked={form.showEventDate}
+                    onChange={(event) => setForm((current) => ({ ...current, showEventDate: event.target.checked }))}
+                    type="checkbox"
+                  />
+                  Mostrar mês e ano do evento
+                </label>
+                <label>
+                  <input
+                    checked={form.consentToPublish}
+                    onChange={(event) => setForm((current) => ({ ...current, consentToPublish: event.target.checked }))}
+                    required
+                    type="checkbox"
+                  />
+                  Confirmo que tenho direito a partilhar este conteúdo e autorizo a publicação caso seja aprovado.
+                </label>
+              </div>
 
               <button disabled={isSaving || uploading !== null} type="submit">
                 {isSaving ? 'A enviar...' : uploading ? 'A carregar ficheiro...' : 'Enviar para aprovação'}
@@ -398,6 +491,8 @@ function UploadedThumbnailPreview({ onRemove, token, url }: { onRemove: () => vo
 }
 
 function ClientContentCard({ post }: { post: ClientContentPost }) {
+  const meta = [post.profileName ?? 'Evento', post.location, post.eventDate].filter(Boolean)
+
   return (
     <article className={styles.postCard}>
       <div className={styles.mediaFrame}>
@@ -407,7 +502,7 @@ function ClientContentCard({ post }: { post: ClientContentPost }) {
         <small>{post.type}</small>
       </div>
       <div className={styles.postDetails}>
-        <p>{post.profileName ?? 'Evento'} · {post.eventDate}</p>
+        {meta.length > 0 && <p>{meta.join(' · ')}</p>}
         <h3>{post.title}</h3>
         {post.caption && <p className={styles.caption}>{post.caption}</p>}
         <span>Partilhado por {post.submittedByName}</span>
@@ -423,7 +518,9 @@ function validateForm(form: ClientContentFormState, profiles: Profile[]) {
   if (!form.eventDate) return 'Indica a data do evento.'
   if (form.eventDate > todayIso()) return 'A data do evento não pode ser no futuro.'
   if (!form.caption.trim()) return 'Escreve uma legenda para a publicação.'
-  if (!form.mediaUrl || !form.mediaType) return 'Carrega uma fotografia ou vídeo antes de enviar.'
+  if (!form.mediaId || !form.mediaUrl || !form.mediaType) return 'Carrega uma fotografia ou vídeo antes de enviar.'
+  if (form.publicIdentity === 'CUSTOM' && form.customDisplayName.trim().length < 2) return 'Indica o nome público a apresentar.'
+  if (!form.consentToPublish) return 'Confirma que tens autorização para publicar este conteúdo.'
   return null
 }
 
@@ -433,7 +530,7 @@ function groupClientContent(posts: ClientContentPost[]) {
 
   posts.forEach((post) => {
     const date = new Date(post.eventDateIso + 'T00:00:00')
-    const key = Number.isNaN(date.getTime()) ? post.eventDateIso : date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
+    const key = post.eventMonth ?? (Number.isNaN(date.getTime()) ? post.eventDateIso : date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0'))
     const existing = groups.find((group) => group.key === key)
 
     if (existing) {
@@ -441,7 +538,9 @@ function groupClientContent(posts: ClientContentPost[]) {
       return
     }
 
-    const rawLabel = Number.isNaN(date.getTime()) ? post.eventDate : monthFormatter.format(date)
+    const rawLabel = post.eventMonth
+      ? monthFormatter.format(new Date(post.eventMonth + '-01T00:00:00'))
+      : Number.isNaN(date.getTime()) ? 'Publicações recentes' : monthFormatter.format(date)
     groups.push({ key, label: capitalize(rawLabel), items: [post] })
   })
 

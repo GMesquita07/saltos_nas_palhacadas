@@ -37,7 +37,21 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild
+      - name: Setup Java
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build Java
+        if: matrix.language == 'java-kotlin'
+        working-directory: backend
+        run: ./mvnw -B -DskipTests package
+
+      - name: Autobuild JavaScript/TypeScript
+        if: matrix.language == 'javascript-typescript'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
