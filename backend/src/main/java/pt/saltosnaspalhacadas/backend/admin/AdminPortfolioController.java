@@ -33,6 +33,7 @@ import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
 import pt.saltosnaspalhacadas.backend.profile.api.ProfileResponse;
+import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -60,10 +61,10 @@ public class AdminPortfolioController {
                 request.name(),
                 request.role(),
                 request.description(),
-                emptyToNull(request.profileImageUrl()),
+                PublicUrlValidator.optional(request.profileImageUrl(), "Indica um URL de imagem válido"),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()),
-                emptyToNull(request.featuredVideoUrl()),
+                PublicUrlValidator.optional(request.featuredVideoUrl(), "Indica um URL de vídeo válido"),
                 nextProfileDisplayOrder());
 
         return ProfileResponse.from(profiles.save(profile));
@@ -107,10 +108,10 @@ public class AdminPortfolioController {
                 request.name(),
                 request.role(),
                 request.description(),
-                emptyToNull(request.profileImageUrl()),
+                PublicUrlValidator.optional(request.profileImageUrl(), "Indica um URL de imagem válido"),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()),
-                emptyToNull(request.featuredVideoUrl()));
+                PublicUrlValidator.optional(request.featuredVideoUrl(), "Indica um URL de vídeo válido"));
 
         return ProfileResponse.from(profiles.save(profile));
     }
@@ -129,8 +130,8 @@ public class AdminPortfolioController {
                 request.title(),
                 request.location(),
                 request.eventDate(),
-                request.mediaUrl(),
-                emptyToNull(request.thumbnailUrl()),
+                PublicUrlValidator.required(request.mediaUrl(), "Indica um URL de ficheiro válido"),
+                PublicUrlValidator.optional(request.thumbnailUrl(), "Indica um URL de miniatura válido"),
                 0,
                 isPublishedByDefault(request.published()));
 
@@ -150,8 +151,8 @@ public class AdminPortfolioController {
                 request.title(),
                 request.location(),
                 request.eventDate(),
-                request.mediaUrl(),
-                emptyToNull(request.thumbnailUrl()),
+                PublicUrlValidator.required(request.mediaUrl(), "Indica um URL de ficheiro válido"),
+                PublicUrlValidator.optional(request.thumbnailUrl(), "Indica um URL de miniatura válido"),
                 request.published() == null ? item.isPublished() : request.published());
 
         return PortfolioItemResponse.from(items.save(item));
@@ -176,10 +177,6 @@ public class AdminPortfolioController {
                     "Não é possível eliminar este perfil porque tem agendamentos associados. Resolve ou cancela os agendamentos primeiro.");
         }
         profiles.delete(profile);
-    }
-
-    private static String emptyToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String defaultImagePosition(String value) {

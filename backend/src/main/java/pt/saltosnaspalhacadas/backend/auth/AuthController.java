@@ -1,7 +1,9 @@
 package pt.saltosnaspalhacadas.backend.auth;
 
+import java.time.Duration;
 import java.util.Locale;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -9,11 +11,15 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
+import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 import pt.saltosnaspalhacadas.backend.user.*;
 
 @RestController
@@ -22,15 +28,25 @@ public class AuthController {
     private final AppUserRepository users;
     private final PasswordEncoder passwords;
     private final JwtService jwt;
+    private final IpRateLimiter rateLimiter;
+    private final int authRateLimitPerMinute;
 
-    public AuthController(AppUserRepository users, PasswordEncoder passwords, JwtService jwt) {
+    public AuthController(
+            AppUserRepository users,
+            PasswordEncoder passwords,
+            JwtService jwt,
+            IpRateLimiter rateLimiter,
+            @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute) {
         this.users = users;
         this.passwords = passwords;
         this.jwt = jwt;
+        this.rateLimiter = rateLimiter;
+        this.authRateLimitPerMinute = authRateLimitPerMinute;
     }
 
     @PostMapping("/login")
-    TokenResponse login(@Valid @RequestBody LoginRequest request) {
+    TokenResponse login(HttpServletRequest servletRequest, @Valid @RequestBody LoginRequest request) {
+        assertAuthAllowed(servletRequest);
         AppUser user = users.findByEmailAndActiveTrue(normalizeEmail(request.email()))
                 .filter(candidate -> passwords.matches(request.password(), candidate.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou palavra-passe inválidos"));
@@ -40,7 +56,8 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    TokenResponse register(@Valid @RequestBody RegisterRequest request) {
+    TokenResponse register(HttpServletRequest servletRequest, @Valid @RequestBody RegisterRequest request) {
+        assertAuthAllowed(servletRequest);
         String email = normalizeEmail(request.email());
         validatePhone(request.phone());
         if (users.existsByEmail(email)) {
@@ -95,11 +112,17 @@ public class AuthController {
                 request.firstName().trim(),
                 request.lastName().trim(),
                 request.phone().trim(),
-                emptyToNull(request.profileImageUrl()),
+                PublicUrlValidator.optional(request.profileImageUrl(), "Indica um URL de foto válido"),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()));
 
         return AuthenticatedUserResponse.from(users.save(user));
+    }
+
+    private void assertAuthAllowed(HttpServletRequest servletRequest) {
+        if (!rateLimiter.tryAcquire("auth", ClientIpAddress.from(servletRequest), authRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas tentativas em pouco tempo. Tenta novamente dentro de instantes.");
+        }
     }
 
     private static String normalizeEmail(String email) {
@@ -117,10 +140,6 @@ public class AuthController {
 
         return users.findByEmailAndActiveTrue(normalizeEmail(authentication.getName()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
-    }
-
-    private static String emptyToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String defaultImagePosition(String value) {

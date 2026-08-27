@@ -11,9 +11,47 @@ services:
         value: prod
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION_HOURS
+        value: "8"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AUTH_RATE_LIMIT_PER_MINUTE
+        value: "12"
+      - key: MEDIA_LOCAL_DIRECTORY
+        value: /var/data/uploads
+      - key: MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE
+        value: "30"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: BOOKING_EMAIL_ENABLED
+        value: "false"
+      - key: BOOKING_EMAIL_SMTP_HOST
+        sync: false
+      - key: BOOKING_EMAIL_SMTP_PORT
+        value: "587"
+      - key: BOOKING_EMAIL_SMTP_SSL
+        value: "false"
+      - key: BOOKING_EMAIL_SMTP_STARTTLS
+        value: "true"
+      - key: BOOKING_EMAIL_USERNAME
+        sync: false
+      - key: BOOKING_EMAIL_PASSWORD
+        sync: false
+      - key: BOOKING_EMAIL_FROM
+        sync: false
+      - key: SUPPORT_AI_ENABLED
+        value: "false"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-mini
+      - key: SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE
+        value: "20"

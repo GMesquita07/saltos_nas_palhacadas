@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.material.Material;
 import pt.saltosnaspalhacadas.backend.material.MaterialRepository;
 import pt.saltosnaspalhacadas.backend.material.api.MaterialResponse;
+import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 
 @RestController
 @RequestMapping("/api/v1/admin/materials")
@@ -50,7 +51,10 @@ public class AdminMaterialController {
                 .mapToInt(Material::getDisplayOrder)
                 .max()
                 .orElse(-1) + 1;
-        Material material = new Material(request.name().trim(), request.imageUrl().trim(), displayOrder);
+        Material material = new Material(
+                request.name().trim(),
+                PublicUrlValidator.required(request.imageUrl(), "Indica um URL de fotografia válido"),
+                displayOrder);
         return MaterialResponse.from(materials.save(material));
     }
 

@@ -1,32 +1,97 @@
 # Saltos nas Palhaçadas
 
-Portfolio digital para o animador **Saltos nas Palhaçadas**: galeria de fotos, vídeos, serviços e contactos.
+Site full-stack para apresentação, gestão e contacto de um animador de eventos. O projeto permite publicar perfis de artistas, portfólios, avaliações, materiais disponíveis, contactos, pedidos de agendamento e conteúdos submetidos por clientes, com moderação no painel de administração.
 
-## Stack e decisões
+## Visão Geral
 
-- **Frontend:** React, TypeScript e Vite. É rápido de desenvolver e gera ficheiros estáticos, ideais para alojamento gratuito.
-- **Backend:** Java 21, Spring Boot e Maven. Expõe uma API REST versionada em `/api/v1`.
-- **Base de dados:** PostgreSQL. Localmente corre em Docker; em produção a recomendação é Neon.
-- **Deploy:** Cloudflare Pages (frontend) + Render (API) + Neon (PostgreSQL).
+O objetivo do site é centralizar a presença digital da marca **Saltos nas Palhaçadas**: mostrar artistas e serviços, receber pedidos de eventos, recolher feedback de clientes e facilitar o contacto com potenciais interessados.
 
-Os vídeos e fotos não devem ficar guardados no repositório nem na base de dados. Publique vídeos no YouTube/Vimeo e imagens num serviço de armazenamento/CDN; a API guarda apenas os metadados e URLs. Isto mantém custos e deploys simples.
+O projeto tem duas aplicações:
+
+- **Frontend:** React, TypeScript e Vite.
+- **Backend:** Java 21, Spring Boot, Maven, Spring Security, JWT, Flyway e PostgreSQL.
+
+Em produção, a arquitetura recomendada é:
+
+- **Frontend estático:** Cloudflare Pages, Netlify, Vercel ou equivalente.
+- **API:** Render, Railway, Fly.io ou outro serviço capaz de correr Docker/Java.
+- **Base de dados:** PostgreSQL gerido, por exemplo Neon, Supabase, Render Postgres ou equivalente.
+- **Uploads:** disco persistente no servidor ou, preferencialmente, storage externo como S3, Cloudinary ou equivalente.
+
+## Funcionalidades
+
+- Homepage com perfis de artistas ordenáveis pelo administrador.
+- Perfil individual de artista com descrição, foto recortável, vídeo de destaque, portfólio e avaliações.
+- Publicação de fotos e vídeos por artista, ordenada por data e organizada por mês.
+- Conta de cliente com dados pessoais, foto de perfil e favoritos.
+- Avaliações feitas por utilizadores autenticados e aprovadas pelo administrador.
+- Pedidos de agendamento e orçamento, com calendário público de disponibilidade.
+- Estados de agendamento: pendente, confirmado, alterado, rejeitado e cancelado.
+- Email automático de confirmação de pedido recebido.
+- Email automático de lembrete 5 dias antes de eventos confirmados.
+- Lista pública de materiais disponíveis, gerida e ordenada pelo administrador.
+- Contactos públicos geridos e ordenados pelo administrador.
+- Página de partilhas de clientes com upload de fotos/vídeos e aprovação obrigatória.
+- Chatbot de suporte com respostas automáticas locais e fallback opcional por IA.
+
+## Estrutura
+
+```text
+saltos_nas_palhacadas/
+├── backend/              # API Spring Boot
+├── frontend/             # Aplicação React/Vite
+├── docker-compose.yml    # PostgreSQL local
+├── render.yaml           # Blueprint para deploy da API no Render
+├── .env.example          # Exemplo de variáveis locais, sem segredos reais
+└── README.md
+```
 
 ## Pré-requisitos
 
-- Node.js 22+ e npm
 - Java 21
-- Docker Desktop ou Docker Engine (para PostgreSQL local)
+- Node.js 22 ou superior
+- npm
+- Docker Desktop ou Docker Engine
+- Conta num provider de alojamento para deploy
+- Conta SMTP para envio real de emails
+- Conta OpenAI, apenas se quiseres ativar IA no chatbot
 
-## Desenvolvimento local
+## Desenvolvimento Local
 
 Na raiz do projeto:
 
 ```bash
+cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas
 cp .env.example .env
+```
+
+Edita o ficheiro `.env` e define, no mínimo:
+
+```bash
+DB_PASSWORD=saltos_dev
+ADMIN_EMAIL=admin@example.test
+ADMIN_PASSWORD=uma-password-local-com-12-caracteres
+```
+
+Para gerar um `JWT_SECRET` local:
+
+```bash
+openssl rand -base64 64
+```
+
+Depois cola o valor em:
+
+```bash
+JWT_SECRET=<valor_gerado>
+```
+
+Arranca a base de dados:
+
+```bash
 docker compose up -d
 ```
 
-Terminal 1 — API:
+Terminal 1, API:
 
 ```bash
 cd backend
@@ -34,7 +99,7 @@ set -a && source ../.env && set +a
 ./mvnw spring-boot:run
 ```
 
-Terminal 2 — site:
+Terminal 2, frontend:
 
 ```bash
 cd frontend
@@ -42,132 +107,319 @@ npm ci
 npm run dev
 ```
 
-Abra `http://localhost:5173`. A rota de verificação da API está em `http://localhost:8080/api/v1/health`.
+Abre:
 
-Para validar antes de cada commit:
-
-```bash
-cd frontend && npm run lint && npm run build
-cd ../backend && ./mvnw test
+```text
+http://localhost:5173
 ```
 
-## Configuração
+A API fica disponível em:
 
-Copie os ficheiros de exemplo; nunca publique os ficheiros `.env`.
+```text
+http://localhost:8080/api/v1
+```
 
-- `.env`: configuração local do Docker/API.
-- `frontend/.env`: use `VITE_API_URL=/api/v1` localmente (o Vite encaminha para a API) ou a URL pública da API em produção.
-- `CORS_ALLOWED_ORIGINS`: origem do frontend permitida pela API. Em produção deve ser, por exemplo, `https://saltos-nas-palhacadas.pages.dev`.
+Se precisares de correr a API na porta `8081`, usa:
 
-O perfil `dev` tem valores locais seguros. O perfil `prod` exige `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` no provedor de alojamento.
+```bash
+cd backend
+set -a && source ../.env && set +a
+SERVER_PORT=8081 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 ./mvnw spring-boot:run
+```
 
-## API pública
+E o frontend:
 
-A API usa migrations Flyway em `backend/src/main/resources/db/migration`. Nunca altere uma migration que já tenha sido aplicada; para cada mudança de schema, crie uma nova migration versionada.
+```bash
+cd frontend
+VITE_API_URL=http://localhost:8081/api/v1 npm run dev -- --host 127.0.0.1
+```
 
-| Método | Endpoint | Descrição |
+## Comandos de Validação
+
+Antes de abrir pull request ou fazer deploy:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+```bash
+cd backend
+./mvnw test
+```
+
+Para verificar vulnerabilidades conhecidas nas dependências frontend:
+
+```bash
+cd frontend
+npm audit --audit-level=moderate
+```
+
+Para auditoria Java com OWASP Dependency Check, configura primeiro uma NVD API key e corre:
+
+```bash
+cd backend
+NVD_API_KEY=<nvd_api_key> ./mvnw org.owasp:dependency-check-maven:check -DskipTests
+```
+
+## Variáveis de Ambiente
+
+Nunca coloques segredos reais em `.env.example`, no README, em commits ou no frontend.
+
+### Backend
+
+| Variável | Obrigatória em produção | Descrição |
 | --- | --- | --- |
-| `GET` | `/api/v1/health` | Estado da API |
-| `GET` | `/api/v1/profiles` | Lista perfis ativos |
-| `GET` | `/api/v1/profiles/{slug}` | Detalhe de um perfil ativo |
-| `GET` | `/api/v1/profiles/{slug}/portfolio?type=PHOTO` | Conteúdos publicados; `type` pode ser `PHOTO` ou `VIDEO` |
-| `GET` | `/api/v1/profiles/{slug}/availability?from=YYYY-MM-DD&to=YYYY-MM-DD` | Slots em stand by/confirmados para esse artista, sem expor dados privados |
-| `GET` | `/api/v1/contacts` | Lista os contactos visíveis no site |
-| `POST` | `/api/v1/auth/register` | Cria uma conta normal (`CUSTOMER`) |
-| `POST` | `/api/v1/auth/login` | Inicia sessão e devolve um JWT |
-| `GET` | `/api/v1/auth/me` | Devolve a conta da sessão atual |
-| `GET` | `/api/v1/favorites` | Lista os favoritos da conta autenticada |
-| `POST` / `DELETE` | `/api/v1/favorites/{portfolioItemId}` | Adiciona ou remove uma publicação dos favoritos |
+| `SPRING_PROFILES_ACTIVE` | Sim | Usar `prod` em produção. |
+| `DB_URL` | Sim | JDBC URL da base PostgreSQL. |
+| `DB_USERNAME` | Sim | Utilizador da base de dados. |
+| `DB_PASSWORD` | Sim | Password da base de dados. |
+| `CORS_ALLOWED_ORIGINS` | Sim | Domínio público do frontend, sem `*` e sem `localhost`. |
+| `JWT_SECRET` | Sim | Segredo Base64 com pelo menos 32 bytes descodificados. |
+| `JWT_EXPIRATION_HOURS` | Não | Duração dos tokens JWT. Valor recomendado: `8`. |
+| `ADMIN_EMAIL` | Sim | Email do primeiro administrador. |
+| `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login e registo. |
+| `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
+| `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
+| `MEDIA_MAX_FILE_SIZE` | Não | Tamanho máximo por ficheiro. |
+| `MEDIA_MAX_REQUEST_SIZE` | Não | Tamanho máximo por pedido multipart. |
+| `BOOKING_EMAIL_ENABLED` | Não | Ativa envio real de emails de agendamento. |
+| `BOOKING_EMAIL_SMTP_HOST` | Sim se email ativo | Host SMTP. |
+| `BOOKING_EMAIL_SMTP_PORT` | Sim se email ativo | Porta SMTP. |
+| `BOOKING_EMAIL_SMTP_SSL` | Não | Usar SSL direto. |
+| `BOOKING_EMAIL_SMTP_STARTTLS` | Não | Usar STARTTLS. |
+| `BOOKING_EMAIL_USERNAME` | Sim se email ativo | Utilizador SMTP. |
+| `BOOKING_EMAIL_PASSWORD` | Sim se email ativo | Password/app password SMTP. |
+| `BOOKING_EMAIL_FROM` | Sim se email ativo | Remetente dos emails. |
+| `BOOKING_REMINDER_DAYS_BEFORE` | Não | Dias antes do evento para enviar lembrete. Valor atual: `5`. |
+| `BOOKING_REMINDER_CRON` | Não | Cron do job de lembretes. |
+| `BOOKING_REMINDER_ZONE` | Não | Fuso horário dos lembretes. Valor recomendado: `Europe/Lisbon`. |
+| `SUPPORT_AI_ENABLED` | Não | Ativa fallback com IA no chatbot. |
+| `OPENAI_API_KEY` | Sim se IA ativa | Chave OpenAI guardada apenas no backend. |
+| `OPENAI_API_ENDPOINT` | Não | Endpoint da API OpenAI. |
+| `OPENAI_MODEL` | Não | Modelo usado pelo chatbot. Usa um modelo disponível no teu projeto OpenAI. |
+| `OPENAI_MAX_OUTPUT_TOKENS` | Não | Limite de tokens por resposta IA. |
+| `SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para o chatbot. |
 
-Nesta fase não existem dados de demonstração: os perfis, conteúdos e contactos são criados no painel de administração. Os endpoints públicos só devolvem dados visíveis ao visitante.
+### Frontend
 
-## Administração
+| Variável | Descrição |
+| --- | --- |
+| `VITE_API_URL` | URL pública da API, por exemplo `https://api.exemplo.pt/api/v1`. |
 
-Em desenvolvimento, a API cria o primeiro administrador com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Defina ambos no `.env` antes do primeiro arranque. O login é único para todo o site: contas normais criadas em **Criar conta** recebem o papel `CUSTOMER`; apenas contas com papel `ADMIN` veem e podem abrir o botão **Admin**.
+Só variáveis com prefixo `VITE_` entram no bundle do frontend. Não uses esse prefixo para segredos.
 
-- `POST /api/v1/auth/login` — devolve um token de sessão JWT.
-- `POST /api/v1/auth/register` — cria exclusivamente contas `CUSTOMER`.
-- `GET /api/v1/auth/me` — valida a sessão atual.
-- `GET`, `POST` e `DELETE /api/v1/favorites/**` — requerem uma conta autenticada.
-- `POST /api/v1/admin/profiles` — requer token `ADMIN`.
-- `POST /api/v1/admin/profiles/{slug}/portfolio` — requer token `ADMIN`.
-- `DELETE /api/v1/admin/profiles/{slug}/portfolio/{itemId}` — remove um conteúdo; requer token `ADMIN`.
-- `POST /api/v1/admin/contacts` — adiciona um contacto público; requer token `ADMIN`.
-- `DELETE /api/v1/admin/contacts/{id}` — remove um contacto; requer token `ADMIN`.
+## Segurança Implementada
 
-## Agendamentos
+O backend inclui várias proteções importantes para deploy:
 
-O visitante pode consultar o calendário de cada artista sem iniciar sessão. Os pedidos pendentes aparecem publicamente apenas como **Em stand by** e os eventos aceites como **Confirmado**; nunca são expostos cliente, contactos, descrição ou notas.
+- Autenticação com JWT.
+- Separação de permissões entre `CUSTOMER` e `ADMIN`.
+- Endpoints administrativos protegidos por role `ADMIN`.
+- Rate limit por IP em login, registo, uploads e chatbot.
+- Validação de URLs públicas guardadas em conteúdos, materiais e perfis.
+- Uploads com allowlist de MIME, validação por assinatura do ficheiro, limites de tamanho e nome gerado pelo servidor.
+- Migrations Flyway com `ddl-auto=validate` em produção.
+- Arranque em `prod` bloqueado quando faltam segredos ou quando o CORS está inseguro.
+- Open Session in View desativado.
+- `.env` ignorado pelo Git.
 
-Para enviar um pedido de orçamento e agendamento, o utilizador inicia sessão e indica artista, data, tipo de evento, local, nome, email, telemóvel, descrição/serviços pretendidos e notas opcionais. As horas são opcionais; quando não existem horas, o pedido aceite bloqueia o dia inteiro. Em casamentos são pedidos os nomes dos noivos; em “Outro” é pedido o tipo de evento.
+## Deploy Seguro
 
-O administrador vê todos os pedidos no separador **Agendamentos** do painel. A proposta de orçamento é tratada fora do site por email/telemóvel; dentro do site o administrador confirma, altera data/hora, regista o orçamento acordado para uso interno, rejeita ou cancela o evento com justificação. Ao cancelar, o slot deixa de contar para a disponibilidade. O orçamento acordado só aparece no painel de administração.
+### 1. Base de Dados
 
-- `POST /api/v1/bookings` — cria um pedido; requer sessão autenticada.
-- `GET /api/v1/bookings/mine` — devolve apenas os pedidos da conta autenticada.
-- `GET /api/v1/admin/bookings?status=PENDING` — lista pedidos para o administrador.
-- `PUT /api/v1/admin/bookings/{id}/decision` — confirma, altera, rejeita ou cancela; requer `ADMIN`.
+Cria uma base PostgreSQL gerida. Para Neon, copia uma connection string compatível com JDBC:
 
-O backend impede reservas aceites sobrepostas para o mesmo artista e data/hora, incluindo decisões concorrentes, e bloqueia pedidos ativos duplicados do mesmo cliente no mesmo horário. Para preservar o histórico, um perfil que tenha agendamentos associados não pode ser eliminado. A migration Flyway `V11__booking_schedule_details.sql` é aplicada automaticamente no próximo arranque da API.
+```text
+jdbc:postgresql://<host>/<database>?sslmode=require
+```
 
-O email de confirmação do pedido é disparado automaticamente pelo backend. Eventos aceites também recebem um lembrete automático 5 dias antes da data marcada, por defeito todos os dias às 09:00 em `Europe/Lisbon`. O backend guarda `reminder_sent_at` para não repetir o mesmo lembrete. Em desenvolvimento, sem SMTP configurado, fica registado nos logs. Para envio real, defina `BOOKING_EMAIL_ENABLED=true`, `BOOKING_EMAIL_SMTP_HOST`, `BOOKING_EMAIL_SMTP_PORT`, `BOOKING_EMAIL_SMTP_SSL` ou `BOOKING_EMAIL_SMTP_STARTTLS`, `BOOKING_EMAIL_USERNAME`, `BOOKING_EMAIL_PASSWORD` e `BOOKING_EMAIL_FROM`. Pode ajustar o lembrete com `BOOKING_REMINDER_DAYS_BEFORE`, `BOOKING_REMINDER_CRON` e `BOOKING_REMINDER_ZONE`.
+Em produção, prefere uma ligação direta para migrations Flyway. Se usares pooler/PgBouncer, confirma primeiro que o modo de pooling é compatível com as migrations.
 
-## Chatbot com IA
+### 2. API
 
-O chatbot funciona sempre com respostas automáticas locais. Para ativar IA quando a pergunta não encaixa nas respostas fixas, crie uma API key na OpenAI Platform e configure no `.env`:
+No Render ou provider equivalente:
+
+1. Cria um Web Service a partir do repositório.
+2. Usa o `render.yaml` existente ou configura manualmente o Dockerfile em `backend/Dockerfile`.
+3. Define `SPRING_PROFILES_ACTIVE=prod`.
+4. Define todas as variáveis obrigatórias no painel do provider.
+5. Não coloques passwords, API keys ou connection strings diretamente no `render.yaml`.
+6. Confirma que o health check aponta para `/actuator/health`.
+
+Se usares Render com Docker, evita usar segredos em build args ou no Dockerfile. Os segredos devem existir apenas como variáveis de runtime no painel do provider.
+
+### 3. Frontend
+
+Para Cloudflare Pages:
+
+| Campo | Valor |
+| --- | --- |
+| Root directory | `frontend` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Environment variable | `VITE_API_URL=https://<api-publica>/api/v1` |
+
+Depois do primeiro deploy, copia o domínio público do frontend e atualiza `CORS_ALLOWED_ORIGINS` na API.
+
+### 4. CORS e Domínios
+
+Em produção:
+
+```bash
+CORS_ALLOWED_ORIGINS=https://<dominio-do-frontend>
+```
+
+Não uses:
+
+```bash
+CORS_ALLOWED_ORIGINS=*
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+Se tiveres domínio principal e domínio `www`, lista ambos explicitamente:
+
+```bash
+CORS_ALLOWED_ORIGINS=https://exemplo.pt,https://www.exemplo.pt
+```
+
+### 5. Uploads e Media
+
+O projeto aceita uploads de imagens e vídeos. Antes de produção, decide onde esses ficheiros vão viver:
+
+- Para testes: `MEDIA_LOCAL_DIRECTORY=uploads`.
+- Para produção com disco persistente: usa um mount estável, por exemplo `/var/data/uploads` ou `/app/uploads`, conforme o provider.
+- Para produção mais robusta: usa storage externo como S3 ou Cloudinary.
+
+Atenção: muitos providers têm filesystem efémero por defeito. Se não houver disco persistente, os uploads podem desaparecer após redeploy, restart ou mudança de instância.
+
+### 6. Emails
+
+Para emails reais:
+
+```bash
+BOOKING_EMAIL_ENABLED=true
+BOOKING_EMAIL_SMTP_HOST=<smtp_host>
+BOOKING_EMAIL_SMTP_PORT=587
+BOOKING_EMAIL_SMTP_STARTTLS=true
+BOOKING_EMAIL_USERNAME=<smtp_user>
+BOOKING_EMAIL_PASSWORD=<smtp_password_ou_app_password>
+BOOKING_EMAIL_FROM=no-reply@<dominio>
+```
+
+Testa estes casos antes do lançamento:
+
+- Pedido de agendamento criado por cliente autenticado.
+- Email de confirmação recebido pelo cliente.
+- Evento confirmado pelo admin.
+- Disponibilidade atualizada no calendário.
+- Lembrete enviado 5 dias antes da data do evento.
+- Evento cancelado sem novo lembrete posterior.
+
+### 7. Chatbot com IA
+
+O chatbot funciona sem IA através de respostas locais. Para ativar IA:
 
 ```bash
 SUPPORT_AI_ENABLED=true
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_API_KEY=<openai_api_key>
+OPENAI_MODEL=<modelo_disponivel_no_teu_projeto>
+OPENAI_MAX_OUTPUT_TOKENS=320
 ```
 
-Depois reinicie o backend com o `.env` carregado. A chave fica apenas no backend; o frontend chama só `/api/v1/support-chat`.
+Regras importantes:
 
-Em produção, use variáveis de ambiente do provedor de alojamento para `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`; não coloque estes valores no repositório.
+- A `OPENAI_API_KEY` fica apenas no backend.
+- O frontend chama apenas `/api/v1/support-chat`.
+- Define limites de custo e alertas na conta OpenAI.
+- Mantém `SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE` ativo para evitar abuso.
+- Não envies dados sensíveis desnecessários para o modelo.
 
-## Deploy gratuito
+## Checklist Antes de Produção
 
-1. Crie uma base PostgreSQL no [Neon](https://neon.com/pricing) e guarde as credenciais apenas nas variáveis de ambiente do Render.
-2. No Render, crie um **Web Service** a partir deste repositório usando `render.yaml`. Defina `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` e, depois de criar o site, `CORS_ALLOWED_ORIGINS`.
-3. No Cloudflare Pages, importe o repositório GitHub com:
-   - **Root directory:** `frontend`
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Environment variable:** `VITE_API_URL=https://<nome-da-api>.onrender.com/api/v1`
-4. Copie o URL `*.pages.dev` para `CORS_ALLOWED_ORIGINS` no Render e faça novo deploy da API.
+Obrigatório antes de abrir o site ao público:
 
-O Cloudflare Pages faz deploy automático a cada push para `main` e cria previews para pull requests. Render tem um nível gratuito útil para projeto pessoal, mas não é um SLA de produção; confirme sempre os limites atuais antes de apresentar o site ao cliente.
+- `SPRING_PROFILES_ACTIVE=prod`.
+- `JWT_SECRET` gerado com `openssl rand -base64 64`.
+- `ADMIN_EMAIL` real e `ADMIN_PASSWORD` forte.
+- `CORS_ALLOWED_ORIGINS` com domínio público real.
+- `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` definidos no provider.
+- Base de dados com SSL ativo.
+- `VITE_API_URL` aponta para a API pública.
+- Emails testados com SMTP real, se `BOOKING_EMAIL_ENABLED=true`.
+- Uploads apontam para storage persistente.
+- `npm run lint`, `npm run build` e `./mvnw test` passam.
+- `npm audit --audit-level=moderate` sem vulnerabilidades críticas/relevantes.
+- Auditoria Java executada com OWASP Dependency Check ou ferramenta equivalente.
+- OpenAI com chave só no backend, rate limit ativo e limites de custo configurados.
+- Política de privacidade e cookies preparada, especialmente porque existem contas, contactos, uploads e mensagens.
 
-## Fluxo GitHub
+## Operação Depois do Deploy
 
-O repositório já tem o remoto GitHub configurado. Para o primeiro commit deste setup:
+Depois de publicar:
 
-```bash
-git status
-git add .
-git commit -m "chore: configurar base full-stack"
-git push -u origin main
-```
+- Cria uma conta admin e guarda as credenciais num gestor de passwords.
+- Testa login, criação de conta, perfil, favoritos, avaliações e upload de media.
+- Testa o painel admin: perfis, ordem dos perfis, materiais, contactos, avaliações, partilhas e agendamentos.
+- Testa agendamento completo: pedido do cliente, email, confirmação admin, disponibilidade e lembrete.
+- Verifica logs da API depois dos primeiros testes reais.
+- Ativa alertas do provider para erros, consumo de storage, consumo de base de dados e uso da OpenAI.
+- Mantém backups automáticos da base de dados.
+- Planeia rotação periódica de segredos, principalmente `JWT_SECRET`, SMTP e OpenAI.
 
-Antes de `git add .`, confirme que `.env` não aparece na lista. Para alterações futuras, crie uma branch (`feat/galeria`, por exemplo), abra um pull request e só depois faça merge em `main`.
+## Rotas Principais
 
-## Próximas funcionalidades
+### Públicas
 
-1. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
-2. Adicionar recuperação de palavra-passe e verificação de email antes do lançamento público.
-3. Adicionar CI no GitHub Actions, testes de acessibilidade e uma política de privacidade/cookies antes do lançamento.
+- `GET /api/v1/health`
+- `GET /api/v1/profiles`
+- `GET /api/v1/profiles/{slug}`
+- `GET /api/v1/profiles/{slug}/portfolio`
+- `GET /api/v1/profiles/{slug}/availability`
+- `GET /api/v1/contacts`
+- `GET /api/v1/materials`
+- `GET /api/v1/client-posts`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/support-chat`
 
+### Autenticadas
 
-## new testing
+- `GET /api/v1/auth/me`
+- `PUT /api/v1/auth/me`
+- `POST /api/v1/media`
+- `GET /api/v1/favorites`
+- `POST /api/v1/favorites/{portfolioItemId}`
+- `DELETE /api/v1/favorites/{portfolioItemId}`
+- `POST /api/v1/profiles/{slug}/reviews`
+- `POST /api/v1/bookings`
+- `GET /api/v1/bookings/mine`
+- `POST /api/v1/client-posts`
 
-```bash
-cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas/backend
-set -a && source ../.env && set +a
-SERVER_PORT=8081 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174 ./mvnw spring-boot:run
-```
+### Administração
 
-```bash
-cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas/frontend
-VITE_API_URL=http://localhost:8081/api/v1 npm run dev -- --host 127.0.0.1
-```
+- `/api/v1/admin/**`
+
+Todos os endpoints administrativos requerem token JWT com role `ADMIN`.
+
+## Boas Práticas de Desenvolvimento
+
+- Não alterar migrations Flyway já aplicadas. Criar sempre uma nova migration.
+- Não guardar ficheiros de upload no Git.
+- Não guardar `.env` ou credenciais reais no repositório.
+- Validar frontend e backend antes de cada deploy.
+- Fazer deploy primeiro para ambiente de staging ou preview quando possível.
+- Rever logs após cada migration de base de dados.
+
+## Referências de Segurança
+
+- [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
+- [OWASP REST Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)
+- [OWASP CSRF Prevention Cheat Sheet, CORS e origens controladas](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+- [OpenAI API Reference, autenticação e proteção de API keys](https://developers.openai.com/api/reference/overview)
+- [Render Docs, environment variables e secrets](https://render.com/docs/configure-environment-variables)
+- [Render Docs, persistent disks](https://render.com/docs/disks)
+- [Cloudflare Pages, build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/)
+- [Neon Docs, connection pooling](https://neon.com/docs/connect/connection-pooling)

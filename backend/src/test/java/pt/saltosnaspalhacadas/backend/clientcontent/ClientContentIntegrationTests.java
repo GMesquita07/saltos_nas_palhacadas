@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.endsWith;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -125,7 +126,7 @@ class ClientContentIntegrationTests {
         String customerToken = jwtService.createToken(customer);
 
         try {
-            MockMultipartFile file = new MockMultipartFile("file", "evento.mp4", "video/mp4", new byte[] {1, 2, 3});
+            MockMultipartFile file = new MockMultipartFile("file", "evento.mp4", "video/mp4", mp4Header());
 
             mockMvc.perform(multipart("/api/v1/media")
                             .file(file)
@@ -133,6 +134,40 @@ class ClientContentIntegrationTests {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.contentType").value("video/mp4"))
                     .andExpect(jsonPath("$.url").exists());
+        } finally {
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void uploadedMediaMustUseAllowedContentAndServerGeneratedExtension() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "upload-image-" + suffix + "@example.test",
+                passwords.encode("change-me-now"),
+                UserRole.CUSTOMER));
+        String customerToken = jwtService.createToken(customer);
+
+        try {
+            MockMultipartFile disguisedImage = new MockMultipartFile("file", "shell.php", "image/png", pngHeader());
+
+            mockMvc.perform(multipart("/api/v1/media")
+                            .file(disguisedImage)
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.contentType").value("image/png"))
+                    .andExpect(jsonPath("$.url", endsWith(".png")));
+
+            MockMultipartFile svg = new MockMultipartFile(
+                    "file",
+                    "script.svg",
+                    "image/svg+xml",
+                    "<svg><script>alert(1)</script></svg>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            mockMvc.perform(multipart("/api/v1/media")
+                            .file(svg)
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isBadRequest());
         } finally {
             users.deleteById(customer.getId());
         }
@@ -161,5 +196,13 @@ class ClientContentIntegrationTests {
             profiles.deleteById(profile.getId());
             users.deleteById(customer.getId());
         }
+    }
+
+    private static byte[] mp4Header() {
+        return new byte[] {0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 1};
+    }
+
+    private static byte[] pngHeader() {
+        return new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0};
     }
 }

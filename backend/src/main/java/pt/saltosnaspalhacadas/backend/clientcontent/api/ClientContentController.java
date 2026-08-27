@@ -25,6 +25,7 @@ import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
+import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 
@@ -81,8 +82,8 @@ public class ClientContentController {
                 request.location().trim(),
                 request.eventDate(),
                 request.caption().trim(),
-                request.mediaUrl().trim(),
-                emptyToNull(request.thumbnailUrl()));
+                PublicUrlValidator.required(request.mediaUrl(), "Indica um URL de ficheiro válido"),
+                PublicUrlValidator.optional(request.thumbnailUrl(), "Indica um URL de miniatura válido"));
 
         return ClientContentPostResponse.mineFrom(posts.save(post));
     }
@@ -94,10 +95,6 @@ public class ClientContentController {
 
         return users.findByEmailAndActiveTrue(authentication.getName().trim().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A tua sessão já não é válida"));
-    }
-
-    private static String emptyToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     record SubmitClientContentRequest(

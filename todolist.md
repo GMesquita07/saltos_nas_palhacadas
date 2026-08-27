@@ -4,4 +4,4 @@
 - email de confirmaçao "O animador" nao, deve ser "A equipa irá analisar", alterar isso
 - chatbot
 - lembrete antes dos eventos marcados ao cliente por email, 5 diias antes (falta testar)
-- o .env.example tem de ser alterado e já nao está seguro
+- o .env.example tem de ser alterado e já nao está seguro (mudar api keys e tudo)
