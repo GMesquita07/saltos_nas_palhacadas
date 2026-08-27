@@ -25,6 +25,7 @@ public class AppUser {
     @Column(nullable = false) private boolean active = true;
     @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
+    @Column(name = "deleted_at") private Instant deletedAt;
     protected AppUser() { }
     public AppUser(String email, String passwordHash, UserRole role) {
         this(email, inferUsername(email), null, null, null, null, "50% 50%", 1.0, passwordHash, role);
@@ -46,7 +47,7 @@ public class AppUser {
     }
     @PrePersist void onCreate() { createdAt = Instant.now(); updatedAt = createdAt; }
     @PreUpdate void onUpdate() { updatedAt = Instant.now(); }
-    public Long getId() { return id; } public String getEmail() { return email; } public String getUsername() { return username; } public String getFirstName() { return firstName; } public String getLastName() { return lastName; } public String getPhone() { return phone; } public String getProfileImageUrl() { return profileImageUrl; } public ManagedMedia getProfileMedia() { return profileMedia; } public String getProfileImagePosition() { return profileImagePosition; } public double getProfileImageZoom() { return profileImageZoom; } public String getPasswordHash() { return passwordHash; } public UserRole getRole() { return role; } public boolean isActive() { return active; }
+    public Long getId() { return id; } public String getEmail() { return email; } public String getUsername() { return username; } public String getFirstName() { return firstName; } public String getLastName() { return lastName; } public String getPhone() { return phone; } public String getProfileImageUrl() { return profileImageUrl; } public ManagedMedia getProfileMedia() { return profileMedia; } public String getProfileImagePosition() { return profileImagePosition; } public double getProfileImageZoom() { return profileImageZoom; } public String getPasswordHash() { return passwordHash; } public UserRole getRole() { return role; } public boolean isActive() { return active; } public Instant getCreatedAt() { return createdAt; } public Instant getUpdatedAt() { return updatedAt; } public Instant getDeletedAt() { return deletedAt; }
     public void updateProfile(String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom) {
         updateProfile(username, firstName, lastName, phone, profileImageUrl, null, profileImagePosition, profileImageZoom);
     }
@@ -60,6 +61,25 @@ public class AppUser {
         this.profileMedia = profileMedia;
         this.profileImagePosition = normalizeImagePosition(profileImagePosition);
         this.profileImageZoom = normalizeImageZoom(profileImageZoom);
+    }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void anonymizeForDeletion(String anonymizedEmail, String disabledPasswordHash) {
+        this.email = anonymizedEmail.trim().toLowerCase(Locale.ROOT);
+        this.username = null;
+        this.firstName = null;
+        this.lastName = null;
+        this.phone = null;
+        this.profileImageUrl = null;
+        this.profileMedia = null;
+        this.profileImagePosition = "50% 50%";
+        this.profileImageZoom = 1.0;
+        this.passwordHash = disabledPasswordHash;
+        this.active = false;
+        this.deletedAt = Instant.now();
     }
 
     private static String normalize(String value) {

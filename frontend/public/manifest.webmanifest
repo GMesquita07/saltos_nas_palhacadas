@@ -1,0 +1,18 @@
+{
+  "name": "Saltos nas Palhacadas",
+  "short_name": "Saltos",
+  "description": "Animacao de eventos, portfolios de artistas, agendamentos e partilhas de clientes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#252421",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

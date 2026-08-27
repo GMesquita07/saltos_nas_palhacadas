@@ -18,6 +18,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<Booking> findAllByUserIdWithProfileOrderByCreatedAtDesc(@Param("userId") Long userId);
 
+    List<Booking> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
     @Query("""
             select booking from Booking booking
             join fetch booking.profile profile

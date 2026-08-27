@@ -25,15 +25,17 @@ const SPLASH_DURATION_MS = 2200
 type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies'
 
 function App() {
+  const initialPasswordResetToken = new URLSearchParams(window.location.search).get('resetToken') ?? ''
   const { isSessionReady, logout, session } = useAuth()
   const [isSplashVisible, setIsSplashVisible] = useState(true)
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [bookingProfile, setBookingProfile] = useState<Profile | null>(null)
   const [shouldReturnToBooking, setShouldReturnToBooking] = useState(false)
-  const [view, setView] = useState<View>('profiles')
+  const [view, setView] = useState<View>(() => initialPasswordResetToken ? 'auth' : 'profiles')
   const [authMode, setAuthMode] = useState<AuthenticationMode>('login')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [profilesError, setProfilesError] = useState(false)
+  const [passwordResetToken, setPasswordResetToken] = useState(initialPasswordResetToken)
 
   const loadProfiles = useCallback(async () => {
     try {
@@ -51,6 +53,12 @@ function App() {
     const timer = window.setTimeout(() => setIsSplashVisible(false), SPLASH_DURATION_MS)
     return () => window.clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (!passwordResetToken) return
+
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [passwordResetToken])
 
   useEffect(() => {
     let isCurrent = true
@@ -73,6 +81,16 @@ function App() {
       window.removeEventListener('profiles:changed', loadProfiles)
     }
   }, [loadProfiles])
+
+  useEffect(() => {
+    const metadata = pageMetadata(view, selectedProfile)
+    document.title = metadata.title
+    setMetaContent('description', metadata.description)
+    setMetaContent('twitter:title', metadata.title)
+    setMetaContent('twitter:description', metadata.description)
+    setMetaProperty('og:title', metadata.title)
+    setMetaProperty('og:description', metadata.description)
+  }, [selectedProfile, view])
 
   function showProfiles() {
     setSelectedProfile(null)
@@ -109,6 +127,7 @@ function App() {
   function openAuthentication(mode: AuthenticationMode) {
     setSelectedProfile(null)
     setShouldReturnToBooking(false)
+    setPasswordResetToken('')
     setAuthMode(mode)
     setView('auth')
   }
@@ -133,6 +152,7 @@ function App() {
 
   function handleAuthenticated(nextSession: AuthSession) {
     setSelectedProfile(null)
+    setPasswordResetToken('')
     setView(shouldReturnToBooking ? 'booking' : nextSession.role === 'ADMIN' ? 'admin' : 'profiles')
     setShouldReturnToBooking(false)
   }
@@ -155,9 +175,18 @@ function App() {
     setView(view)
   }
 
+  function handleAuthBack() {
+    setPasswordResetToken('')
+    if (shouldReturnToBooking) {
+      openBooking(bookingProfile)
+      return
+    }
+    showProfiles()
+  }
+
   function renderView() {
     if (view === 'auth') {
-      return <AuthPage key={authMode} initialMode={authMode} onAuthenticated={handleAuthenticated} onBack={() => shouldReturnToBooking ? openBooking(bookingProfile) : showProfiles()} />
+      return <AuthPage key={`${authMode}-${passwordResetToken ? 'reset' : 'auth'}`} initialMode={authMode} resetToken={passwordResetToken} onAuthenticated={handleAuthenticated} onBack={handleAuthBack} />
     }
 
     if (view === 'admin' && session?.role === 'ADMIN') {
@@ -172,7 +201,7 @@ function App() {
     if (view === 'cookies') return <LegalPage type="cookies" onBack={showProfiles} />
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
-    if (view === 'account' && session) return <AccountPage onExit={showProfiles} onFavoritesClick={openFavorites} />
+    if (view === 'account' && session) return <AccountPage onBookingsClick={() => openBooking()} onClientContentClick={showClientContent} onExit={showProfiles} onFavoritesClick={openFavorites} />
     if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} onLogin={() => openAuthentication('login')} />
     if (profilesError) return <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
 
@@ -220,4 +249,42 @@ function refreshProfileReference(current: Profile | null, profiles: Profile[]) {
 function displaySessionName(session: AuthSession) {
   const fullName = [session.firstName, session.lastName].filter(Boolean).join(' ').trim()
   return fullName || session.username || session.email.split('@')[0] || 'user'
+}
+
+function pageMetadata(view: View, profile: Profile | null) {
+  if (profile) {
+    return {
+      title: `${profile.name} | Saltos nas Palhaçadas`,
+      description: `${profile.name}, ${profile.role}. Consulta o portfólio, avaliações e disponibilidade para eventos.`,
+    }
+  }
+
+  const defaults = {
+    title: 'Saltos nas Palhaçadas | Animação de Eventos',
+    description: 'Perfis de artistas, portfólios, materiais disponíveis, pedidos de agendamento e partilhas de clientes.',
+  }
+
+  const metadata: Partial<Record<View, { title: string; description: string }>> = {
+    account: { title: 'A minha conta | Saltos nas Palhaçadas', description: 'Dados pessoais, foto, segurança, favoritos, agendamentos e partilhas da conta.' },
+    admin: { title: 'Administração | Saltos nas Palhaçadas', description: 'Backoffice para gerir perfis, conteúdos, contactos, materiais, avaliações, partilhas e agendamentos.' },
+    auth: { title: 'Login e conta | Saltos nas Palhaçadas', description: 'Entrar, criar conta ou recuperar palavra-passe.' },
+    booking: { title: 'Agendar evento | Saltos nas Palhaçadas', description: 'Consulta a disponibilidade dos artistas e envia um pedido de agendamento.' },
+    clientContent: { title: 'Partilhas de clientes | Saltos nas Palhaçadas', description: 'Fotos e vídeos de eventos partilhados pelos clientes.' },
+    contacts: { title: 'Contactos | Saltos nas Palhaçadas', description: 'Contactos para pedidos, reservas e apoio.' },
+    cookies: { title: 'Cookies | Saltos nas Palhaçadas', description: 'Informação sobre cookies e tecnologias semelhantes.' },
+    favorites: { title: 'Favoritos | Saltos nas Palhaçadas', description: 'Conteúdos guardados como favoritos.' },
+    materials: { title: 'Material disponível | Saltos nas Palhaçadas', description: 'Lista de material disponível para eventos.' },
+    privacy: { title: 'Privacidade | Saltos nas Palhaçadas', description: 'Informação sobre privacidade e proteção de dados.' },
+    terms: { title: 'Termos | Saltos nas Palhaçadas', description: 'Termos de utilização do site Saltos nas Palhaçadas.' },
+  }
+
+  return metadata[view] ?? defaults
+}
+
+function setMetaContent(name: string, content: string) {
+  document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.setAttribute('content', content)
+}
+
+function setMetaProperty(property: string, content: string) {
+  document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`)?.setAttribute('content', content)
 }

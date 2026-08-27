@@ -71,6 +71,14 @@ class ProductionSecurityVerifier implements ApplicationRunner {
                 throw new IllegalStateException("CORS_ALLOWED_ORIGINS deve apontar para o domínio real do frontend em produção");
             }
         }
+
+        String frontendUrl = required("app.frontend.public-url", "APP_PUBLIC_URL é obrigatório em produção");
+        String normalizedFrontendUrl = frontendUrl.toLowerCase();
+        if (!normalizedFrontendUrl.startsWith("https://")
+                || normalizedFrontendUrl.contains("localhost")
+                || normalizedFrontendUrl.contains("127.0.0.1")) {
+            throw new IllegalStateException("APP_PUBLIC_URL deve ser o URL HTTPS público do frontend em produção");
+        }
     }
 
     private void requireExternalServicesWhenEnabled() {

@@ -200,6 +200,17 @@ public class Booking {
         this.reminderSentAt = sentAt == null ? Instant.now() : sentAt;
     }
 
+    public void anonymizeForAccountDeletion() {
+        this.customEventType = null;
+        this.weddingCoupleNames = null;
+        this.location = null;
+        this.contactName = "Cliente eliminado";
+        this.contactEmail = null;
+        this.contactPhone = "removido";
+        this.description = "Dados removidos por pedido de eliminação da conta.";
+        this.notes = null;
+    }
+
     private static String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }

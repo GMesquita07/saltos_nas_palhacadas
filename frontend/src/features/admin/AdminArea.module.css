@@ -120,12 +120,16 @@ button:disabled {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 35px;
   border-bottom: 1px solid var(--color-line);
 }
 
 .tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -137,6 +141,145 @@ button:disabled {
   border-color: var(--color-ink);
   color: var(--color-ink);
   font-weight: 600;
+}
+
+.tabBadge {
+  min-width: 20px;
+  border: 1px solid #b85c55;
+  padding: 2px 6px;
+  color: #9b332c;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.overview {
+  display: grid;
+  gap: 24px;
+  margin-top: 30px;
+}
+
+.refreshButton {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-line);
+  padding: 10px 14px;
+  color: var(--color-ink);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+}
+
+.refreshButton:hover:not(:disabled) {
+  border-color: var(--color-ink);
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  display: grid;
+  min-height: 118px;
+  border: 1px solid var(--color-line);
+  padding: 18px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.metric:hover {
+  border-color: var(--color-ink);
+}
+
+.metric span {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.metric strong {
+  align-self: end;
+  font: 600 38px/1 Georgia, 'Times New Roman', serif;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.overviewPanel {
+  border: 1px solid var(--color-line);
+  padding: 20px;
+  background: var(--color-surface);
+}
+
+.overviewPanel > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.overviewPanel h3 {
+  margin: 0;
+  font: 600 22px/1.2 Georgia, 'Times New Roman', serif;
+}
+
+.overviewPanel button {
+  border: 1px solid var(--color-line);
+  padding: 8px 10px;
+  color: var(--color-ink);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+
+.overviewPanel button:hover {
+  border-color: var(--color-ink);
+}
+
+.overviewPanel p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.overviewPanel ul {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overviewPanel li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.overviewPanel li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.overviewPanel li:last-child {
+  padding-bottom: 0;
+}
+
+.overviewPanel strong {
+  color: var(--color-ink);
+}
+
+.overviewPanel span {
+  overflow-wrap: anywhere;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .page {
@@ -526,6 +669,16 @@ button:disabled {
   color: #9b332c;
 }
 
+@media (max-width: 900px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 650px) {
   .login,
   .dashboard {
@@ -543,6 +696,10 @@ button:disabled {
 
   .tabs button {
     white-space: nowrap;
+  }
+
+  .metricGrid {
+    grid-template-columns: 1fr;
   }
 
   .page {

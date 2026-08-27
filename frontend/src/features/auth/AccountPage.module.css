@@ -52,6 +52,61 @@
   gap: 18px;
 }
 
+.accountSections {
+  display: grid;
+  gap: 28px;
+  margin-top: 30px;
+  padding-top: 28px;
+  border-top: 1px solid var(--color-line);
+}
+
+.sectionBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionBlock h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 31px);
+}
+
+.sectionBlock p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.quickLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quickLinks button {
+  display: grid;
+  gap: 8px;
+  min-height: 94px;
+  border: 1px solid var(--color-line);
+  padding: 14px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.quickLinks button:hover {
+  border-color: var(--color-ink);
+}
+
+.quickLinks span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.quickLinks strong {
+  align-self: end;
+  font: 600 18px/1.2 Georgia, 'Times New Roman', serif;
+}
+
 .details {
   display: grid;
   gap: 0;
@@ -77,14 +132,18 @@
   overflow-wrap: anywhere;
 }
 
-.profileForm label {
+.profileForm label,
+.securityForm label,
+.deleteForm label {
   display: grid;
   gap: 7px;
   color: var(--color-muted);
   font-size: 12px;
 }
 
-.profileForm input {
+.profileForm input,
+.securityForm input,
+.deleteForm input {
   width: 100%;
   border: 1px solid var(--color-line);
   padding: 11px;
@@ -101,6 +160,12 @@
   color: var(--color-muted);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.securityForm,
+.deleteForm {
+  display: grid;
+  gap: 12px;
 }
 
 .avatarEditor {
@@ -141,7 +206,19 @@
   background: var(--color-ink);
 }
 
-.actions button:disabled {
+.securityForm button,
+.secondaryButton,
+.dangerButton {
+  border: 0;
+  padding: 12px;
+  color: white;
+  background: var(--color-ink);
+}
+
+.actions button:disabled,
+.securityForm button:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
@@ -153,6 +230,25 @@
 }
 
 .actions .logout {
+  border: 1px solid #b85c55;
+  color: #9b332c;
+  background: transparent;
+}
+
+.secondaryButton {
+  width: fit-content;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.deleteForm {
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+}
+
+.dangerButton {
   border: 1px solid #b85c55;
   color: #9b332c;
   background: transparent;
@@ -185,6 +281,7 @@
   .accountHeader,
   .avatarEditor,
   .nameFields,
+  .quickLinks,
   .details div,
   .actions,
   .profileForm .actions {

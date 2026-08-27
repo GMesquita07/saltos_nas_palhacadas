@@ -118,7 +118,9 @@ public class BookingService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Este agendamento já está cancelado");
             }
             booking.cancel(command.message());
-            return bookings.save(booking);
+            Booking savedBooking = bookings.save(booking);
+            notifications.sendDecisionNotification(savedBooking);
+            return savedBooking;
         }
 
         if (booking.getStatus() != BookingStatus.PENDING) {
@@ -153,7 +155,9 @@ public class BookingService {
             booking.decline(command.message());
         }
 
-        return bookings.save(booking);
+        Booking savedBooking = bookings.save(booking);
+        notifications.sendDecisionNotification(savedBooking);
+        return savedBooking;
     }
 
     @Transactional
@@ -176,7 +180,9 @@ public class BookingService {
 
         if (decision == CounterProposalDecision.DECLINED) {
             booking.declineCounterProposal();
-            return bookings.save(booking);
+            Booking savedBooking = bookings.save(booking);
+            notifications.sendCounterProposalResponseConfirmation(savedBooking, decision);
+            return savedBooking;
         }
 
         Profile profile = profiles.findByIdAndActiveTrueForUpdate(booking.getProfile().getId())
@@ -197,7 +203,32 @@ public class BookingService {
                 booking.getId());
 
         booking.acceptCounterProposal(acceptedEventDate, acceptedBudget);
-        return bookings.save(booking);
+        Booking savedBooking = bookings.save(booking);
+        notifications.sendCounterProposalResponseConfirmation(savedBooking, decision);
+        return savedBooking;
+    }
+
+    @Transactional
+    public Booking cancelMine(String email, Long bookingId, String message) {
+        AppUser user = findActiveUser(email);
+        Booking booking = bookings.findByIdWithProfile(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido de agendamento não encontrado"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não tens permissão para cancelar este pedido");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.COUNTER_PROPOSED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este pedido já não pode ser cancelado pelo cliente");
+        }
+
+        String cancellationMessage = message == null || message.isBlank()
+                ? "Pedido cancelado pelo cliente."
+                : "Pedido cancelado pelo cliente: " + message.trim();
+        booking.cancel(cancellationMessage);
+        Booking savedBooking = bookings.save(booking);
+        notifications.sendDecisionNotification(savedBooking);
+        return savedBooking;
     }
 
     private void validateCounterProposal(DecisionBookingCommand command, Profile profile, Long bookingId) {

@@ -14,5 +14,8 @@
 .panel input:focus { outline: 2px solid rgb(35 34 32 / 25%); outline-offset: 1px; }
 .panel small { color: var(--color-muted); font-size: 11px; }
 .panel form > button { border: 0; padding: 12px; color: white; background: var(--color-ink); }
+.panel form > .textButton { border: 0; padding: 4px 0; color: var(--color-muted); background: transparent; text-align: left; }
+.panel form > .textButton:hover { color: var(--color-ink); }
 .error { margin: 0; color: #9b332c; line-height: 1.5; }
+.success { margin: 0; color: #3a6848; line-height: 1.5; }
 @media (max-width: 650px) { .page { width: min(100% - 32px, 960px); padding-top: 40px; } .panel { margin-top: 45px; } .nameFields { grid-template-columns: 1fr; } }

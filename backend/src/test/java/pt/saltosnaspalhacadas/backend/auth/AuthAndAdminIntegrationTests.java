@@ -1,14 +1,20 @@
 package pt.saltosnaspalhacadas.backend.auth;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.containsString;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +45,7 @@ class AuthAndAdminIntegrationTests {
     @Autowired private PasswordEncoder passwords;
     @Autowired private ManagedMediaRepository managedMedia;
     @Autowired private ClientContentMediaService mediaService;
+    @Autowired private PasswordResetTokenRepository passwordResetTokens;
 
     @BeforeEach
     void ensureAdmin() {
@@ -79,6 +86,139 @@ class AuthAndAdminIntegrationTests {
                     .andExpect(status().isForbidden());
         } finally {
             users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void customerCanChangePasswordInsideAccount() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "password-" + suffix + "@example.test",
+                "password." + suffix,
+                "Cliente",
+                "Seguro",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+        String token = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(put("/api/v1/auth/me/password")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"currentPassword\":\"errada\",\"newPassword\":\"password-nova\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(put("/api/v1/auth/me/password")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"currentPassword\":\"password-antiga\",\"newPassword\":\"password-nova\"}"))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"password-%s@example.test\",\"password\":\"password-antiga\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"password-%s@example.test\",\"password\":\"password-nova\"}".formatted(suffix)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.role").value("CUSTOMER"));
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void customerCanResetPasswordWithTemporaryToken() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "reset-" + suffix + "@example.test",
+                "reset." + suffix,
+                "Cliente",
+                "Reset",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+        String rawToken = "reset-token-" + suffix;
+        passwordResetTokens.save(new PasswordResetToken(customer, tokenHash(rawToken), Instant.now().plusSeconds(900)));
+
+        try {
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"token\":\"%s\",\"newPassword\":\"password-nova\"}".formatted(rawToken)))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"reset-%s@example.test\",\"password\":\"password-antiga\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"reset-%s@example.test\",\"password\":\"password-nova\"}".formatted(suffix)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"token\":\"%s\",\"newPassword\":\"outra-password\"}".formatted(rawToken)))
+                    .andExpect(status().isBadRequest());
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void customerCanExportAndDeleteAccountWithPasswordConfirmation() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "rgpd-" + suffix + "@example.test",
+                "rgpd." + suffix,
+                "Cliente",
+                "RGPD",
+                "912345678",
+                null,
+                passwords.encode("password-segura"),
+                UserRole.CUSTOMER));
+        String token = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(get("/api/v1/auth/me/export")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profile.email").value("rgpd-" + suffix + "@example.test"))
+                    .andExpect(jsonPath("$.profile.firstName").value("Cliente"));
+
+            mockMvc.perform(delete("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"password\":\"password-errada\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(delete("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"password\":\"password-segura\"}"))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"rgpd-%s@example.test\",\"password\":\"password-segura\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            AppUser deletedUser = users.findById(customer.getId()).orElseThrow();
+            assertThat(deletedUser.isActive()).isFalse();
+            assertThat(deletedUser.getDeletedAt()).isNotNull();
+            assertThat(deletedUser.getEmail()).startsWith("deleted-user-");
+        } finally {
+            if (users.existsById(customer.getId())) {
+                users.deleteById(customer.getId());
+            }
         }
     }
 
@@ -214,6 +354,11 @@ class AuthAndAdminIntegrationTests {
 
     private static byte[] pngHeader() {
         return new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0};
+    }
+
+    private static String tokenHash(String token) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(digest);
     }
 
     private record UploadedAvatar(String id, String url) {

@@ -1,65 +1,28 @@
 package pt.saltosnaspalhacadas.backend.booking;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.Locale;
 
-import javax.net.ssl.SSLSocketFactory;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import pt.saltosnaspalhacadas.backend.notification.EmailService;
 
 @Service
 public class BookingNotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(BookingNotificationService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", Locale.forLanguageTag("pt-PT"));
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final boolean enabled;
-    private final String host;
-    private final int port;
-    private final boolean ssl;
-    private final boolean startTls;
-    private final String username;
-    private final String password;
-    private final String from;
+    private final EmailService emailService;
 
-    public BookingNotificationService(
-            @Value("${app.booking.email.enabled:false}") boolean enabled,
-            @Value("${app.booking.email.smtp-host:}") String host,
-            @Value("${app.booking.email.smtp-port:25}") int port,
-            @Value("${app.booking.email.smtp-ssl:false}") boolean ssl,
-            @Value("${app.booking.email.smtp-starttls:false}") boolean startTls,
-            @Value("${app.booking.email.username:}") String username,
-            @Value("${app.booking.email.password:}") String password,
-            @Value("${app.booking.email.from:no-reply@saltosnaspalhacadas.pt}") String from) {
-        this.enabled = enabled;
-        this.host = host == null ? "" : host.trim();
-        this.port = port;
-        this.ssl = ssl;
-        this.startTls = startTls;
-        this.username = username == null ? "" : username.trim();
-        this.password = password == null ? "" : password;
-        this.from = from == null || from.isBlank() ? "no-reply@saltosnaspalhacadas.pt" : from.trim();
+    public BookingNotificationService(EmailService emailService) {
+        this.emailService = emailService;
     }
 
     public void sendReceivedConfirmation(Booking booking) {
-        if (booking.getContactEmail() == null || booking.getContactEmail().isBlank()) {
-            return;
-        }
-
-        String subject = "Pedido de agendamento recebido";
-        String body = """
+        send(booking, "Pedido de agendamento recebido", """
                 Olá %s,
 
                 Recebemos o teu pedido de orçamento e agendamento para %s.
@@ -70,18 +33,37 @@ public class BookingNotificationService {
                 Saltos nas Palhaçadas
                 """.formatted(
                 booking.getContactName(),
-                DATE_FORMATTER.format(booking.getEventDate()));
+                DATE_FORMATTER.format(booking.getEventDate())));
+    }
 
-        if (!enabled || host.isBlank()) {
-            log.info("Email de confirmação preparado para {} sobre o pedido {}", maskEmail(booking.getContactEmail()), booking.getId());
+    public void sendDecisionNotification(Booking booking) {
+        if (booking.getStatus() == BookingStatus.ACCEPTED) {
+            sendAccepted(booking);
+        } else if (booking.getStatus() == BookingStatus.DECLINED) {
+            sendDeclined(booking);
+        } else if (booking.getStatus() == BookingStatus.COUNTER_PROPOSED) {
+            sendCounterProposal(booking);
+        } else if (booking.getStatus() == BookingStatus.CANCELLED) {
+            sendCancelled(booking);
+        }
+    }
+
+    public void sendCounterProposalResponseConfirmation(Booking booking, CounterProposalDecision decision) {
+        if (decision == CounterProposalDecision.ACCEPTED) {
+            sendAccepted(booking);
             return;
         }
 
-        try {
-            sendSmtp(booking.getContactEmail(), subject, body);
-        } catch (IOException exception) {
-            log.warn("Não foi possível enviar o email de confirmação do pedido {}", booking.getId(), exception);
-        }
+        send(booking, "Contraproposta recusada", """
+                Olá %s,
+
+                A tua resposta à alteração proposta foi registada e o pedido foi encerrado.
+
+                Se quiseres fazer um novo pedido, podes voltar ao calendário no site.
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(booking.getContactName()));
     }
 
     public boolean sendEventReminder(Booking booking) {
@@ -105,18 +87,82 @@ public class BookingNotificationService {
                 DATE_FORMATTER.format(booking.getEventDate()),
                 formatSchedule(booking));
 
-        if (!enabled || host.isBlank()) {
-            log.info("Email de lembrete preparado para {} sobre o agendamento {}", maskEmail(booking.getContactEmail()), booking.getId());
-            return true;
-        }
+        return emailService.send(booking.getContactEmail(), subject, body);
+    }
 
-        try {
-            sendSmtp(booking.getContactEmail(), subject, body);
-            return true;
-        } catch (IOException exception) {
-            log.warn("Não foi possível enviar o email de lembrete do agendamento {}", booking.getId(), exception);
-            return false;
-        }
+    private void sendAccepted(Booking booking) {
+        send(booking, "Pedido de agendamento aceite", """
+                Olá %s,
+
+                O teu pedido para %s com %s foi aceite%s.
+
+                %s
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                DATE_FORMATTER.format(booking.getEventDate()),
+                booking.getProfile().getName(),
+                formatSchedule(booking),
+                adminMessageOrDefault(booking, "A equipa entrará em contacto se for necessário confirmar algum detalhe.")));
+    }
+
+    private void sendDeclined(Booking booking) {
+        send(booking, "Pedido de agendamento não aceite", """
+                Olá %s,
+
+                Depois de analisar o teu pedido para %s, a equipa não conseguiu aceitar este agendamento.
+
+                %s
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                DATE_FORMATTER.format(booking.getEventDate()),
+                adminMessageOrDefault(booking, "Podes consultar outras datas ou entrar em contacto connosco para avaliar alternativas.")));
+    }
+
+    private void sendCounterProposal(Booking booking) {
+        send(booking, "Alteração proposta ao teu pedido", """
+                Olá %s,
+
+                A equipa analisou o teu pedido e propôs uma alteração.
+
+                %s
+
+                %s
+
+                Entra na tua conta para aceitares ou recusares esta alteração.
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                formatCounterProposal(booking),
+                adminMessageOrDefault(booking, "Confirma no site se a alteração funciona para o teu evento.")));
+    }
+
+    private void sendCancelled(Booking booking) {
+        send(booking, "Agendamento cancelado", """
+                Olá %s,
+
+                O agendamento para %s com %s foi cancelado.
+
+                %s
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                DATE_FORMATTER.format(booking.getEventDate()),
+                booking.getProfile().getName(),
+                adminMessageOrDefault(booking, "Se precisares de esclarecer alguma questão, entra em contacto connosco.")));
+    }
+
+    private void send(Booking booking, String subject, String body) {
+        emailService.send(booking.getContactEmail(), subject, body);
     }
 
     private static String formatSchedule(Booking booking) {
@@ -128,95 +174,27 @@ public class BookingNotificationService {
                 TIME_FORMATTER.format(booking.getEndTime()));
     }
 
-    private static String maskEmail(String email) {
-        if (email == null || email.isBlank()) {
-            return "email-indisponivel";
+    private static String formatCounterProposal(Booking booking) {
+        StringBuilder builder = new StringBuilder();
+        if (booking.getCounterEventDate() != null) {
+            builder.append("Nova data proposta: ").append(DATE_FORMATTER.format(booking.getCounterEventDate())).append(".");
         }
-        String normalized = email.trim();
-        int atIndex = normalized.indexOf('@');
-        if (atIndex <= 0) {
-            return "***";
-        }
-        return normalized.charAt(0) + "***" + normalized.substring(atIndex);
-    }
-
-    private void sendSmtp(String to, String subject, String body) throws IOException {
-        Socket socket = openSocket();
-        try {
-            BufferedReader reader = reader(socket);
-            BufferedWriter writer = writer(socket);
-
-            expectOk(reader);
-            command(writer, reader, "EHLO saltosnaspalhacadas.pt");
-
-            if (startTls && !ssl) {
-                command(writer, reader, "STARTTLS");
-                socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(socket, host, port, true);
-                reader = reader(socket);
-                writer = writer(socket);
-                command(writer, reader, "EHLO saltosnaspalhacadas.pt");
+        if (booking.getCounterBudget() != null) {
+            if (!builder.isEmpty()) {
+                builder.append("\n");
             }
-
-            if (!username.isBlank()) {
-                command(writer, reader, "AUTH LOGIN");
-                command(writer, reader, Base64.getEncoder().encodeToString(username.getBytes(StandardCharsets.UTF_8)));
-                command(writer, reader, Base64.getEncoder().encodeToString(password.getBytes(StandardCharsets.UTF_8)));
-            }
-
-            command(writer, reader, "MAIL FROM:<%s>".formatted(from));
-            command(writer, reader, "RCPT TO:<%s>".formatted(to));
-            command(writer, reader, "DATA");
-            writer.write("From: Saltos nas Palhaçadas <%s>\r\n".formatted(from));
-            writer.write("To: <%s>\r\n".formatted(to));
-            writer.write("Subject: %s\r\n".formatted(subject));
-            writer.write("Content-Type: text/plain; charset=UTF-8\r\n");
-            writer.write("\r\n");
-            writer.write(body.replace("\n.", "\n..").replace("\n", "\r\n"));
-            writer.write("\r\n.\r\n");
-            writer.flush();
-            expectOk(reader);
-            command(writer, reader, "QUIT");
-        } finally {
-            socket.close();
+            builder.append("Orçamento proposto: ").append(formatCurrency(booking.getCounterBudget())).append(".");
         }
+        return builder.isEmpty() ? "A equipa deixou uma mensagem sobre o teu pedido." : builder.toString();
     }
 
-    private Socket openSocket() throws IOException {
-        if (ssl) {
-            return SSLSocketFactory.getDefault().createSocket(host, port);
-        }
-        return new Socket(host, port);
+    private static String adminMessageOrDefault(Booking booking, String fallback) {
+        return booking.getAdminMessage() == null || booking.getAdminMessage().isBlank()
+                ? fallback
+                : booking.getAdminMessage();
     }
 
-    private static BufferedReader reader(Socket socket) throws IOException {
-        return new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-    }
-
-    private static BufferedWriter writer(Socket socket) throws IOException {
-        return new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-    }
-
-    private static void command(BufferedWriter writer, BufferedReader reader, String command) throws IOException {
-        writer.write(command);
-        writer.write("\r\n");
-        writer.flush();
-        expectOk(reader);
-    }
-
-    private static void expectOk(BufferedReader reader) throws IOException {
-        String line = reader.readLine();
-        if (line == null) {
-            throw new IOException("Resposta vazia do servidor SMTP");
-        }
-        String code = line.length() >= 3 ? line.substring(0, 3) : line;
-        while (line.length() > 3 && line.charAt(3) == '-') {
-            line = reader.readLine();
-            if (line == null) {
-                throw new IOException("Resposta SMTP incompleta");
-            }
-        }
-        if (!code.startsWith("2") && !code.startsWith("3")) {
-            throw new IOException("Resposta SMTP inesperada: " + line);
-        }
+    private static String formatCurrency(BigDecimal value) {
+        return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("pt-PT")).format(value);
     }
 }

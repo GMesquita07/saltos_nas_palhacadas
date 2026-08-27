@@ -63,6 +63,13 @@
 .declined { color: #964440; background: #f5e7e6; }
 .countered { color: #615391; background: #ece9f7; }
 .cancelled { color: #76665b; background: #eee8e2; }
+.timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0 0 22px; padding: 0; list-style: none; }
+.timeline li { position: relative; display: grid; gap: 8px; color: var(--color-muted); font-size: 11px; font-weight: 650; letter-spacing: .4px; text-transform: uppercase; }
+.timeline li::before { width: 10px; height: 10px; border: 1px solid var(--color-line); border-radius: 50%; background: var(--color-surface); content: ''; }
+.timeline li:not(:last-child)::after { position: absolute; top: 5px; left: 16px; right: 10px; height: 1px; background: var(--color-line); content: ''; }
+.timelineDone { color: var(--color-ink) !important; }
+.timelineDone::before { border-color: var(--color-ink) !important; background: var(--color-ink) !important; }
+.timelineCurrent::before { outline: 4px solid #eee8df; }
 .bookingCard dl { display: flex; flex-wrap: wrap; gap: 12px 38px; margin: 0; }
 .bookingCard dl div { display: grid; gap: 4px; }
 .bookingCard dt { color: var(--color-muted); font-size: 10px; font-weight: 650; letter-spacing: .5px; text-transform: uppercase; }
@@ -76,10 +83,16 @@
 .counterActions .declineCounter { border-color: #ba625b; color: #9d3e37; background: transparent; }
 .counterActions .declineCounter:hover:not(:disabled) { color: white; background: #9d3e37; }
 .counterActions button:disabled { cursor: wait; opacity: .55; }
-.counterSuccess, .counterError { margin: 11px 0 0; font-size: 12px; line-height: 1.5; }
+.bookingActions { display: flex; justify-content: flex-end; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-line); }
+.cancelRequest { border: 1px solid #ba625b; padding: 9px 12px; color: #9d3e37; background: transparent; font-size: 12px; }
+.cancelRequest:hover:not(:disabled) { color: white; background: #9d3e37; }
+.cancelRequest:disabled { cursor: wait; opacity: .55; }
+.counterSuccess, .counterError, .cancelSuccess, .cancelError { margin: 11px 0 0; font-size: 12px; line-height: 1.5; }
 .counterSuccess { color: #356f4d; }
 .counterError { color: #a4433b; }
+.cancelSuccess { color: #356f4d; }
+.cancelError { color: #a4433b; }
 .adminMessage { margin: 16px 0 0; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
 .adminMessage strong { color: var(--color-ink); }
 @media (max-width: 840px) { .layout { grid-template-columns: 1fr; } .calendarPanel { border-right: 0; border-bottom: 1px solid var(--color-line); } }
-@media (max-width: 650px) { .page { width: min(100% - 32px, 1120px); padding-top: 40px; } .header { margin: 45px 0 38px; } .calendarPanel, .form { padding: 24px 18px; } .formGrid { grid-template-columns: 1fr; } .calendar { gap: 3px; } .bookingCard { padding: 19px; } .bookingTopline { align-items: flex-start; flex-direction: column; gap: 9px; } .counterActions { flex-direction: column; } .counterActions button { width: 100%; } }
+@media (max-width: 650px) { .page { width: min(100% - 32px, 1120px); padding-top: 40px; } .header { margin: 45px 0 38px; } .calendarPanel, .form { padding: 24px 18px; } .formGrid { grid-template-columns: 1fr; } .calendar { gap: 3px; } .bookingCard { padding: 19px; } .bookingTopline { align-items: flex-start; flex-direction: column; gap: 9px; } .timeline { grid-template-columns: 1fr; gap: 12px; } .timeline li:not(:last-child)::after { display: none; } .counterActions, .bookingActions { flex-direction: column; } .counterActions button, .bookingActions button { width: 100%; } }

@@ -113,6 +113,15 @@ export async function respondToCounterProposal(
   return toBooking(response)
 }
 
+export async function cancelBooking(id: string, token: string, message?: string): Promise<Booking> {
+  const response = await apiClient<ApiBooking>(`/bookings/${encodeURIComponent(id)}/cancel`, {
+    method: 'PUT',
+    body: JSON.stringify({ message: message?.trim() || null }),
+  }, token)
+
+  return toBooking(response)
+}
+
 function toBooking(booking: ApiBooking): Booking {
   return {
     id: String(booking.id),

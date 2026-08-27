@@ -1,7 +1,16 @@
 package pt.saltosnaspalhacadas.backend.auth;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -26,6 +35,7 @@ import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
+import pt.saltosnaspalhacadas.backend.notification.EmailService;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
@@ -34,29 +44,46 @@ import pt.saltosnaspalhacadas.backend.user.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final AppUserRepository users;
+    private final PasswordResetTokenRepository passwordResetTokens;
     private final PasswordEncoder passwords;
     private final JwtService jwt;
     private final IpRateLimiter rateLimiter;
     private final ClientContentMediaService mediaService;
     private final LocalMediaStorage storage;
+    private final EmailService emailService;
+    private final AccountLifecycleService accountLifecycle;
     private final int authRateLimitPerMinute;
+    private final int passwordResetTokenMinutes;
+    private final String frontendPublicUrl;
 
     public AuthController(
             AppUserRepository users,
+            PasswordResetTokenRepository passwordResetTokens,
             PasswordEncoder passwords,
             JwtService jwt,
             IpRateLimiter rateLimiter,
             ClientContentMediaService mediaService,
             LocalMediaStorage storage,
-            @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute) {
+            EmailService emailService,
+            AccountLifecycleService accountLifecycle,
+            @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute,
+            @Value("${app.auth.password-reset-token-minutes:30}") int passwordResetTokenMinutes,
+            @Value("${app.frontend.public-url:http://localhost:5173}") String frontendPublicUrl) {
         this.users = users;
+        this.passwordResetTokens = passwordResetTokens;
         this.passwords = passwords;
         this.jwt = jwt;
         this.rateLimiter = rateLimiter;
         this.mediaService = mediaService;
         this.storage = storage;
+        this.emailService = emailService;
+        this.accountLifecycle = accountLifecycle;
         this.authRateLimitPerMinute = authRateLimitPerMinute;
+        this.passwordResetTokenMinutes = Math.max(5, passwordResetTokenMinutes);
+        this.frontendPublicUrl = frontendPublicUrl == null ? "" : frontendPublicUrl.trim();
     }
 
     @PostMapping("/login")
@@ -67,6 +94,60 @@ public class AuthController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou palavra-passe inválidos"));
 
         return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void forgotPassword(HttpServletRequest servletRequest, @Valid @RequestBody ForgotPasswordRequest request) {
+        assertAuthAllowed(servletRequest);
+        String email = normalizeEmail(request.email());
+
+        users.findByEmailAndActiveTrue(email).ifPresent(user -> {
+            passwordResetTokens.deleteAllByUserId(user.getId());
+            String rawToken = createSecureToken();
+            passwordResetTokens.save(new PasswordResetToken(
+                    user,
+                    tokenHash(rawToken),
+                    Instant.now().plus(passwordResetTokenMinutes, ChronoUnit.MINUTES)));
+
+            emailService.send(
+                    user.getEmail(),
+                    "Recuperar palavra-passe",
+                    """
+                            Olá %s,
+
+                            Recebemos um pedido para recuperar a palavra-passe da tua conta Saltos nas Palhaçadas.
+
+                            Para definires uma nova palavra-passe, abre este link nos próximos %d minutos:
+                            %s
+
+                            Se não fizeste este pedido, podes ignorar este email.
+
+                            Obrigado,
+                            Saltos nas Palhaçadas
+                            """.formatted(displayName(user), passwordResetTokenMinutes, resetLink(rawToken)));
+        });
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void resetPassword(HttpServletRequest servletRequest, @Valid @RequestBody ResetPasswordRequest request) {
+        assertAuthAllowed(servletRequest);
+        PasswordResetToken resetToken = passwordResetTokens.findByTokenHashAndUsedAtIsNull(tokenHash(request.token()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou"));
+
+        Instant now = Instant.now();
+        if (!resetToken.isUsable(now) || !resetToken.getUser().isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou");
+        }
+
+        AppUser user = resetToken.getUser();
+        user.changePassword(passwords.encode(request.newPassword()));
+        resetToken.markUsed(now);
+        users.save(user);
+        passwordResetTokens.save(resetToken);
     }
 
     @PostMapping("/register")
@@ -140,6 +221,38 @@ public class AuthController {
         cleanupPreviousProfileImage(previousAvatar, previousLegacyUrl, profileImage);
 
         return AuthenticatedUserResponse.from(savedUser, profileImageUrl(savedUser));
+    }
+
+    @PutMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        AppUser user = findCurrentUser(authentication);
+        if (!passwords.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A palavra-passe atual não está correta");
+        }
+
+        user.changePassword(passwords.encode(request.newPassword()));
+        users.save(user);
+        passwordResetTokens.deleteAllByUserId(user.getId());
+    }
+
+    @GetMapping("/me/export")
+    AccountLifecycleService.AccountDataExport exportCurrentUser(Authentication authentication) {
+        return accountLifecycle.exportFor(findCurrentUser(authentication).getId());
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional(rollbackFor = IOException.class)
+    void deleteCurrentUser(Authentication authentication, @Valid @RequestBody DeleteAccountRequest request) throws IOException {
+        AppUser user = findCurrentUser(authentication);
+        if (!passwords.matches(request.password(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A palavra-passe não está correta");
+        }
+
+        accountLifecycle.deleteAccount(user.getId(), passwords.encode(createSecureToken()));
+        passwordResetTokens.deleteAllByUserId(user.getId());
     }
 
     private void assertAuthAllowed(HttpServletRequest servletRequest) {
@@ -250,6 +363,36 @@ public class AuthController {
         return value == null ? "" : value;
     }
 
+    private static String createSecureToken() {
+        byte[] token = new byte[32];
+        SECURE_RANDOM.nextBytes(token);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(token);
+    }
+
+    private static String tokenHash(String token) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 não está disponível", exception);
+        }
+    }
+
+    private String resetLink(String rawToken) {
+        String baseUrl = frontendPublicUrl.isBlank()
+                ? ServletUriComponentsBuilder.fromCurrentContextPath().toUriString()
+                : frontendPublicUrl;
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        return normalizedBaseUrl + "/?resetToken=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+    }
+
+    private static String displayName(AppUser user) {
+        String fullName = ((user.getFirstName() == null ? "" : user.getFirstName())
+                + " "
+                + (user.getLastName() == null ? "" : user.getLastName())).trim();
+        return fullName.isBlank() ? "cliente" : fullName;
+    }
+
     record LoginRequest(
             @NotBlank(message = "O email é obrigatório")
             @Email(message = "Indica um endereço de email válido")
@@ -278,6 +421,35 @@ public class AuthController {
             String phone,
             @NotBlank(message = "A palavra-passe é obrigatória")
             @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String password) {
+    }
+
+    record ForgotPasswordRequest(
+            @NotBlank(message = "O email é obrigatório")
+            @Email(message = "Indica um endereço de email válido")
+            @Size(max = 254, message = "O email pode ter no máximo 254 caracteres")
+            String email) {
+    }
+
+    record ResetPasswordRequest(
+            @NotBlank(message = "O token de recuperação é obrigatório")
+            @Size(max = 200, message = "O token de recuperação é inválido")
+            String token,
+            @NotBlank(message = "A nova palavra-passe é obrigatória")
+            @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String newPassword) {
+    }
+
+    record ChangePasswordRequest(
+            @NotBlank(message = "A palavra-passe atual é obrigatória")
+            String currentPassword,
+            @NotBlank(message = "A nova palavra-passe é obrigatória")
+            @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String newPassword) {
+    }
+
+    record DeleteAccountRequest(
+            @NotBlank(message = "Confirma a tua palavra-passe")
             String password) {
     }
 

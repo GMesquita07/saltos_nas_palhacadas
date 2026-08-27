@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { createBooking, getAvailability, getMyBookings, respondToCounterProposal } from '../../services/bookingService'
+import { cancelBooking, createBooking, getAvailability, getMyBookings, respondToCounterProposal } from '../../services/bookingService'
 import type { AvailabilitySlot, Booking, BookingCounterProposalDecision, BookingProposal, BookingStatus } from '../../types/booking'
 import type { Profile } from '../../types/profile'
 import styles from './BookingPage.module.css'
@@ -48,6 +48,8 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   const [respondingBookingId, setRespondingBookingId] = useState<string | null>(null)
   const [respondingCounterDecision, setRespondingCounterDecision] = useState<BookingCounterProposalDecision | null>(null)
   const [counterProposalFeedback, setCounterProposalFeedback] = useState<{ bookingId: string; type: 'error' | 'success'; message: string } | null>(null)
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null)
+  const [cancellationFeedback, setCancellationFeedback] = useState<{ bookingId: string; type: 'error' | 'success'; message: string } | null>(null)
   const respondingBookingRef = useRef<string | null>(null)
 
   const selectedProfile = profiles.find((profile) => profile.slug === selectedProfileSlug) ?? null
@@ -258,6 +260,36 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
     }
   }
 
+  async function handleCancelBooking(bookingId: string) {
+    if (!session || cancellingBookingId) return
+    if (!window.confirm('Cancelar este pedido de agendamento?')) return
+
+    setCancellingBookingId(bookingId)
+    setCancellationFeedback(null)
+    try {
+      const updatedBooking = await cancelBooking(bookingId, session.token)
+      setMyBookings((current) => current.map((booking) => booking.id === bookingId ? updatedBooking : booking))
+      if (updatedBooking.profileSlug === selectedProfileSlug) {
+        const from = toDateValue(firstDayOfMonth(visibleMonth))
+        const to = toDateValue(lastDayOfMonth(visibleMonth))
+        setAvailabilitySlots(await getAvailability(selectedProfileSlug, from, to))
+      }
+      setCancellationFeedback({
+        bookingId,
+        type: 'success',
+        message: 'Pedido cancelado. A data voltou a ficar disponível para análise.',
+      })
+    } catch (reason) {
+      setCancellationFeedback({
+        bookingId,
+        type: 'error',
+        message: reason instanceof Error ? reason.message : 'Não foi possível cancelar este pedido.',
+      })
+    } finally {
+      setCancellingBookingId(null)
+    }
+  }
+
   return (
     <section className={styles.page}>
       <button className={styles.back} type="button" onClick={onBack}>← Voltar aos perfis</button>
@@ -428,7 +460,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
             <p className="eyebrow">Área privada</p>
             <h2>Os meus pedidos</h2>
           </div>
-          {isBookingsLoading ? <p className={styles.feedback}>A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="status">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} counterProposalFeedback={counterProposalFeedback} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
+          {isBookingsLoading ? <p className={styles.feedback}>A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="status">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} cancellationFeedback={cancellationFeedback} cancellingBookingId={cancellingBookingId} counterProposalFeedback={counterProposalFeedback} onCancelBooking={handleCancelBooking} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
         </section>
       )}
     </section>
@@ -437,13 +469,16 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
 
 type BookingListProps = {
   bookings: Booking[]
+  cancellationFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
+  cancellingBookingId: string | null
   counterProposalFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
+  onCancelBooking: (bookingId: string) => void
   onCounterProposalDecision: (bookingId: string, decision: BookingCounterProposalDecision) => void
   respondingBookingId: string | null
   respondingCounterDecision: BookingCounterProposalDecision | null
 }
 
-function BookingList({ bookings, counterProposalFeedback, onCounterProposalDecision, respondingBookingId, respondingCounterDecision }: BookingListProps) {
+function BookingList({ bookings, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCancelBooking, onCounterProposalDecision, respondingBookingId, respondingCounterDecision }: BookingListProps) {
   return (
     <div className={styles.bookingList}>
       {bookings.map((booking) => {
@@ -455,6 +490,13 @@ function BookingList({ bookings, counterProposalFeedback, onCounterProposalDecis
               <span className={`${styles.status} ${styles[status.className]}`}>{status.label}</span>
             </div>
             <h3>{eventTypeLabel(booking)} · {dateFormatter.format(toLocalDate(booking.eventDate))}</h3>
+            <ol className={styles.timeline} aria-label="Estado do pedido">
+              {timelineSteps(booking.status).map((step) => (
+                <li className={`${step.done ? styles.timelineDone : ''} ${step.current ? styles.timelineCurrent : ''}`} key={step.label}>
+                  {step.label}
+                </li>
+              ))}
+            </ol>
             <dl>
               <div><dt>Horário</dt><dd>{formatTimeRange(booking.startTime, booking.endTime)}</dd></div>
               {booking.location && <div><dt>Local</dt><dd>{booking.location}</dd></div>}
@@ -473,6 +515,18 @@ function BookingList({ bookings, counterProposalFeedback, onCounterProposalDecis
                   </button>
                 </div>
               </div>
+            )}
+            {canCustomerCancel(booking.status) && (
+              <div className={styles.bookingActions}>
+                <button className={styles.cancelRequest} disabled={cancellingBookingId !== null} type="button" onClick={() => onCancelBooking(booking.id)}>
+                  {cancellingBookingId === booking.id ? 'A cancelar...' : 'Cancelar pedido'}
+                </button>
+              </div>
+            )}
+            {cancellationFeedback?.bookingId === booking.id && (
+              <p className={cancellationFeedback.type === 'success' ? styles.cancelSuccess : styles.cancelError} role={cancellationFeedback.type === 'error' ? 'alert' : 'status'}>
+                {cancellationFeedback.message}
+              </p>
             )}
             {counterProposalFeedback?.bookingId === booking.id && (
               <p className={counterProposalFeedback.type === 'success' ? styles.counterSuccess : styles.counterError} role={counterProposalFeedback.type === 'error' ? 'alert' : 'status'}>
@@ -493,6 +547,34 @@ function statusMeta(status: BookingStatus) {
   if (status === 'COUNTER_PROPOSED') return { label: 'Alteração proposta', className: 'countered' }
   if (status === 'CANCELLED') return { label: 'Cancelado', className: 'cancelled' }
   return { label: 'Em análise', className: 'pending' }
+}
+
+function timelineSteps(status: BookingStatus) {
+  const terminalLabel = status === 'ACCEPTED'
+    ? 'Confirmado'
+    : status === 'DECLINED'
+      ? 'Não aceite'
+      : status === 'CANCELLED'
+        ? 'Cancelado'
+        : 'Decisão final'
+
+  return [
+    { label: 'Pedido enviado', done: true, current: false },
+    {
+      label: status === 'COUNTER_PROPOSED' ? 'Alteração proposta' : 'Em análise',
+      done: status !== 'PENDING',
+      current: status === 'PENDING' || status === 'COUNTER_PROPOSED',
+    },
+    {
+      label: terminalLabel,
+      done: status === 'ACCEPTED' || status === 'DECLINED' || status === 'CANCELLED',
+      current: status === 'ACCEPTED' || status === 'DECLINED' || status === 'CANCELLED',
+    },
+  ]
+}
+
+function canCustomerCancel(status: BookingStatus) {
+  return status === 'PENDING' || status === 'COUNTER_PROPOSED'
 }
 
 function eventTypeLabel(booking: Booking) {

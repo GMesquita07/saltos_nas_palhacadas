@@ -81,6 +81,7 @@ class ProductionSecurityVerifierTests {
                 .withProperty("app.bootstrap.admin.email", "admin@saltosnaspalhacadas.pt")
                 .withProperty("app.bootstrap.admin.password", "uma-password-forte-2026")
                 .withProperty("app.cors.allowed-origins", "https://saltosnaspalhacadas.pt")
+                .withProperty("app.frontend.public-url", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.support.ai.enabled", "false")
                 .withProperty("app.booking.email.enabled", "false");
         return environment;

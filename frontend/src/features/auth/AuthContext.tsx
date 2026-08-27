@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { getCurrentUser, login as requestLogin, register as requestRegistration, updateCurrentUser, type RegisterCredentials, type UpdateAccountInput } from '../../services/authService'
+import { changePassword as requestPasswordChange, deleteAccount as requestAccountDeletion, exportAccountData as requestAccountExport, getCurrentUser, login as requestLogin, register as requestRegistration, updateCurrentUser, type AccountDataExport, type ChangePasswordInput, type RegisterCredentials, type UpdateAccountInput } from '../../services/authService'
 import { addFavorite, getFavorites, removeFavorite } from '../../services/favoriteService'
 import type { AuthSession, AuthUser } from '../../types/auth'
 import type { Favorite } from '../../types/favorite'
@@ -22,6 +22,9 @@ type AuthContextValue = {
   refreshFavorites: () => Promise<void>
   toggleFavorite: (portfolioItemId: string) => Promise<void>
   updateAccount: (input: UpdateAccountInput) => Promise<AuthUser>
+  changePassword: (input: ChangePasswordInput) => Promise<void>
+  exportAccountData: () => Promise<AccountDataExport>
+  deleteAccount: (password: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -136,6 +139,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return nextUser
   }, [session])
 
+  const changePassword = useCallback(async (input: ChangePasswordInput) => {
+    if (!session) {
+      throw new Error('Inicia sessão para alterar a palavra-passe.')
+    }
+
+    await requestPasswordChange(input, session.token)
+  }, [session])
+
+  const exportAccountData = useCallback(async () => {
+    if (!session) {
+      throw new Error('Inicia sessão para descarregar os teus dados.')
+    }
+
+    return requestAccountExport(session.token)
+  }, [session])
+
+  const deleteAccount = useCallback(async (password: string) => {
+    if (!session) {
+      throw new Error('Inicia sessão para eliminar a tua conta.')
+    }
+
+    await requestAccountDeletion(password, session.token)
+    logout()
+  }, [logout, session])
+
   const toggleFavorite = useCallback(async (portfolioItemId: string) => {
     if (!session) {
       throw new Error('Inicia sessão para guardar publicações nos favoritos.')
@@ -162,7 +190,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     refreshFavorites,
     toggleFavorite,
     updateAccount,
-  }), [favorites, isFavoritesLoading, isSessionReady, login, logout, refreshFavorites, register, session, toggleFavorite, updateAccount])
+    changePassword,
+    exportAccountData,
+    deleteAccount,
+  }), [changePassword, deleteAccount, exportAccountData, favorites, isFavoritesLoading, isSessionReady, login, logout, refreshFavorites, register, session, toggleFavorite, updateAccount])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

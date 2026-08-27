@@ -73,6 +73,17 @@ public class BookingController {
                 request.decision()));
     }
 
+    @PutMapping("/{bookingId}/cancel")
+    BookingResponse cancelBooking(
+            Authentication authentication,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody(required = false) CancelBookingRequest request) {
+        return BookingResponse.from(bookings.cancelMine(
+                currentEmail(authentication),
+                bookingId,
+                request == null ? null : request.message()));
+    }
+
     private static String currentEmail(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para continuar");
@@ -120,5 +131,10 @@ public class BookingController {
     record CounterProposalDecisionRequest(
             @NotNull(message = "Escolhe se aceitas ou recusas a contraproposta")
             CounterProposalDecision decision) {
+    }
+
+    record CancelBookingRequest(
+            @Size(max = 1000, message = "A mensagem pode ter no máximo 1000 caracteres")
+            String message) {
     }
 }

@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { apiClient, uploadFile } from '../../services/apiClient'
+import { getAdminBookings } from '../../services/bookingService'
+import { getAdminClientContent } from '../../services/clientContentService'
 import { getContacts, reorderContacts } from '../../services/contactService'
 import { getPortfolioItems } from '../../services/portfolioService'
 import { getProfiles } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
+import type { Booking } from '../../types/booking'
+import type { ClientContentPost } from '../../types/clientContent'
 import type { Contact, ContactType } from '../../types/contact'
 import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
@@ -16,7 +20,7 @@ import { MaterialManagement } from './materials/MaterialManagement'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'clientContent' | 'bookings'
+type AdminPage = 'dashboard' | 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'clientContent' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
@@ -99,10 +103,12 @@ const emptyContactForm = (): ContactFormState => ({
 
 export function AdminArea({ onExit, token }: { onExit: () => void; token: string }) {
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [page, setPage] = useState<AdminPage>('profile')
+  const [page, setPage] = useState<AdminPage>('dashboard')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
+  const [adminBookings, setAdminBookings] = useState<Booking[]>([])
+  const [clientPosts, setClientPosts] = useState<ClientContentPost[]>([])
   const [contentItems, setContentItems] = useState<PortfolioItem[]>([])
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
@@ -112,6 +118,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   const [editingContentId, setEditingContentId] = useState<string | null>(null)
   const [editingContactId, setEditingContactId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false)
 
   const refreshProfiles = useCallback(async () => {
     try {
@@ -165,16 +172,39 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }, [])
 
+  const refreshDashboard = useCallback(async () => {
+    if (!token) return
+
+    setIsDashboardLoading(true)
+    try {
+      const [bookingItems, clientPostItems, reviewItems] = await Promise.all([
+        getAdminBookings(token),
+        getAdminClientContent(token),
+        getAdminReviews(token),
+      ])
+      setAdminBookings(bookingItems)
+      setClientPosts(clientPostItems)
+      setReviews(reviewItems)
+      setReviewDrafts(toReviewDrafts(reviewItems))
+    } catch {
+      setNotice({ type: 'error', text: 'Não foi possível atualizar o resumo do painel.' })
+    } finally {
+      setIsDashboardLoading(false)
+    }
+  }, [token])
+
   useEffect(() => {
     if (!token) return
     let isCurrent = true
 
-    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token)])
-      .then(([profileItems, contactItems, reviewItems]) => {
+    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token), getAdminBookings(token), getAdminClientContent(token)])
+      .then(([profileItems, contactItems, reviewItems, bookingItems, clientPostItems]) => {
         if (!isCurrent) return
         setProfiles(profileItems)
         setContacts(contactItems)
         setReviews(reviewItems)
+        setAdminBookings(bookingItems)
+        setClientPosts(clientPostItems)
         setReviewDrafts(toReviewDrafts(reviewItems))
       })
       .catch(() => {
@@ -606,14 +636,27 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       </div>
 
       <nav className={styles.tabs} aria-label="Secções de administração">
+        <Tab active={page === 'dashboard'} onClick={() => setPage('dashboard')}>Resumo</Tab>
         <Tab active={page === 'profile'} onClick={() => setPage('profile')}>Novo perfil</Tab>
         <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
         <Tab active={page === 'materials'} onClick={() => setPage('materials')}>Materiais</Tab>
-        <Tab active={page === 'reviews'} onClick={() => setPage('reviews')}>Avaliações</Tab>
-        <Tab active={page === 'clientContent'} onClick={() => setPage('clientContent')}>Partilhas de clientes</Tab>
-        <Tab active={page === 'bookings'} onClick={() => setPage('bookings')}>Agendamentos</Tab>
+        <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => setPage('reviews')}>Avaliações</Tab>
+        <Tab active={page === 'clientContent'} badge={clientPosts.filter((post) => post.status === 'PENDING').length} onClick={() => setPage('clientContent')}>Partilhas de clientes</Tab>
+        <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => setPage('bookings')}>Agendamentos</Tab>
       </nav>
+
+      {page === 'dashboard' && (
+        <AdminDashboard
+          bookings={adminBookings}
+          clientPosts={clientPosts}
+          isLoading={isDashboardLoading}
+          profiles={profiles}
+          reviews={reviews}
+          onNavigate={setPage}
+          onRefresh={refreshDashboard}
+        />
+      )}
 
       {page === 'profile' && (
         <ProfileManagement
@@ -703,14 +746,143 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   )
 }
 
+function AdminDashboard({
+  bookings,
+  clientPosts,
+  isLoading,
+  profiles,
+  reviews,
+  onNavigate,
+  onRefresh,
+}: {
+  bookings: Booking[]
+  clientPosts: ClientContentPost[]
+  isLoading: boolean
+  profiles: Profile[]
+  reviews: Review[]
+  onNavigate: (page: AdminPage) => void
+  onRefresh: () => Promise<void>
+}) {
+  const today = new Date()
+  const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const pendingBookings = bookings.filter((booking) => booking.status === 'PENDING')
+  const pendingClientPosts = clientPosts.filter((post) => post.status === 'PENDING')
+  const pendingReviews = reviews.filter((review) => !review.published)
+  const upcomingEvents = bookings
+    .filter((booking) => booking.status === 'ACCEPTED' && booking.eventDate >= todayValue)
+    .sort((first, second) => first.eventDate.localeCompare(second.eventDate) || (first.startTime ?? '').localeCompare(second.startTime ?? ''))
+    .slice(0, 5)
+
+  return (
+    <section className={styles.overview} aria-labelledby="admin-overview-heading">
+      <div className={styles.formHeading}>
+        <div>
+          <h2 id="admin-overview-heading">Resumo</h2>
+          <p className={styles.intro}>Prioridades do backoffice, próximos eventos e conteúdo por moderar.</p>
+        </div>
+        <button className={styles.refreshButton} disabled={isLoading} type="button" onClick={() => { void onRefresh() }}>
+          {isLoading ? 'A atualizar...' : 'Atualizar'}
+        </button>
+      </div>
+
+      <div className={styles.metricGrid}>
+        <button className={styles.metric} type="button" onClick={() => onNavigate('bookings')}>
+          <span>Pedidos pendentes</span>
+          <strong>{pendingBookings.length}</strong>
+        </button>
+        <button className={styles.metric} type="button" onClick={() => onNavigate('clientContent')}>
+          <span>Partilhas por aprovar</span>
+          <strong>{pendingClientPosts.length}</strong>
+        </button>
+        <button className={styles.metric} type="button" onClick={() => onNavigate('reviews')}>
+          <span>Avaliações por aprovar</span>
+          <strong>{pendingReviews.length}</strong>
+        </button>
+        <button className={styles.metric} type="button" onClick={() => onNavigate('profile')}>
+          <span>Perfis ativos</span>
+          <strong>{profiles.length}</strong>
+        </button>
+      </div>
+
+      <div className={styles.overviewGrid}>
+        <OverviewPanel title="Pedidos pendentes" empty="Sem pedidos pendentes." onOpen={() => onNavigate('bookings')}>
+          {pendingBookings.slice(0, 4).map((booking) => (
+            <li key={booking.id}>
+              <strong>{booking.profileName}</strong>
+              <span>{eventTypeSummary(booking)} · {formatAdminDate(booking.eventDate)} · {formatAdminTimeRange(booking.startTime, booking.endTime)}</span>
+            </li>
+          ))}
+        </OverviewPanel>
+
+        <OverviewPanel title="Partilhas por aprovar" empty="Sem partilhas por aprovar." onOpen={() => onNavigate('clientContent')}>
+          {pendingClientPosts.slice(0, 4).map((post) => (
+            <li key={post.id}>
+              <strong>{post.title}</strong>
+              <span>{post.submittedByName} · {post.profileName ?? 'Perfil por confirmar'}</span>
+            </li>
+          ))}
+        </OverviewPanel>
+
+        <OverviewPanel title="Avaliações por aprovar" empty="Sem avaliações por aprovar." onOpen={() => onNavigate('reviews')}>
+          {pendingReviews.slice(0, 4).map((review) => (
+            <li key={review.id}>
+              <strong>{review.reviewerName}</strong>
+              <span>{review.profileName ?? 'Artista'} · {review.rating}/5 · {review.reviewDate}</span>
+            </li>
+          ))}
+        </OverviewPanel>
+
+        <OverviewPanel title="Próximos eventos" empty="Sem eventos confirmados futuros." onOpen={() => onNavigate('bookings')}>
+          {upcomingEvents.map((booking) => (
+            <li key={booking.id}>
+              <strong>{booking.profileName}</strong>
+              <span>{formatAdminDate(booking.eventDate)} · {formatAdminTimeRange(booking.startTime, booking.endTime)}</span>
+            </li>
+          ))}
+        </OverviewPanel>
+      </div>
+    </section>
+  )
+}
+
+function OverviewPanel({
+  children,
+  empty,
+  onOpen,
+  title,
+}: {
+  children: ReactNode
+  empty: string
+  onOpen: () => void
+  title: string
+}) {
+  const items = Array.isArray(children) ? children.filter(Boolean) : children ? [children] : []
+
+  return (
+    <section className={styles.overviewPanel}>
+      <div>
+        <h3>{title}</h3>
+        <button type="button" onClick={onOpen}>Abrir</button>
+      </div>
+      {items.length === 0 ? (
+        <p>{empty}</p>
+      ) : (
+        <ul>{items}</ul>
+      )}
+    </section>
+  )
+}
+
 function Tab({
   active,
+  badge,
   onClick,
   children,
 }: {
   active: boolean
+  badge?: number
   onClick: () => void
-  children: string
+  children: ReactNode
 }) {
   return (
     <button
@@ -720,6 +892,7 @@ function Tab({
       onClick={onClick}
     >
       {children}
+      {badge !== undefined && badge > 0 && <span className={styles.tabBadge}>{badge}</span>}
     </button>
   )
 }
@@ -1494,6 +1667,29 @@ function validateContact(form: ContactFormState) {
   }
 
   return null
+}
+
+function eventTypeSummary(booking: Booking) {
+  const labels: Record<string, string> = {
+    WEDDING: 'Casamento',
+    BIRTHDAY: 'Aniversário',
+    BAPTISM: 'Batizado',
+    CORPORATE: 'Evento empresarial',
+    PRIVATE_PARTY: 'Festa privada',
+    FESTIVAL: 'Festival',
+  }
+
+  if (booking.eventType === 'OTHER' && booking.customEventType) return booking.customEventType
+  return labels[booking.eventType] ?? booking.eventType
+}
+
+function formatAdminDate(value: string) {
+  return new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
+    .format(new Date(`${value}T00:00:00`))
+}
+
+function formatAdminTimeRange(startTime: string | null, endTime: string | null) {
+  return startTime && endTime ? `${startTime.slice(0, 5)} - ${endTime.slice(0, 5)}` : 'Horário a combinar'
 }
 
 function stars(rating: number) {

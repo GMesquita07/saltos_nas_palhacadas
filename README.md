@@ -24,10 +24,12 @@ Em produção, a arquitetura recomendada é:
 - Perfil individual de artista com descrição, foto recortável, vídeo de destaque, portfólio e avaliações.
 - Publicação de fotos e vídeos por artista, ordenada por data e organizada por mês.
 - Conta de cliente com dados pessoais, foto de perfil e favoritos.
+- Recuperação de palavra-passe por email, alteração de palavra-passe na conta e token temporário de reset.
+- Exportação dos dados da conta e eliminação RGPD com confirmação de palavra-passe.
 - Avaliações feitas por utilizadores autenticados e aprovadas pelo administrador.
 - Pedidos de agendamento e orçamento, com calendário público de disponibilidade.
 - Estados de agendamento: pendente, confirmado, alterado, rejeitado e cancelado.
-- Email automático de confirmação de pedido recebido.
+- Emails automáticos para pedido recebido, aceitação, rejeição, contraproposta, cancelamento e recuperação de palavra-passe.
 - Email automático de lembrete 5 dias antes de eventos confirmados.
 - Lista pública de materiais disponíveis, gerida e ordenada pelo administrador.
 - Contactos públicos geridos e ordenados pelo administrador.
@@ -176,11 +178,13 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `DB_USERNAME` | Sim | Utilizador da base de dados. |
 | `DB_PASSWORD` | Sim | Password da base de dados. |
 | `CORS_ALLOWED_ORIGINS` | Sim | Domínio público do frontend, sem `*` e sem `localhost`. |
+| `APP_PUBLIC_URL` | Sim | URL público do frontend usado em links enviados por email, como recuperação de password. |
 | `JWT_SECRET` | Sim | Segredo Base64 com pelo menos 32 bytes descodificados. |
 | `JWT_EXPIRATION_HOURS` | Não | Duração dos tokens JWT. Valor recomendado: `8`. |
 | `ADMIN_EMAIL` | Sim | Email do primeiro administrador. |
 | `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
-| `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login e registo. |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login, registo e recuperação de password. |
+| `PASSWORD_RESET_TOKEN_MINUTES` | Não | Validade, em minutos, dos links de recuperação de password. Valor recomendado: `30`. |
 | `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
 | `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
 | `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
@@ -274,6 +278,11 @@ Para Cloudflare Pages:
 | Environment variable | `VITE_API_URL=https://<api-publica>/api/v1` |
 
 Depois do primeiro deploy, copia o domínio público do frontend e atualiza `CORS_ALLOWED_ORIGINS` na API.
+Define também `APP_PUBLIC_URL` com esse mesmo domínio público para os links enviados por email:
+
+```bash
+APP_PUBLIC_URL=https://<dominio-do-frontend>
+```
 
 O ficheiro `frontend/public/_headers` inclui uma Content Security Policy funcional para deploy estático. Antes da publicação final, troca o `connect-src 'self' https:` por uma lista explícita com o domínio real da API, por exemplo:
 
@@ -333,6 +342,8 @@ Testa estes casos antes do lançamento:
 - Pedido de agendamento criado por cliente autenticado.
 - Email de confirmação recebido pelo cliente.
 - Evento confirmado pelo admin.
+- Pedido rejeitado, contraproposta e cancelamento.
+- Recuperação de palavra-passe com link recebido por email.
 - Disponibilidade atualizada no calendário.
 - Lembrete enviado 5 dias antes da data do evento.
 - Evento cancelado sem novo lembrete posterior.
@@ -364,6 +375,7 @@ Obrigatório antes de abrir o site ao público:
 - `JWT_SECRET` gerado com `openssl rand -base64 64`.
 - `ADMIN_EMAIL` real e `ADMIN_PASSWORD` forte.
 - `CORS_ALLOWED_ORIGINS` com domínio público real.
+- `APP_PUBLIC_URL` com o domínio HTTPS público do frontend.
 - `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` definidos no provider.
 - Base de dados com SSL ativo.
 - `VITE_API_URL` aponta para a API pública.
@@ -402,12 +414,17 @@ Depois de publicar:
 - `GET /api/v1/client-posts`
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
 - `POST /api/v1/support-chat`
 
 ### Autenticadas
 
 - `GET /api/v1/auth/me`
 - `PUT /api/v1/auth/me`
+- `PUT /api/v1/auth/me/password`
+- `GET /api/v1/auth/me/export`
+- `DELETE /api/v1/auth/me`
 - `POST /api/v1/media`
 - `GET /api/v1/favorites`
 - `POST /api/v1/favorites/{portfolioItemId}`
@@ -415,6 +432,8 @@ Depois de publicar:
 - `POST /api/v1/profiles/{slug}/reviews`
 - `POST /api/v1/bookings`
 - `GET /api/v1/bookings/mine`
+- `PUT /api/v1/bookings/{bookingId}/cancel`
+- `PUT /api/v1/bookings/{bookingId}/counter-proposal/decision`
 - `POST /api/v1/client-posts`
 
 ### Administração
