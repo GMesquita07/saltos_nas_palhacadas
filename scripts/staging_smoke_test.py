@@ -2,6 +2,7 @@ import base64
 import os
 import sys
 import uuid
+from datetime import date, timedelta
 
 import requests
 
@@ -953,7 +954,1048 @@ def main():
                 "Access-Control-Allow-Origin"
             ),
         )
+    # ========================================================
+    # 13. CLIENT CONTENT / PARTILHAS / RGPD
+    # ========================================================
 
+    print()
+    print("--- CLIENT CONTENT / RGPD ---")
+
+    client_post_id = None
+    client_private_url = None
+    client_public_url = None
+
+    if not profile_created:
+
+        warn(
+            "Testes de partilhas ignorados",
+            "perfil temporário não foi criado",
+        )
+
+    else:
+
+        # ----------------------------------------------------
+        # Upload de media para uma PARTILHA.
+        #
+        # IMPORTANTE:
+        # Isto é diferente de POST /media, que é para avatar.
+        # ----------------------------------------------------
+
+        content_upload = requests.post(
+            f"{API}/client-posts/media",
+            headers=auth_headers(
+                customer_a_token
+            ),
+            files={
+                "file": (
+                    "smoke-client-content.png",
+                    png,
+                    "image/png",
+                ),
+            },
+            timeout=TIMEOUT,
+        )
+
+        content_media_id = None
+
+        if expect_status(
+            "Cliente A pode fazer upload para partilha",
+            content_upload,
+            201,
+        ):
+
+            try:
+                content_upload_json = (
+                    content_upload.json()
+                )
+
+                content_media_id = (
+                    content_upload_json.get("id")
+                )
+
+                client_private_url = (
+                    content_upload_json.get("url")
+                )
+
+                if content_media_id:
+                    pass_test(
+                        "Partilha devolve media id",
+                        "presente",
+                    )
+
+                else:
+                    fail_test(
+                        "Partilha devolve media id",
+                        "id ausente",
+                    )
+
+                if (
+                    isinstance(
+                        client_private_url,
+                        str,
+                    )
+                    and (
+                        "/api/v1/private-media/"
+                        in client_private_url
+                    )
+                ):
+                    pass_test(
+                        "Media da partilha começa privada",
+                        "/private-media/",
+                    )
+
+                else:
+                    fail_test(
+                        "Media da partilha começa privada",
+                        f"url={client_private_url!r}",
+                    )
+
+            except ValueError:
+                fail_test(
+                    "Upload de partilha JSON",
+                    "resposta não é JSON",
+                )
+
+        # ----------------------------------------------------
+        # Isolamento do upload antes da publicação
+        # ----------------------------------------------------
+
+        if client_private_url:
+
+            owner_media = requests.get(
+                client_private_url,
+                headers=auth_headers(
+                    customer_a_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                "Cliente A vê media pendente da própria partilha",
+                owner_media,
+                200,
+            )
+
+            other_media = requests.get(
+                client_private_url,
+                headers=auth_headers(
+                    customer_b_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                "Cliente B não vê media pendente do Cliente A",
+                other_media,
+                404,
+            )
+
+            anonymous_media = requests.get(
+                client_private_url,
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                "Anónimo não vê media pendente da partilha",
+                anonymous_media,
+                403,
+            )
+
+            admin_private_media = requests.get(
+                client_private_url,
+                headers=auth_headers(
+                    admin_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                "ADMIN pode moderar media privada da partilha",
+                admin_private_media,
+                200,
+            )
+
+        # ----------------------------------------------------
+        # Payload válido
+        # ----------------------------------------------------
+
+        event_date = (
+            date.today()
+            - timedelta(days=1)
+        )
+
+        client_post_body = {
+            "profileSlug": test_slug,
+            "type": "PHOTO",
+            "mediaId": content_media_id,
+            "title": "Smoke Test Partilha",
+            "location": "Local privado de teste",
+            "eventDate": event_date.isoformat(),
+            "caption": (
+                "Conteúdo temporário criado "
+                "automaticamente pelo smoke test."
+            ),
+            "publicIdentity": "ANONYMOUS",
+            "showLocation": False,
+            "showEventDate": True,
+            "consentToPublish": True,
+        }
+
+        # ----------------------------------------------------
+        # BOLA / IDOR:
+        #
+        # Cliente B tenta usar media pertencente ao Cliente A.
+        # ----------------------------------------------------
+
+        if content_media_id:
+
+            bola_attempt = requests.post(
+                f"{API}/client-posts",
+                headers=auth_headers(
+                    customer_b_token
+                ),
+                json=client_post_body,
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                (
+                    "Cliente B não pode anexar media "
+                    "do Cliente A"
+                ),
+                bola_attempt,
+                404,
+            )
+
+        # ----------------------------------------------------
+        # Cliente A cria a publicação
+        # ----------------------------------------------------
+
+        if content_media_id:
+
+            submit_post = requests.post(
+                f"{API}/client-posts",
+                headers=auth_headers(
+                    customer_a_token
+                ),
+                json=client_post_body,
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                "Cliente A cria partilha",
+                submit_post,
+                201,
+            ):
+
+                try:
+                    submitted_json = (
+                        submit_post.json()
+                    )
+
+                    client_post_id = (
+                        submitted_json.get("id")
+                    )
+
+                    submitted_status = (
+                        submitted_json.get("status")
+                    )
+
+                    if client_post_id:
+                        pass_test(
+                            "Partilha devolve id",
+                            str(client_post_id),
+                        )
+
+                    else:
+                        fail_test(
+                            "Partilha devolve id",
+                            "id ausente",
+                        )
+
+                    if submitted_status == "PENDING":
+
+                        pass_test(
+                            (
+                                "Nova partilha começa "
+                                "PENDING"
+                            ),
+                            "PENDING",
+                        )
+
+                    else:
+                        fail_test(
+                            (
+                                "Nova partilha começa "
+                                "PENDING"
+                            ),
+                            (
+                                "esperado=PENDING, "
+                                f"recebido="
+                                f"{submitted_status}"
+                            ),
+                        )
+
+                except ValueError:
+                    fail_test(
+                        "Partilha criada JSON",
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # Confirmar que PENDING NÃO aparece publicamente
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            public_before = requests.get(
+                f"{API}/client-posts",
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                (
+                    "Lista pública de partilhas "
+                    "está acessível"
+                ),
+                public_before,
+                200,
+            ):
+
+                try:
+                    public_items = (
+                        public_before.json()
+                    )
+
+                    found_public = any(
+                        item.get("id")
+                        == client_post_id
+                        for item in public_items
+                    )
+
+                    if not found_public:
+
+                        pass_test(
+                            (
+                                "Partilha PENDING não "
+                                "aparece publicamente"
+                            )
+                        )
+
+                    else:
+                        fail_test(
+                            (
+                                "Partilha PENDING não "
+                                "aparece publicamente"
+                            ),
+                            (
+                                "publicação pendente "
+                                "foi exposta"
+                            ),
+                        )
+
+                except ValueError:
+                    fail_test(
+                        "Lista pública JSON",
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # Cliente A vê a própria publicação
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            mine_response = requests.get(
+                f"{API}/client-posts/mine",
+                headers=auth_headers(
+                    customer_a_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                "Cliente A consulta as próprias partilhas",
+                mine_response,
+                200,
+            ):
+
+                try:
+                    mine_items = (
+                        mine_response.json()
+                    )
+
+                    mine_post = next(
+                        (
+                            item
+                            for item in mine_items
+                            if (
+                                item.get("id")
+                                == client_post_id
+                            )
+                        ),
+                        None,
+                    )
+
+                    if mine_post:
+                        pass_test(
+                            (
+                                "Cliente A vê a sua "
+                                "partilha PENDING"
+                            )
+                        )
+
+                    else:
+                        fail_test(
+                            (
+                                "Cliente A vê a sua "
+                                "partilha PENDING"
+                            ),
+                            "publicação não encontrada",
+                        )
+
+                except ValueError:
+                    fail_test(
+                        "/client-posts/mine JSON",
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # ADMIN vê dados necessários para moderação
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            admin_posts_response = requests.get(
+                f"{API}/admin/client-posts",
+                headers=auth_headers(
+                    admin_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                (
+                    "ADMIN consulta partilhas "
+                    "para moderação"
+                ),
+                admin_posts_response,
+                200,
+            ):
+
+                try:
+                    admin_items = (
+                        admin_posts_response.json()
+                    )
+
+                    admin_post = next(
+                        (
+                            item
+                            for item in admin_items
+                            if (
+                                item.get("id")
+                                == client_post_id
+                            )
+                        ),
+                        None,
+                    )
+
+                    if admin_post:
+
+                        pass_test(
+                            (
+                                "ADMIN encontra "
+                                "partilha PENDING"
+                            )
+                        )
+
+                        submitted_email = (
+                            admin_post.get(
+                                "submittedByEmail"
+                            )
+                        )
+
+                        if (
+                            isinstance(
+                                submitted_email,
+                                str,
+                            )
+                            and (
+                                submitted_email
+                                .strip()
+                                .lower()
+                                ==
+                                CUSTOMER_A_EMAIL
+                                .strip()
+                                .lower()
+                            )
+                        ):
+                            pass_test(
+                                (
+                                    "ADMIN vê email "
+                                    "para moderação"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "ADMIN vê email "
+                                    "para moderação"
+                                ),
+                                (
+                                    f"recebido="
+                                    f"{submitted_email!r}"
+                                ),
+                            )
+
+                        consent_version = (
+                            admin_post.get(
+                                "consentVersion"
+                            )
+                        )
+
+                        consented_at = (
+                            admin_post.get(
+                                "consentedAt"
+                            )
+                        )
+
+                        if (
+                            consent_version
+                            and consented_at
+                        ):
+                            pass_test(
+                                (
+                                    "Consentimento "
+                                    "RGPD é registado"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "Consentimento "
+                                    "RGPD é registado"
+                                ),
+                                (
+                                    "consentVersion ou "
+                                    "consentedAt ausente"
+                                ),
+                            )
+
+                    else:
+                        fail_test(
+                            (
+                                "ADMIN encontra "
+                                "partilha PENDING"
+                            ),
+                            "não encontrada",
+                        )
+
+                except ValueError:
+                    fail_test(
+                        (
+                            "/admin/client-posts "
+                            "JSON"
+                        ),
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # Aprovação ADMIN
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            approve_response = requests.put(
+                (
+                    f"{API}/admin/client-posts/"
+                    f"{client_post_id}"
+                ),
+                headers=auth_headers(
+                    admin_token
+                ),
+                json={
+                    "status": "APPROVED",
+                    "adminMessage": (
+                        "Aprovado automaticamente "
+                        "pelo smoke test."
+                    ),
+                },
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                "ADMIN aprova partilha",
+                approve_response,
+                200,
+            ):
+
+                try:
+                    approved_json = (
+                        approve_response.json()
+                    )
+
+                    approved_status = (
+                        approved_json.get("status")
+                    )
+
+                    client_public_url = (
+                        approved_json.get(
+                            "mediaUrl"
+                        )
+                    )
+
+                    if (
+                        approved_status
+                        == "APPROVED"
+                    ):
+                        pass_test(
+                            (
+                                "Partilha fica "
+                                "APPROVED"
+                            )
+                        )
+
+                    else:
+                        fail_test(
+                            (
+                                "Partilha fica "
+                                "APPROVED"
+                            ),
+                            (
+                                f"status="
+                                f"{approved_status!r}"
+                            ),
+                        )
+
+                    if (
+                        isinstance(
+                            client_public_url,
+                            str,
+                        )
+                        and (
+                            "/api/v1/media/"
+                            in client_public_url
+                        )
+                    ):
+                        pass_test(
+                            (
+                                "Media aprovada passa "
+                                "para URL pública"
+                            ),
+                            "/media/",
+                        )
+
+                    else:
+                        fail_test(
+                            (
+                                "Media aprovada passa "
+                                "para URL pública"
+                            ),
+                            (
+                                f"url="
+                                f"{client_public_url!r}"
+                            ),
+                        )
+
+                except ValueError:
+                    fail_test(
+                        "Aprovação JSON",
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # URL privada antiga deixa de funcionar
+        # ----------------------------------------------------
+
+        if client_private_url:
+
+            old_private = requests.get(
+                client_private_url,
+                headers=auth_headers(
+                    customer_a_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                (
+                    "URL privada antiga desaparece "
+                    "após aprovação"
+                ),
+                old_private,
+                404,
+            )
+
+        # ----------------------------------------------------
+        # URL pública passa a funcionar sem autenticação
+        # ----------------------------------------------------
+
+        if client_public_url:
+
+            public_media = requests.get(
+                client_public_url,
+                timeout=TIMEOUT,
+            )
+
+            expect_status(
+                (
+                    "Media aprovada é acessível "
+                    "publicamente"
+                ),
+                public_media,
+                200,
+            )
+
+        # ----------------------------------------------------
+        # RGPD / DTO PÚBLICO
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            public_after = requests.get(
+                f"{API}/client-posts",
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                (
+                    "Partilha aprovada aparece "
+                    "na lista pública"
+                ),
+                public_after,
+                200,
+            ):
+
+                try:
+                    public_items = (
+                        public_after.json()
+                    )
+
+                    public_post = next(
+                        (
+                            item
+                            for item in public_items
+                            if (
+                                item.get("id")
+                                == client_post_id
+                            )
+                        ),
+                        None,
+                    )
+
+                    if public_post is None:
+
+                        fail_test(
+                            (
+                                "Partilha APPROVED "
+                                "fica pública"
+                            ),
+                            "não encontrada",
+                        )
+
+                    else:
+
+                        pass_test(
+                            (
+                                "Partilha APPROVED "
+                                "fica pública"
+                            )
+                        )
+
+                        # EMAIL NUNCA PODE SAIR
+                        # NO DTO PÚBLICO.
+
+                        if (
+                            "submittedByEmail"
+                            not in public_post
+                            or (
+                                public_post.get(
+                                    "submittedByEmail"
+                                )
+                                is None
+                            )
+                        ):
+                            pass_test(
+                                (
+                                    "API pública não "
+                                    "expõe email"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "API pública não "
+                                    "expõe email"
+                                ),
+                                "EMAIL EXPOSTO",
+                            )
+
+                        # showLocation=False:
+                        # local não pode aparecer.
+
+                        if (
+                            "location"
+                            not in public_post
+                            or (
+                                public_post.get(
+                                    "location"
+                                )
+                                is None
+                            )
+                        ):
+                            pass_test(
+                                (
+                                    "Localização escondida "
+                                    "não é pública"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "Localização escondida "
+                                    "não é pública"
+                                ),
+                                (
+                                    f"location="
+                                    f"{public_post.get('location')!r}"
+                                ),
+                            )
+
+                        # Data exata nunca é pública.
+
+                        if (
+                            "eventDate"
+                            not in public_post
+                            or (
+                                public_post.get(
+                                    "eventDate"
+                                )
+                                is None
+                            )
+                        ):
+                            pass_test(
+                                (
+                                    "Data exata do evento "
+                                    "não é pública"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "Data exata do evento "
+                                    "não é pública"
+                                ),
+                                (
+                                    f"eventDate="
+                                    f"{public_post.get('eventDate')!r}"
+                                ),
+                            )
+
+                        expected_month = (
+                            event_date.strftime(
+                                "%Y-%m"
+                            )
+                        )
+
+                        if (
+                            public_post.get(
+                                "eventMonth"
+                            )
+                            == expected_month
+                        ):
+                            pass_test(
+                                (
+                                    "API pública expõe "
+                                    "apenas mês autorizado"
+                                ),
+                                expected_month,
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "API pública expõe "
+                                    "apenas mês autorizado"
+                                ),
+                                (
+                                    f"esperado="
+                                    f"{expected_month}, "
+                                    f"recebido="
+                                    f"{public_post.get('eventMonth')!r}"
+                                ),
+                            )
+
+                        # Consentimento é dado ao admin
+                        # para auditoria, não ao público.
+
+                        if (
+                            "consentVersion"
+                            not in public_post
+                            and (
+                                "consentedAt"
+                                not in public_post
+                            )
+                        ):
+                            pass_test(
+                                (
+                                    "Metadados internos de "
+                                    "consentimento não são "
+                                    "públicos"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "Metadados internos de "
+                                    "consentimento não são "
+                                    "públicos"
+                                ),
+                                (
+                                    "consentVersion/"
+                                    "consentedAt expostos"
+                                ),
+                            )
+
+                except ValueError:
+                    fail_test(
+                        "Lista pública aprovada JSON",
+                        "resposta não é JSON",
+                    )
+
+        # ----------------------------------------------------
+        # CLEANUP DA PARTILHA
+        # ----------------------------------------------------
+
+        if client_post_id:
+
+            delete_client_post = requests.delete(
+                (
+                    f"{API}/admin/client-posts/"
+                    f"{client_post_id}"
+                ),
+                headers=auth_headers(
+                    admin_token
+                ),
+                timeout=TIMEOUT,
+            )
+
+            if expect_status(
+                (
+                    "Cleanup da partilha "
+                    "temporária"
+                ),
+                delete_client_post,
+                204,
+            ):
+
+                public_after_delete = (
+                    requests.get(
+                        f"{API}/client-posts",
+                        timeout=TIMEOUT,
+                    )
+                )
+
+                if expect_status(
+                    (
+                        "Lista pública após "
+                        "cleanup"
+                    ),
+                    public_after_delete,
+                    200,
+                ):
+
+                    try:
+                        remaining_posts = (
+                            public_after_delete
+                            .json()
+                        )
+
+                        still_exists = any(
+                            item.get("id")
+                            == client_post_id
+                            for item
+                            in remaining_posts
+                        )
+
+                        if not still_exists:
+
+                            pass_test(
+                                (
+                                    "Partilha deixa de "
+                                    "existir após cleanup"
+                                )
+                            )
+
+                        else:
+                            fail_test(
+                                (
+                                    "Partilha deixa de "
+                                    "existir após cleanup"
+                                ),
+                                (
+                                    "continua na lista "
+                                    "pública"
+                                ),
+                            )
+
+                    except ValueError:
+                        fail_test(
+                            (
+                                "Cleanup partilha "
+                                "JSON"
+                            ),
+                            "resposta não é JSON",
+                        )
+
+        # Confirmar também que o ficheiro público
+        # foi eliminado juntamente com a publicação.
+
+        if client_public_url:
+
+            public_media_after_delete = (
+                requests.get(
+                    client_public_url,
+                    timeout=TIMEOUT,
+                )
+            )
+
+            if (
+                public_media_after_delete
+                .status_code
+                in (403, 404)
+            ):
+
+                pass_test(
+                    (
+                        "Media pública é eliminada "
+                        "com a partilha"
+                    ),
+                    str(
+                        public_media_after_delete
+                        .status_code
+                    ),
+                )
+
+            else:
+
+                fail_test(
+                    (
+                        "Media pública é eliminada "
+                        "com a partilha"
+                    ),
+                    (
+                        "esperado=403/404, "
+                        f"recebido="
+                        f"{public_media_after_delete.status_code}"
+                    ),
+                )
     # ========================================================
     # 13. CLEANUP
     # ========================================================
