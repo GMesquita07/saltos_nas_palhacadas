@@ -1,0 +1,94 @@
+services:
+  - type: web
+    name: saltos-nas-palhacadas-api-staging
+
+    runtime: docker
+    branch: dev
+
+    plan: starter
+    region: frankfurt
+
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+
+    healthCheckPath: /actuator/health
+
+    autoDeployTrigger: checksPass
+
+    disk:
+      name: saltos-media-staging
+      mountPath: /var/data
+      sizeGB: 10
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+      - key: JWT_SECRET
+        sync: false
+
+      - key: JWT_EXPIRATION_HOURS
+        value: "8"
+
+      - key: ADMIN_EMAIL
+        sync: false
+
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      - key: AUTH_RATE_LIMIT_PER_MINUTE
+        value: "12"
+
+      - key: MEDIA_LOCAL_DIRECTORY
+        value: /var/data/uploads
+
+      - key: MEDIA_PRIVATE_LOCAL_DIRECTORY
+        value: /var/data/uploads-private
+
+      - key: MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE
+        value: "30"
+
+      - key: CLIENT_CONTENT_MAX_PENDING_UPLOADS_PER_USER
+        value: "12"
+
+      - key: CLIENT_CONTENT_MAX_PENDING_UPLOAD_BYTES_PER_USER
+        value: "314572800"
+
+      - key: CLIENT_CONTENT_PRIVATE_UPLOAD_RETENTION_HOURS
+        value: "24"
+
+      - key: CLIENT_CONTENT_PRIVATE_UPLOAD_CLEANUP_CRON
+        value: "0 30 3 * * *"
+
+      - key: MEDIA_MAX_FILE_SIZE
+        value: 100MB
+
+      - key: MEDIA_MAX_REQUEST_SIZE
+        value: 100MB
+
+      - key: DB_URL
+        sync: false
+
+      - key: DB_USERNAME
+        sync: false
+
+      - key: DB_PASSWORD
+        sync: false
+
+      - key: BOOKING_EMAIL_ENABLED
+        value: "false"
+
+      - key: BOOKING_REMINDER_DAYS_BEFORE
+        value: "5"
+
+      - key: BOOKING_REMINDER_ZONE
+        value: Europe/Lisbon
+
+      - key: SUPPORT_AI_ENABLED
+        value: "false"
+
+      - key: SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE
+        value: "20"
