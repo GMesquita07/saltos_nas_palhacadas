@@ -26,7 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.auth.JwtService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
@@ -48,7 +48,7 @@ class ClientContentIntegrationTests {
     @Autowired private ClientContentPostRepository posts;
     @Autowired private ManagedMediaRepository managedMedia;
     @Autowired private ClientContentMediaService mediaService;
-    @Autowired private LocalMediaStorage storage;
+    @Autowired private MediaStorage storage;
 
     @Test
     void customerSubmissionsStayHiddenUntilAdminApprovesThem() throws Exception {

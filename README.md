@@ -196,8 +196,15 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `BOOKING_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para criação de pedidos de agendamento. |
 | `REVIEW_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de avaliações. |
 | `CLIENT_CONTENT_SUBMIT_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de partilhas de clientes. |
-| `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
-| `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
+| `MEDIA_STORAGE_PROVIDER` | Sim | `local` em desenvolvimento/testes; `r2` em staging/produção. |
+| `MEDIA_LOCAL_DIRECTORY` | Sim se usares `local` | Diretório onde a API guarda uploads locais. |
+| `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação em storage local. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
+| `R2_ENDPOINT` | Sim se usares `r2` | Endpoint S3 do Cloudflare R2, por exemplo `https://<account_id>.eu.r2.cloudflarestorage.com`. |
+| `R2_ACCESS_KEY_ID` | Sim se usares `r2` | Access key do token R2, guardada apenas no backend/provider. |
+| `R2_SECRET_ACCESS_KEY` | Sim se usares `r2` | Secret access key do token R2, guardada apenas no backend/provider. |
+| `R2_PUBLIC_BUCKET` | Sim se usares `r2` | Bucket para objetos publicados. |
+| `R2_PRIVATE_BUCKET` | Sim se usares `r2` | Bucket privado para objetos pendentes/avatars. Tem de ser diferente do público. |
+| `R2_REGION` | Não | Região de assinatura do R2. Valor recomendado: `auto`. |
 | `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
 | `CLIENT_CONTENT_MAX_PENDING_UPLOADS_PER_USER` | Não | Máximo de uploads pendentes/anexados por cliente antes de aprovação. |
 | `CLIENT_CONTENT_MAX_PENDING_UPLOAD_BYTES_PER_USER` | Não | Limite total temporário, em bytes, dos uploads pendentes/anexados por cliente. |
@@ -332,13 +339,13 @@ CORS_ALLOWED_ORIGINS=https://exemplo.pt,https://www.exemplo.pt
 
 ### 5. Uploads e Media
 
-O projeto aceita uploads de imagens e vídeos. Antes de produção, decide onde esses ficheiros vão viver:
+O projeto aceita uploads de imagens e vídeos. O backend escolhe o provider através de `MEDIA_STORAGE_PROVIDER`.
 
-- Para testes: `MEDIA_LOCAL_DIRECTORY=uploads`.
-- Para produção com disco persistente: usa um mount estável, por exemplo `/var/data/uploads` ou `/app/uploads`, conforme o provider.
-- Para produção mais robusta: usa storage externo como S3 ou Cloudinary.
+- Para desenvolvimento/testes: `MEDIA_STORAGE_PROVIDER=local` e `MEDIA_LOCAL_DIRECTORY=uploads`.
+- Para staging/produção sem filesystem persistente: `MEDIA_STORAGE_PROVIDER=r2`.
+- Em R2, mantém dois buckets diferentes: um público para media publicada e um privado para pendentes/avatars.
 
-Atenção: muitos providers têm filesystem efémero por defeito. Se não houver disco persistente, os uploads podem desaparecer após redeploy, restart ou mudança de instância.
+Mesmo com R2, os URLs públicos e privados continuam a passar pela API (`/api/v1/media/{key}` e `/api/v1/private-media/{key}`). Não exponhas o bucket privado, não uses `r2.dev` para estes objetos e não guardes endpoints S3 na base de dados.
 
 ### 6. Emails
 

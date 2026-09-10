@@ -18,7 +18,7 @@ import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.favorite.Favorite;
 import pt.saltosnaspalhacadas.backend.favorite.FavoriteRepository;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
 import pt.saltosnaspalhacadas.backend.review.Review;
@@ -34,7 +34,7 @@ public class AccountLifecycleService {
     private final ReviewRepository reviews;
     private final ManagedMediaRepository media;
     private final ClientContentMediaService mediaService;
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
 
     public AccountLifecycleService(
             AppUserRepository users,
@@ -44,7 +44,7 @@ public class AccountLifecycleService {
             ReviewRepository reviews,
             ManagedMediaRepository media,
             ClientContentMediaService mediaService,
-            LocalMediaStorage storage) {
+            MediaStorage storage) {
         this.users = users;
         this.bookings = bookings;
         this.clientPosts = clientPosts;

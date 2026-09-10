@@ -25,7 +25,8 @@ import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.clientcontent.api.ClientContentPostResponse;
 import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.MediaPaths;
+import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 
 @RestController
@@ -33,11 +34,11 @@ import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 public class AdminClientContentController {
 
     private final ClientContentPostRepository posts;
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
     private final ClientContentMediaService mediaService;
     private final ApiResponseLimits responseLimits;
 
-    public AdminClientContentController(ClientContentPostRepository posts, LocalMediaStorage storage, ClientContentMediaService mediaService, ApiResponseLimits responseLimits) {
+    public AdminClientContentController(ClientContentPostRepository posts, MediaStorage storage, ClientContentMediaService mediaService, ApiResponseLimits responseLimits) {
         this.posts = posts;
         this.storage = storage;
         this.mediaService = mediaService;
@@ -96,13 +97,13 @@ public class AdminClientContentController {
             return null;
         }
 
-        String filename = storage.privateFilenameFromUrl(url).orElse(null);
+        String filename = storage.privateKeyFromUrl(url).orElse(null);
         if (filename == null) {
             return url;
         }
 
         storage.publishPrivate(filename);
-        return publicUrl(LocalMediaStorage.PUBLIC_MEDIA_PATH + filename);
+        return publicUrl(MediaPaths.publicPath(filename));
     }
 
     private String publicUrl(String path) {

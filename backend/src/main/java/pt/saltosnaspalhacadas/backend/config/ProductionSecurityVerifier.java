@@ -2,6 +2,7 @@ package pt.saltosnaspalhacadas.backend.config;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 
 import org.springframework.boot.ApplicationArguments;
@@ -41,6 +42,7 @@ class ProductionSecurityVerifier implements ApplicationRunner {
         requireProductionCors();
         requireHttpsHeaders();
         requireDatabaseSslWhenConfigured();
+        requireKnownMediaStorageProvider();
         requireExternalServicesWhenEnabled();
     }
 
@@ -124,6 +126,34 @@ class ProductionSecurityVerifier implements ApplicationRunner {
                 && !normalized.contains("sslmode=verify-full")
                 && !normalized.contains("ssl=true")) {
             throw new IllegalStateException("DB_URL em produção deve exigir SSL, por exemplo com sslmode=require");
+        }
+    }
+
+    private void requireKnownMediaStorageProvider() {
+        String storageProvider = environment.getProperty("app.media.storage-provider");
+        if (storageProvider == null || !"r2".equals(storageProvider.trim().toLowerCase(Locale.ROOT))) {
+            throw new IllegalStateException("MEDIA_STORAGE_PROVIDER deve ser r2 em produção; storage local não é persistente.");
+        }
+        requireR2Configuration();
+    }
+
+    private void requireR2Configuration() {
+        String endpoint = required("app.media.r2.endpoint", "R2_ENDPOINT é obrigatório quando MEDIA_STORAGE_PROVIDER=r2 em produção");
+        URI endpointUri = parseUri(endpoint, "R2_ENDPOINT deve ser um URL HTTPS válido");
+        String normalizedEndpoint = endpoint.toLowerCase(Locale.ROOT);
+        if (!"https".equalsIgnoreCase(endpointUri.getScheme())
+                || endpointUri.getHost() == null
+                || normalizedEndpoint.contains("localhost")
+                || normalizedEndpoint.contains("127.0.0.1")) {
+            throw new IllegalStateException("R2_ENDPOINT deve ser HTTPS e não pode apontar para localhost em produção");
+        }
+
+        required("app.media.r2.access-key-id", "R2_ACCESS_KEY_ID é obrigatório quando MEDIA_STORAGE_PROVIDER=r2 em produção");
+        required("app.media.r2.secret-access-key", "R2_SECRET_ACCESS_KEY é obrigatório quando MEDIA_STORAGE_PROVIDER=r2 em produção");
+        String publicBucket = required("app.media.r2.public-bucket", "R2_PUBLIC_BUCKET é obrigatório quando MEDIA_STORAGE_PROVIDER=r2 em produção");
+        String privateBucket = required("app.media.r2.private-bucket", "R2_PRIVATE_BUCKET é obrigatório quando MEDIA_STORAGE_PROVIDER=r2 em produção");
+        if (publicBucket.equals(privateBucket)) {
+            throw new IllegalStateException("R2_PUBLIC_BUCKET e R2_PRIVATE_BUCKET devem ser buckets diferentes");
         }
     }
 

@@ -15,12 +15,12 @@ import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
 @RestController
 @RequestMapping("/api/v1/admin/media")
 public class MediaController {
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
     private final IpRateLimiter rateLimiter;
     private final int uploadRateLimitPerMinute;
 
     public MediaController(
-            LocalMediaStorage storage,
+            MediaStorage storage,
             IpRateLimiter rateLimiter,
             @Value("${app.media.upload.rate-limit-per-minute:30}") int uploadRateLimitPerMinute) {
         this.storage = storage;
@@ -32,8 +32,11 @@ public class MediaController {
     @ResponseStatus(HttpStatus.CREATED)
     MediaUploadResponse upload(HttpServletRequest request, @RequestParam MultipartFile file) throws IOException {
         assertUploadAllowed(request);
-        LocalMediaStorage.StoredMedia media = storage.store(file);
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/v1/media/").path(media.filename()).toUriString();
+        StoredMedia media = storage.storePublic(file);
+        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(MediaPaths.PUBLIC_MEDIA_PATH)
+                .path(media.storageKey())
+                .toUriString();
         return new MediaUploadResponse(url, media.contentType());
     }
 

@@ -107,4 +107,11 @@ NVD_API_KEY=<nvd_api_key> ./mvnw org.owasp:dependency-check-maven:check -DskipTe
 - `ADMIN_PASSWORD`
 - `SECURITY_HSTS_ENABLED=true`
 - `REQUIRE_DATABASE_SSL=true`
+- `MEDIA_STORAGE_PROVIDER=r2`
+- `R2_ENDPOINT=https://<account_id>.eu.r2.cloudflarestorage.com`
+- `R2_ACCESS_KEY_ID=<r2_access_key_id>`
+- `R2_SECRET_ACCESS_KEY=<r2_secret_access_key>`
+- `R2_PUBLIC_BUCKET=<r2_public_bucket>`
+- `R2_PRIVATE_BUCKET=<r2_private_bucket>`
+- `R2_REGION=auto`
 - `VITE_API_URL=https://<api-publica>/api/v1`

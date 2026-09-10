@@ -32,7 +32,7 @@ import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPostRepository;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.MediaPaths;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
@@ -125,8 +125,8 @@ public class ClientContentController {
                 request.location().trim(),
                 request.eventDate(),
                 request.caption().trim(),
-                mediaUrl(LocalMediaStorage.PRIVATE_MEDIA_PATH, mainMedia.getStorageKey()),
-                thumbnailMedia == null ? null : mediaUrl(LocalMediaStorage.PRIVATE_MEDIA_PATH, thumbnailMedia.getStorageKey()),
+                mediaUrl(MediaPaths.PRIVATE_MEDIA_PATH, mainMedia.getStorageKey()),
+                thumbnailMedia == null ? null : mediaUrl(MediaPaths.PRIVATE_MEDIA_PATH, thumbnailMedia.getStorageKey()),
                 mainMedia,
                 thumbnailMedia,
                 publicDisplayName(user, request),
