@@ -10,6 +10,7 @@ export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect:
     <button className={styles.card} type="button" onClick={() => onSelect(profile)}>
       <span className={styles.portrait}>
         <CroppedImage
+          alt={'Foto de perfil de ' + profile.name}
           className={styles.image}
           fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
           position={imagePosition}

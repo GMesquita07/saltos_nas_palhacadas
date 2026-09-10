@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.material.Material;
 import pt.saltosnaspalhacadas.backend.material.MaterialRepository;
 import pt.saltosnaspalhacadas.backend.material.api.MaterialResponse;
@@ -30,17 +31,18 @@ import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 @RequestMapping("/api/v1/admin/materials")
 public class AdminMaterialController {
     private final MaterialRepository materials;
+    private final ApiResponseLimits responseLimits;
 
-    public AdminMaterialController(MaterialRepository materials) {
+    public AdminMaterialController(MaterialRepository materials, ApiResponseLimits responseLimits) {
         this.materials = materials;
+        this.responseLimits = responseLimits;
     }
 
     @GetMapping
     List<MaterialResponse> listMaterials() {
-        return materials.findAllByOrderByDisplayOrderAscNameAscIdAsc()
+        return responseLimits.adminList(materials.findAllByOrderByDisplayOrderAscNameAscIdAsc()
                 .stream()
-                .map(MaterialResponse::from)
-                .toList();
+                .map(MaterialResponse::from));
     }
 
     @PostMapping

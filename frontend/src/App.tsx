@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
+import { CookieConsent } from './components/CookieConsent/CookieConsent'
 import { SupportChat } from './components/SupportChat/SupportChat'
 import { AccountPage } from './features/auth/AccountPage'
 import { AuthPage } from './features/auth/AuthPage'
@@ -9,6 +10,7 @@ import { AdminArea } from './features/admin/AdminArea'
 import { BookingPage } from './features/booking/BookingPage'
 import { ClientContentPage } from './features/clientContent/ClientContentPage'
 import { ContactPage } from './features/contacts/ContactPage'
+import { FAQPage } from './features/faq/FAQPage'
 import { FavoritesPage } from './features/favorites/FavoritesPage'
 import { LegalPage } from './features/legal/LegalPage'
 import { MaterialsPage } from './features/materials/MaterialsPage'
@@ -22,7 +24,7 @@ import styles from './App.module.css'
 
 const SPLASH_DURATION_MS = 2200
 
-type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies'
+type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
 
 function App() {
   const initialPasswordResetToken = new URLSearchParams(window.location.search).get('resetToken') ?? ''
@@ -175,6 +177,12 @@ function App() {
     setView(view)
   }
 
+  function openFAQ() {
+    setSelectedProfile(null)
+    setShouldReturnToBooking(false)
+    setView('faq')
+  }
+
   function handleAuthBack() {
     setPasswordResetToken('')
     if (shouldReturnToBooking) {
@@ -199,6 +207,7 @@ function App() {
     if (view === 'privacy') return <LegalPage type="privacy" onBack={showProfiles} />
     if (view === 'terms') return <LegalPage type="terms" onBack={showProfiles} />
     if (view === 'cookies') return <LegalPage type="cookies" onBack={showProfiles} />
+    if (view === 'faq') return <FAQPage onBack={showProfiles} />
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
     if (view === 'account' && session) return <AccountPage onBookingsClick={() => openBooking()} onClientContentClick={showClientContent} onExit={showProfiles} onFavoritesClick={openFavorites} />
@@ -229,10 +238,12 @@ function App() {
           {!isSessionReady ? <p className={styles.feedback}>A preparar a tua sessão...</p> : renderView()}
         </main>
         <Footer
+          onFAQClick={openFAQ}
           onCookiesClick={() => openLegal('cookies')}
           onPrivacyClick={() => openLegal('privacy')}
           onTermsClick={() => openLegal('terms')}
         />
+        <CookieConsent onManage={() => openLegal('cookies')} />
         {!isSplashVisible && <SupportChat />}
       </div>
     </>
@@ -273,6 +284,7 @@ function pageMetadata(view: View, profile: Profile | null) {
     contacts: { title: 'Contactos | Saltos nas Palhaçadas', description: 'Contactos para pedidos, reservas e apoio.' },
     cookies: { title: 'Cookies | Saltos nas Palhaçadas', description: 'Informação sobre cookies e tecnologias semelhantes.' },
     favorites: { title: 'Favoritos | Saltos nas Palhaçadas', description: 'Conteúdos guardados como favoritos.' },
+    faq: { title: 'FAQ | Saltos nas Palhaçadas', description: 'Perguntas frequentes sobre agendamentos, contas, disponibilidade e partilhas.' },
     materials: { title: 'Material disponível | Saltos nas Palhaçadas', description: 'Lista de material disponível para eventos.' },
     privacy: { title: 'Privacidade | Saltos nas Palhaçadas', description: 'Informação sobre privacidade e proteção de dados.' },
     terms: { title: 'Termos | Saltos nas Palhaçadas', description: 'Termos de utilização do site Saltos nas Palhaçadas.' },

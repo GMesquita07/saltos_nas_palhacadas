@@ -179,12 +179,23 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `DB_PASSWORD` | Sim | Password da base de dados. |
 | `CORS_ALLOWED_ORIGINS` | Sim | Domínio público do frontend, sem `*` e sem `localhost`. |
 | `APP_PUBLIC_URL` | Sim | URL público do frontend usado em links enviados por email, como recuperação de password. |
+| `PUBLIC_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas públicas. Valor recomendado: `200`. |
+| `PRIVATE_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas privadas do utilizador. Valor recomendado: `200`. |
+| `ADMIN_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas administrativas. Valor recomendado: `500`. |
 | `JWT_SECRET` | Sim | Segredo Base64 com pelo menos 32 bytes descodificados. |
 | `JWT_EXPIRATION_HOURS` | Não | Duração dos tokens JWT. Valor recomendado: `8`. |
+| `SECURITY_HSTS_ENABLED` | Sim | Ativa `Strict-Transport-Security` em HTTPS. Valor recomendado: `true`. |
+| `SECURITY_HSTS_MAX_AGE_SECONDS` | Não | Tempo de HSTS em segundos. Valor recomendado: `31536000`. |
+| `SECURITY_HSTS_INCLUDE_SUBDOMAINS` | Não | Inclui subdomínios no HSTS. Valor recomendado: `true` se todos os subdomínios forem HTTPS. |
+| `SECURITY_HSTS_PRELOAD` | Não | Só usar `true` depois de confirmar requisitos de preload. |
+| `REQUIRE_DATABASE_SSL` | Sim | Exige SSL na ligação PostgreSQL em produção. Valor recomendado: `true`. |
 | `ADMIN_EMAIL` | Sim | Email do primeiro administrador. |
 | `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login, registo e recuperação de password. |
 | `PASSWORD_RESET_TOKEN_MINUTES` | Não | Validade, em minutos, dos links de recuperação de password. Valor recomendado: `30`. |
+| `BOOKING_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para criação de pedidos de agendamento. |
+| `REVIEW_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de avaliações. |
+| `CLIENT_CONTENT_SUBMIT_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de partilhas de clientes. |
 | `MEDIA_LOCAL_DIRECTORY` | Sim se usares uploads locais | Diretório onde a API guarda uploads. |
 | `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
 | `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
@@ -234,6 +245,9 @@ O backend inclui várias proteções importantes para deploy:
 - Ficheiros privados de partilhas ligados ao utilizador dono; outro cliente recebe `404` mesmo que tente adivinhar o URL.
 - Quotas temporárias por cliente e limpeza automática de uploads privados órfãos.
 - Partilhas públicas escondem email, local e data completa por defeito; o cliente escolhe nome público e consente antes de submeter.
+- Respostas de listas públicas, privadas e administrativas têm limites configuráveis.
+- JSON com campos desconhecidos é rejeitado para evitar tentativas de mass assignment.
+- Headers de segurança aplicados no backend e no frontend, incluindo HSTS em produção.
 - Migrations Flyway com `ddl-auto=validate` em produção.
 - Arranque em `prod` bloqueado quando faltam segredos ou quando o CORS está inseguro.
 - Open Session in View desativado.
@@ -284,13 +298,16 @@ Define também `APP_PUBLIC_URL` com esse mesmo domínio público para os links e
 APP_PUBLIC_URL=https://<dominio-do-frontend>
 ```
 
-O ficheiro `frontend/public/_headers` inclui uma Content Security Policy funcional para deploy estático. Antes da publicação final, troca o `connect-src 'self' https:` por uma lista explícita com o domínio real da API, por exemplo:
+O ficheiro `frontend/public/_headers` inclui uma Content Security Policy funcional para Cloudflare Pages. Se usares Render Static Sites, replica estes headers no Dashboard ou no blueprint `headers`.
+Antes da publicação final, troca o `connect-src 'self' https:` por uma lista explícita com o domínio real da API, por exemplo:
 
 ```text
 connect-src 'self' https://api.exemplo.pt;
 ```
 
 Mantém `frame-src` apenas para os domínios usados nos vídeos incorporados, como YouTube ou YouTube NoCookie.
+
+Se o frontend for publicado como SPA no Render e forem criadas rotas reais no browser, adiciona uma regra `rewrite` de `/*` para `/index.html` no Dashboard ou no blueprint `routes`. A app atual navega por estado interno, por isso a homepage continua a ser a rota pública principal.
 
 ### 4. CORS e Domínios
 
@@ -376,7 +393,8 @@ Obrigatório antes de abrir o site ao público:
 - `ADMIN_EMAIL` real e `ADMIN_PASSWORD` forte.
 - `CORS_ALLOWED_ORIGINS` com domínio público real.
 - `APP_PUBLIC_URL` com o domínio HTTPS público do frontend.
-- `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` definidos no provider.
+- `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` definidos no provider, com SSL ativo.
+- `SECURITY_HSTS_ENABLED=true` e `REQUIRE_DATABASE_SSL=true`.
 - Base de dados com SSL ativo.
 - `VITE_API_URL` aponta para a API pública.
 - Emails testados com SMTP real, se `BOOKING_EMAIL_ENABLED=true`.
@@ -456,6 +474,7 @@ Todos os endpoints administrativos requerem token JWT com role `ADMIN`.
 - [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) define o processo para responder a incidentes de segurança ou privacidade.
 - [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) descreve backups, restore e recuperação após falha.
 - [RGPD_REGISTER.md](RGPD_REGISTER.md) mantém o registo de tratamentos e tarefas RGPD a validar.
+- [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) mapeia a checklist de segurança, SEO, legal e operação antes do lançamento.
 
 ## Referências de Segurança
 

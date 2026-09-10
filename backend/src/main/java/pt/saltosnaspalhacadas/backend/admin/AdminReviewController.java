@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.review.Review;
 import pt.saltosnaspalhacadas.backend.review.ReviewRepository;
 import pt.saltosnaspalhacadas.backend.review.api.AdminReviewResponse;
@@ -23,17 +24,18 @@ import pt.saltosnaspalhacadas.backend.review.api.AdminReviewResponse;
 public class AdminReviewController {
 
     private final ReviewRepository reviews;
+    private final ApiResponseLimits responseLimits;
 
-    public AdminReviewController(ReviewRepository reviews) {
+    public AdminReviewController(ReviewRepository reviews, ApiResponseLimits responseLimits) {
         this.reviews = reviews;
+        this.responseLimits = responseLimits;
     }
 
     @GetMapping
     List<AdminReviewResponse> findAll() {
-        return reviews.findAllByOrderByReviewDateDescIdDesc()
+        return responseLimits.adminList(reviews.findAllByOrderByReviewDateDescIdDesc()
                 .stream()
-                .map(AdminReviewResponse::from)
-                .toList();
+                .map(AdminReviewResponse::from));
     }
 
     @PutMapping("/{id}")

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
+
 @RestControllerAdvice
 public class ValidationExceptionHandler {
 
@@ -27,9 +29,26 @@ public class ValidationExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ProblemDetail handleUnreadableRequest(HttpMessageNotReadableException exception) {
+        if (hasCause(exception, UnrecognizedPropertyException.class)) {
+            return ProblemDetail.forStatusAndDetail(
+                    HttpStatus.BAD_REQUEST,
+                    "O pedido contém campos não permitidos.");
+        }
+
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "Os dados enviados são inválidos. Confirma a data, o tipo de contacto e os restantes campos.");
+    }
+
+    private static boolean hasCause(Throwable throwable, Class<? extends Throwable> expectedType) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (expectedType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     @ExceptionHandler(ResponseStatusException.class)

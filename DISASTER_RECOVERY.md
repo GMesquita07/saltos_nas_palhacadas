@@ -17,7 +17,8 @@ Este documento define a estratégia mínima para recuperar o site **Saltos nas P
 ### PostgreSQL
 
 - Ativar backups automáticos no provider.
-- Confirmar retenção mínima adequada ao negócio.
+- Confirmar retenção mínima adequada ao negócio, idealmente 7 a 30 dias.
+- Confirmar se existe point-in-time recovery e em que plano está disponível.
 - Testar restore antes de produção.
 - Guardar informação de região e projeto.
 
@@ -25,6 +26,7 @@ Este documento define a estratégia mínima para recuperar o site **Saltos nas P
 
 - Usar storage persistente ou object storage.
 - Ativar versioning/lifecycle quando disponível.
+- Ativar snapshots automáticos se for usado disco persistente.
 - Confirmar que apagar na aplicação apaga ou agenda apagar no storage.
 
 ### Segredos

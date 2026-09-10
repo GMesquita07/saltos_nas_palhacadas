@@ -22,20 +22,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pt.saltosnaspalhacadas.backend.booking.BookingService;
 import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 
 @RestController
 @RequestMapping("/api/v1/admin/bookings")
 public class AdminBookingController {
 
     private final BookingService bookings;
+    private final ApiResponseLimits responseLimits;
 
-    public AdminBookingController(BookingService bookings) {
+    public AdminBookingController(BookingService bookings, ApiResponseLimits responseLimits) {
         this.bookings = bookings;
+        this.responseLimits = responseLimits;
     }
 
     @GetMapping
     List<BookingResponse> findBookings(@RequestParam(required = false) BookingStatus status) {
-        return bookings.findForAdmin(status).stream().map(BookingResponse::fromAdmin).toList();
+        return responseLimits.adminList(bookings.findForAdmin(status).stream().map(BookingResponse::fromAdmin));
     }
 
     @PutMapping("/{bookingId}/decision")

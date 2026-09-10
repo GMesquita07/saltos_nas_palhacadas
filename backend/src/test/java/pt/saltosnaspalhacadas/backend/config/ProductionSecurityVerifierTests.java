@@ -23,11 +23,42 @@ class ProductionSecurityVerifierTests {
     @Test
     void rejectsProductionWithLocalhostCors() {
         MockEnvironment environment = validProductionEnvironment()
-                .withProperty("app.cors.allowed-origins", "http://localhost:5173");
+                .withProperty("app.cors.allowed-origins", "https://localhost:5173");
 
         assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("domínio real");
+    }
+
+    @Test
+    void rejectsProductionWithHttpCors() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.cors.allowed-origins", "http://saltosnaspalhacadas.pt");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("HTTPS");
+    }
+
+    @Test
+    void rejectsProductionWithoutHsts() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.security.hsts.enabled", "false");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("SECURITY_HSTS_ENABLED");
+    }
+
+    @Test
+    void rejectsProductionDatabaseWithoutSslWhenRequired() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("spring.datasource.url", "jdbc:postgresql://db.example.test/saltos")
+                .withProperty("app.security.require-database-ssl", "true");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("sslmode=require");
     }
 
     @Test
@@ -82,6 +113,9 @@ class ProductionSecurityVerifierTests {
                 .withProperty("app.bootstrap.admin.password", "uma-password-forte-2026")
                 .withProperty("app.cors.allowed-origins", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.frontend.public-url", "https://saltosnaspalhacadas.pt")
+                .withProperty("app.security.hsts.enabled", "true")
+                .withProperty("app.security.require-database-ssl", "true")
+                .withProperty("spring.datasource.url", "jdbc:postgresql://db.example.test/saltos?sslmode=require")
                 .withProperty("app.support.ai.enabled", "false")
                 .withProperty("app.booking.email.enabled", "false");
         return environment;

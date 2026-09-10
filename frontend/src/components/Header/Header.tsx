@@ -54,7 +54,7 @@ export function Header({
             <>
               <button className={styles.accountButton} type="button" onClick={onAccountClick}>
                 {session.profileImageUrl && accountAvatarUrl
-                  ? <CroppedImage className={styles.accountAvatar} position={session.profileImagePosition} src={accountAvatarUrl} zoom={session.profileImageZoom} />
+                  ? <CroppedImage alt="Foto de perfil" className={styles.accountAvatar} position={session.profileImagePosition} src={accountAvatarUrl} zoom={session.profileImageZoom} />
                   : <NavIcon name="account" />}
                 Conta
               </button>

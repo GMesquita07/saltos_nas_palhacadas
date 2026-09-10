@@ -35,6 +35,42 @@
   font-size: 12px;
 }
 
+.cookiePanel {
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  margin: 0 0 42px;
+  padding: 18px 0;
+}
+
+.cookiePanel p {
+  margin: 0 0 14px;
+  color: var(--color-muted);
+}
+
+.cookiePanel strong {
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.cookieActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cookieActions button {
+  border: 1px solid var(--color-line);
+  min-height: 42px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.cookieActions button:hover {
+  border-color: var(--color-ink);
+}
+
 .sections {
   display: grid;
   gap: 18px;

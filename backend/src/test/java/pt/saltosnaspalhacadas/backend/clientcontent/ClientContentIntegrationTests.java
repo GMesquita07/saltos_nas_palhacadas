@@ -357,9 +357,9 @@ class ClientContentIntegrationTests {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"profileSlug":"%s","type":"PHOTO","title":"Festa","location":"Viseu","eventDate":"2026-08-20","caption":"Legenda válida","mediaUrl":"https://evil.example/festa.jpg","publicIdentity":"ANONYMOUS","consentToPublish":true}
-                                    """.formatted(profile.getSlug())))
+                    """.formatted(profile.getSlug())))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.mediaId").value("Envia uma fotografia ou vídeo"));
+                    .andExpect(jsonPath("$.detail").value("O pedido contém campos não permitidos."));
         } finally {
             profiles.deleteById(profile.getId());
             users.deleteById(customer.getId());

@@ -23,6 +23,7 @@ import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPostRepository;
 import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.clientcontent.api.ClientContentPostResponse;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
@@ -34,19 +35,20 @@ public class AdminClientContentController {
     private final ClientContentPostRepository posts;
     private final LocalMediaStorage storage;
     private final ClientContentMediaService mediaService;
+    private final ApiResponseLimits responseLimits;
 
-    public AdminClientContentController(ClientContentPostRepository posts, LocalMediaStorage storage, ClientContentMediaService mediaService) {
+    public AdminClientContentController(ClientContentPostRepository posts, LocalMediaStorage storage, ClientContentMediaService mediaService, ApiResponseLimits responseLimits) {
         this.posts = posts;
         this.storage = storage;
         this.mediaService = mediaService;
+        this.responseLimits = responseLimits;
     }
 
     @GetMapping
     List<ClientContentPostResponse> findAll() {
-        return posts.findAllByOrderByCreatedAtDescIdDesc()
+        return responseLimits.adminList(posts.findAllByOrderByCreatedAtDescIdDesc()
                 .stream()
-                .map(ClientContentPostResponse::adminFrom)
-                .toList();
+                .map(ClientContentPostResponse::adminFrom));
     }
 
     @PutMapping("/{id}")

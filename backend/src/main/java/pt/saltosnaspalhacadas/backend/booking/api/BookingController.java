@@ -2,8 +2,10 @@ package pt.saltosnaspalhacadas.backend.booking.api;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Duration;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -23,24 +25,39 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Value;
 
 import pt.saltosnaspalhacadas.backend.booking.BookingEventType;
 import pt.saltosnaspalhacadas.backend.booking.BookingService;
 import pt.saltosnaspalhacadas.backend.booking.CounterProposalDecision;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
 
 @RestController
 @RequestMapping("/api/v1/bookings")
 public class BookingController {
 
     private final BookingService bookings;
+    private final IpRateLimiter rateLimiter;
+    private final ApiResponseLimits responseLimits;
+    private final int bookingRateLimitPerMinute;
 
-    public BookingController(BookingService bookings) {
+    public BookingController(
+            BookingService bookings,
+            IpRateLimiter rateLimiter,
+            ApiResponseLimits responseLimits,
+            @Value("${app.booking.rate-limit-per-minute:6}") int bookingRateLimitPerMinute) {
         this.bookings = bookings;
+        this.rateLimiter = rateLimiter;
+        this.responseLimits = responseLimits;
+        this.bookingRateLimitPerMinute = bookingRateLimitPerMinute;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    BookingResponse createBooking(Authentication authentication, @Valid @RequestBody CreateBookingRequest request) {
+    BookingResponse createBooking(HttpServletRequest servletRequest, Authentication authentication, @Valid @RequestBody CreateBookingRequest request) {
+        assertBookingAllowed(servletRequest);
         return BookingResponse.from(bookings.create(currentEmail(authentication), new BookingService.CreateBookingCommand(
                 request.profileSlug(),
                 request.eventDate(),
@@ -59,7 +76,7 @@ public class BookingController {
 
     @GetMapping("/mine")
     List<BookingResponse> findMyBookings(Authentication authentication) {
-        return bookings.findMine(currentEmail(authentication)).stream().map(BookingResponse::from).toList();
+        return responseLimits.privateList(bookings.findMine(currentEmail(authentication)).stream().map(BookingResponse::from));
     }
 
     @PutMapping("/{bookingId}/counter-proposal/decision")
@@ -89,6 +106,12 @@ public class BookingController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para continuar");
         }
         return authentication.getName();
+    }
+
+    private void assertBookingAllowed(HttpServletRequest servletRequest) {
+        if (!rateLimiter.tryAcquire("booking-create", ClientIpAddress.from(servletRequest), bookingRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiados pedidos de agendamento em pouco tempo. Tenta novamente dentro de instantes.");
+        }
     }
 
     record CreateBookingRequest(

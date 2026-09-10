@@ -1,0 +1,67 @@
+.banner {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  border-top: 1px solid var(--color-line);
+  padding: 16px 24px;
+  background: rgba(250, 249, 246, .96);
+  color: var(--color-ink);
+  box-shadow: 0 -12px 36px rgba(37, 36, 33, .08);
+}
+
+.banner p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions button {
+  border: 1px solid var(--color-line);
+  padding: 9px 12px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.actions button:hover {
+  border-color: var(--color-ink);
+}
+
+.actions .primary {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: white;
+}
+
+@media (max-width: 720px) {
+  .banner {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .actions button {
+    min-height: 42px;
+    padding: 9px 8px;
+  }
+}

@@ -35,6 +35,7 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
       <header className={`${styles.hero} ${featuredVideo ? styles.heroWithVideo : ''}`}>
         <div className={styles.profileImage}>
           <CroppedImage
+            alt={'Foto de perfil de ' + profile.name}
             className={styles.profileImageFrame}
             fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
             position={imagePosition}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './LegalPage.module.css'
 
 type LegalPageProps = {
@@ -48,6 +49,17 @@ const pages = {
 
 export function LegalPage({ onBack, type }: LegalPageProps) {
   const page = pages[type]
+  const [cookieConsent, setCookieConsent] = useState(readCookieConsent)
+
+  function saveCookieConsent(nextChoice: CookieConsentChoice) {
+    try {
+      localStorage.setItem(cookieConsentStorageKey, nextChoice)
+      window.dispatchEvent(new CustomEvent('saltos:cookie-consent', { detail: { analytics: nextChoice === 'accepted' } }))
+    } catch {
+      // Preference still applies for the current page even if browser storage is blocked.
+    }
+    setCookieConsent(nextChoice)
+  }
 
   return (
     <section className={styles.page}>
@@ -56,6 +68,19 @@ export function LegalPage({ onBack, type }: LegalPageProps) {
       <h1>{page.title}</h1>
       <p className={styles.intro}>{page.intro}</p>
       <p className={styles.updated}>Última atualização: 27 de agosto de 2026</p>
+
+      {type === 'cookies' && (
+        <div className={styles.cookiePanel}>
+          <p>
+            Preferência atual:{' '}
+            <strong>{cookieConsent === 'accepted' ? 'opcionais aceites' : cookieConsent === 'rejected' ? 'opcionais rejeitados' : 'sem escolha guardada'}</strong>
+          </p>
+          <div className={styles.cookieActions}>
+            <button type="button" onClick={() => saveCookieConsent('rejected')}>Rejeitar opcionais</button>
+            <button type="button" onClick={() => saveCookieConsent('accepted')}>Aceitar opcionais</button>
+          </div>
+        </div>
+      )}
 
       <div className={styles.sections}>
         {page.sections.map(([title, content]) => (
@@ -67,4 +92,17 @@ export function LegalPage({ onBack, type }: LegalPageProps) {
       </div>
     </section>
   )
+}
+
+type CookieConsentChoice = 'accepted' | 'rejected'
+
+const cookieConsentStorageKey = 'saltos.cookie-consent'
+
+function readCookieConsent(): CookieConsentChoice | null {
+  try {
+    const value = localStorage.getItem(cookieConsentStorageKey)
+    return value === 'accepted' || value === 'rejected' ? value : null
+  } catch {
+    return null
+  }
 }

@@ -1,5 +1,6 @@
 package pt.saltosnaspalhacadas.backend.config;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -15,8 +16,13 @@ class ProductionSecurityVerifier implements ApplicationRunner {
     private static final Set<String> FORBIDDEN_ADMIN_PASSWORDS = Set.of(
             "11223344",
             "admin",
+            "admin123456",
             "password",
+            "password123",
             "change-me-now");
+    private static final Set<String> FORBIDDEN_JWT_SECRETS = Set.of(
+            "c2FsdG9zLWRldi1zZWNyZXQtY2hhbmdlLW1lLTIwMjYtMDE=",
+            "c2FsdG9zLXRlc3Qtc2VjcmV0LWNoYW5nZS1tZS0yMDI2LTAx");
 
     private final Environment environment;
 
@@ -33,11 +39,16 @@ class ProductionSecurityVerifier implements ApplicationRunner {
         requireStrongJwtSecret();
         requireStrongAdminCredentials();
         requireProductionCors();
+        requireHttpsHeaders();
+        requireDatabaseSslWhenConfigured();
         requireExternalServicesWhenEnabled();
     }
 
     private void requireStrongJwtSecret() {
         String secret = required("app.security.jwt.secret", "JWT_SECRET é obrigatório em produção");
+        if (FORBIDDEN_JWT_SECRETS.contains(secret.trim())) {
+            throw new IllegalStateException("JWT_SECRET não pode ser um segredo de desenvolvimento ou teste");
+        }
         try {
             byte[] decoded = Decoders.BASE64.decode(secret);
             if (decoded.length < 32) {
@@ -67,24 +78,63 @@ class ProductionSecurityVerifier implements ApplicationRunner {
             if (normalized.isBlank() || "*".equals(normalized)) {
                 throw new IllegalStateException("CORS_ALLOWED_ORIGINS não pode conter origens vazias ou wildcard em produção");
             }
+            URI uri = parseUri(origin.trim(), "CORS_ALLOWED_ORIGINS deve conter origens HTTPS válidas");
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
+                throw new IllegalStateException("CORS_ALLOWED_ORIGINS deve conter apenas origens HTTPS em produção");
+            }
+            if ((uri.getPath() != null && !uri.getPath().isBlank() && !"/".equals(uri.getPath()))
+                    || uri.getQuery() != null
+                    || uri.getFragment() != null) {
+                throw new IllegalStateException("CORS_ALLOWED_ORIGINS deve conter só a origem, sem path, query ou fragment");
+            }
             if (normalized.contains("localhost") || normalized.contains("127.0.0.1")) {
                 throw new IllegalStateException("CORS_ALLOWED_ORIGINS deve apontar para o domínio real do frontend em produção");
             }
         }
 
         String frontendUrl = required("app.frontend.public-url", "APP_PUBLIC_URL é obrigatório em produção");
+        URI frontendUri = parseUri(frontendUrl, "APP_PUBLIC_URL deve ser o URL HTTPS público do frontend em produção");
         String normalizedFrontendUrl = frontendUrl.toLowerCase();
-        if (!normalizedFrontendUrl.startsWith("https://")
+        if (!"https".equalsIgnoreCase(frontendUri.getScheme())
+                || frontendUri.getHost() == null
                 || normalizedFrontendUrl.contains("localhost")
                 || normalizedFrontendUrl.contains("127.0.0.1")) {
             throw new IllegalStateException("APP_PUBLIC_URL deve ser o URL HTTPS público do frontend em produção");
         }
     }
 
+    private void requireHttpsHeaders() {
+        if (!environment.getProperty("app.security.hsts.enabled", Boolean.class, false)) {
+            throw new IllegalStateException("SECURITY_HSTS_ENABLED deve estar ativo em produção");
+        }
+    }
+
+    private void requireDatabaseSslWhenConfigured() {
+        if (!environment.getProperty("app.security.require-database-ssl", Boolean.class, false)) {
+            return;
+        }
+
+        String datasourceUrl = required("spring.datasource.url", "DB_URL é obrigatório em produção");
+        String normalized = datasourceUrl.toLowerCase();
+        if (!normalized.startsWith("jdbc:postgresql:")) {
+            return;
+        }
+        if (!normalized.contains("sslmode=require")
+                && !normalized.contains("sslmode=verify-ca")
+                && !normalized.contains("sslmode=verify-full")
+                && !normalized.contains("ssl=true")) {
+            throw new IllegalStateException("DB_URL em produção deve exigir SSL, por exemplo com sslmode=require");
+        }
+    }
+
     private void requireExternalServicesWhenEnabled() {
         if (environment.getProperty("app.support.ai.enabled", Boolean.class, false)) {
             required("app.support.ai.api-key", "OPENAI_API_KEY é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
-            required("app.support.ai.endpoint", "OPENAI_API_ENDPOINT é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
+            String endpoint = required("app.support.ai.endpoint", "OPENAI_API_ENDPOINT é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
+            URI endpointUri = parseUri(endpoint, "OPENAI_API_ENDPOINT deve ser HTTPS quando SUPPORT_AI_ENABLED=true em produção");
+            if (!"https".equalsIgnoreCase(endpointUri.getScheme())) {
+                throw new IllegalStateException("OPENAI_API_ENDPOINT deve ser HTTPS quando SUPPORT_AI_ENABLED=true em produção");
+            }
             required("app.support.ai.model", "OPENAI_MODEL é obrigatório quando SUPPORT_AI_ENABLED=true em produção");
         }
 
@@ -96,6 +146,14 @@ class ProductionSecurityVerifier implements ApplicationRunner {
             if (!ssl && !startTls) {
                 throw new IllegalStateException("SMTP em produção deve usar SSL ou STARTTLS");
             }
+        }
+    }
+
+    private static URI parseUri(String value, String errorMessage) {
+        try {
+            return URI.create(value.trim());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException(errorMessage, exception);
         }
     }
 

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.favorite.FavoriteService;
 
 @RestController
@@ -19,16 +20,17 @@ import pt.saltosnaspalhacadas.backend.favorite.FavoriteService;
 public class FavoriteController {
 
     private final FavoriteService favorites;
+    private final ApiResponseLimits responseLimits;
 
-    public FavoriteController(FavoriteService favorites) {
+    public FavoriteController(FavoriteService favorites, ApiResponseLimits responseLimits) {
         this.favorites = favorites;
+        this.responseLimits = responseLimits;
     }
 
     @GetMapping
     List<FavoriteResponse> findFavorites(Authentication authentication) {
-        return favorites.findVisibleFavorites(currentEmail(authentication)).stream()
-                .map(FavoriteResponse::from)
-                .toList();
+        return responseLimits.privateList(favorites.findVisibleFavorites(currentEmail(authentication)).stream()
+                .map(FavoriteResponse::from));
     }
 
     @PostMapping("/{portfolioItemId}")

@@ -90,6 +90,19 @@ class AuthAndAdminIntegrationTests {
     }
 
     @Test
+    void registrationRejectsUnexpectedRoleField() throws Exception {
+        String email = "mass-assignment-" + UUID.randomUUID().toString().substring(0, 8) + "@example.test";
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","username":"mass%s","firstName":"Cliente","lastName":"Teste","phone":"+351 912 345 678","password":"palavra123","role":"ADMIN"}
+                """.formatted(email, UUID.randomUUID().toString().substring(0, 6))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O pedido contém campos não permitidos."));
+    }
+
+    @Test
     void customerCanChangePasswordInsideAccount() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         AppUser customer = users.save(new AppUser(
@@ -320,6 +333,12 @@ class AuthAndAdminIntegrationTests {
         mockMvc.perform(post("/api/v1/admin/contacts").header("Authorization", "Bearer " + token)
                         .contentType("application/json")
                         .content("{\"label\":\"Email geral\",\"type\":\"EMAIL\",\"value\":\"ola@example.test\",\"displayOrder\":0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O pedido contém campos não permitidos."));
+
+        mockMvc.perform(post("/api/v1/admin/contacts").header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"label\":\"Email geral\",\"type\":\"EMAIL\",\"value\":\"ola@example.test\"}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.label").value("Email geral"));
 
         mockMvc.perform(get("/api/v1/contacts"))

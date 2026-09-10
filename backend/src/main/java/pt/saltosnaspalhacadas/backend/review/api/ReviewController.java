@@ -1,9 +1,11 @@
 package pt.saltosnaspalhacadas.backend.review.api;
 
 import java.time.LocalDate;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -20,11 +22,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Value;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
 import pt.saltosnaspalhacadas.backend.review.Review;
 import pt.saltosnaspalhacadas.backend.review.ReviewRepository;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 
@@ -35,28 +41,41 @@ public class ReviewController {
     private final ReviewRepository reviews;
     private final ProfileRepository profiles;
     private final AppUserRepository users;
+    private final IpRateLimiter rateLimiter;
+    private final ApiResponseLimits responseLimits;
+    private final int reviewRateLimitPerMinute;
 
-    public ReviewController(ReviewRepository reviews, ProfileRepository profiles, AppUserRepository users) {
+    public ReviewController(
+            ReviewRepository reviews,
+            ProfileRepository profiles,
+            AppUserRepository users,
+            IpRateLimiter rateLimiter,
+            ApiResponseLimits responseLimits,
+            @Value("${app.review.rate-limit-per-minute:6}") int reviewRateLimitPerMinute) {
         this.reviews = reviews;
         this.profiles = profiles;
         this.users = users;
+        this.rateLimiter = rateLimiter;
+        this.responseLimits = responseLimits;
+        this.reviewRateLimitPerMinute = reviewRateLimitPerMinute;
     }
 
     @GetMapping
     List<ReviewResponse> findPublished(@PathVariable String slug) {
         profiles.findBySlugAndActiveTrue(slug).orElseThrow(() -> new ProfileNotFoundException(slug));
-        return reviews.findAllByProfileSlugAndPublishedTrueOrderByReviewDateDescIdDesc(slug)
+        return responseLimits.publicList(reviews.findAllByProfileSlugAndPublishedTrueOrderByReviewDateDescIdDesc(slug)
                 .stream()
-                .map(ReviewResponse::from)
-                .toList();
+                .map(ReviewResponse::from));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     ReviewResponse submitReview(
+            HttpServletRequest servletRequest,
             @PathVariable String slug,
             Authentication authentication,
             @Valid @RequestBody SubmitReviewRequest request) {
+        assertReviewAllowed(servletRequest);
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para deixar uma avaliação");
         }
@@ -78,6 +97,12 @@ public class ReviewController {
                 false);
 
         return ReviewResponse.from(reviews.save(review));
+    }
+
+    private void assertReviewAllowed(HttpServletRequest servletRequest) {
+        if (!rateLimiter.tryAcquire("review-submit", ClientIpAddress.from(servletRequest), reviewRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas avaliações em pouco tempo. Tenta novamente dentro de instantes.");
+        }
     }
 
     record SubmitReviewRequest(

@@ -2,16 +2,19 @@ package pt.saltosnaspalhacadas.backend.clientcontent.api;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +35,12 @@ import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
+import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 
@@ -48,12 +54,25 @@ public class ClientContentController {
     private final ProfileRepository profiles;
     private final AppUserRepository users;
     private final ClientContentMediaService mediaService;
+    private final IpRateLimiter rateLimiter;
+    private final ApiResponseLimits responseLimits;
+    private final int submitRateLimitPerMinute;
 
-    public ClientContentController(ClientContentPostRepository posts, ProfileRepository profiles, AppUserRepository users, ClientContentMediaService mediaService) {
+    public ClientContentController(
+            ClientContentPostRepository posts,
+            ProfileRepository profiles,
+            AppUserRepository users,
+            ClientContentMediaService mediaService,
+            IpRateLimiter rateLimiter,
+            ApiResponseLimits responseLimits,
+            @Value("${app.client-content.submit.rate-limit-per-minute:10}") int submitRateLimitPerMinute) {
         this.posts = posts;
         this.profiles = profiles;
         this.users = users;
         this.mediaService = mediaService;
+        this.rateLimiter = rateLimiter;
+        this.responseLimits = responseLimits;
+        this.submitRateLimitPerMinute = submitRateLimitPerMinute;
     }
 
     @GetMapping
@@ -62,26 +81,25 @@ public class ClientContentController {
                 ? posts.findAllByStatusOrderByEventDateDescIdDesc(ClientContentStatus.APPROVED)
                 : posts.findAllByStatusAndMediaTypeOrderByEventDateDescIdDesc(ClientContentStatus.APPROVED, type);
 
-        return result.stream()
-                .map(ClientContentPostResponse::publicFrom)
-                .toList();
+        return responseLimits.publicList(result.stream()
+                .map(ClientContentPostResponse::publicFrom));
     }
 
     @GetMapping("/mine")
     List<ClientContentPostResponse> findMine(Authentication authentication) {
         AppUser user = findCurrentUser(authentication);
 
-        return posts.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId())
+        return responseLimits.privateList(posts.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId())
                 .stream()
-                .map(ClientContentPostResponse::mineFrom)
-                .toList();
+                .map(ClientContentPostResponse::mineFrom));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    ClientContentPostResponse submit(Authentication authentication, @Valid @RequestBody SubmitClientContentRequest request) {
+    ClientContentPostResponse submit(HttpServletRequest servletRequest, Authentication authentication, @Valid @RequestBody SubmitClientContentRequest request) {
         AppUser user = findCurrentUser(authentication);
+        assertSubmitAllowed(servletRequest);
         if (request.eventDate().isAfter(LocalDate.now())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data do evento não pode ser no futuro");
         }
@@ -118,6 +136,12 @@ public class ClientContentController {
                 Instant.now());
 
         return ClientContentPostResponse.mineFrom(posts.save(post));
+    }
+
+    private void assertSubmitAllowed(HttpServletRequest servletRequest) {
+        if (!rateLimiter.tryAcquire("client-content-submit", ClientIpAddress.from(servletRequest), submitRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas submissões em pouco tempo. Tenta novamente dentro de instantes.");
+        }
     }
 
     private AppUser findCurrentUser(Authentication authentication) {
@@ -192,8 +216,6 @@ public class ClientContentController {
             Boolean showEventDate,
             @NotNull(message = "Confirma que tens autorização para publicar este conteúdo")
             @AssertTrue(message = "Confirma que tens autorização para publicar este conteúdo")
-            Boolean consentToPublish,
-            String mediaUrl,
-            String thumbnailUrl) {
+            Boolean consentToPublish) {
     }
 }
