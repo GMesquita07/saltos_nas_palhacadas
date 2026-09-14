@@ -26,7 +26,7 @@ public class ClientContentMediaService {
     private static final Logger log = LoggerFactory.getLogger(ClientContentMediaService.class);
     private static final Set<ManagedMediaStatus> QUOTA_STATUSES = Set.of(ManagedMediaStatus.PENDING, ManagedMediaStatus.ATTACHED);
 
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
     private final ManagedMediaRepository media;
     private final ClientContentPostRepository clientPosts;
     private final int maxPendingUploadsPerUser;
@@ -34,7 +34,7 @@ public class ClientContentMediaService {
     private final int privateUploadRetentionHours;
 
     public ClientContentMediaService(
-            LocalMediaStorage storage,
+            MediaStorage storage,
             ManagedMediaRepository media,
             ClientContentPostRepository clientPosts,
             @Value("${app.media.client-content.max-pending-uploads-per-user:12}") int maxPendingUploadsPerUser,
@@ -51,11 +51,11 @@ public class ClientContentMediaService {
     @Transactional
     public ManagedMedia uploadPrivate(AppUser owner, MultipartFile file) throws IOException {
         assertQuotaAvailable(owner, file.getSize());
-        LocalMediaStorage.StoredMedia stored = storage.storePrivate(file);
+        StoredMedia stored = storage.storePrivate(file);
         try {
-            return media.save(new ManagedMedia(owner, stored.filename(), stored.contentType(), file.getSize(), ManagedMediaPurpose.CLIENT_CONTENT));
+            return media.save(new ManagedMedia(owner, stored.storageKey(), stored.contentType(), file.getSize(), ManagedMediaPurpose.CLIENT_CONTENT));
         } catch (RuntimeException exception) {
-            storage.deletePrivate(stored.filename());
+            storage.deletePrivate(stored.storageKey());
             throw exception;
         }
     }
@@ -69,16 +69,16 @@ public class ClientContentMediaService {
             delete(pendingAvatar);
         }
 
-        LocalMediaStorage.StoredMedia stored = storage.storePrivate(file);
+        StoredMedia stored = storage.storePrivate(file);
         if (!stored.contentType().startsWith("image/")) {
-            storage.deletePrivate(stored.filename());
+            storage.deletePrivate(stored.storageKey());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleciona uma imagem válida");
         }
 
         try {
-            return media.save(new ManagedMedia(owner, stored.filename(), stored.contentType(), file.getSize(), ManagedMediaPurpose.PROFILE_AVATAR));
+            return media.save(new ManagedMedia(owner, stored.storageKey(), stored.contentType(), file.getSize(), ManagedMediaPurpose.PROFILE_AVATAR));
         } catch (RuntimeException exception) {
-            storage.deletePrivate(stored.filename());
+            storage.deletePrivate(stored.storageKey());
             throw exception;
         }
     }
@@ -114,18 +114,19 @@ public class ClientContentMediaService {
     }
 
     @Transactional(readOnly = true)
-    public PrivateMediaDownload requirePrivateDownload(String filename, AppUser currentUser) {
-        if (!storage.isSafeFilename(filename)) {
+    public MediaDownload requirePrivateDownload(String filename, AppUser currentUser) throws IOException {
+        if (!storage.isValidStorageKey(filename)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
         }
 
-        if (!storage.privateExists(filename)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
+        ManagedMedia managedMedia = media.findByStorageKeyAndDeletedAtIsNull(filename).orElse(null);
+        if (managedMedia != null) {
+            String contentType = requireManagedPrivateDownload(managedMedia, currentUser);
+            return requireExistingPrivateDownload(filename, contentType);
         }
 
-        return media.findByStorageKeyAndDeletedAtIsNull(filename)
-                .map(managedMedia -> requireManagedPrivateDownload(managedMedia, currentUser))
-                .orElseGet(() -> requireLegacyPrivateDownload(filename, currentUser));
+        requireLegacyPrivateDownload(filename, currentUser);
+        return requireExistingPrivateDownload(filename, null);
     }
 
     @Transactional
@@ -141,7 +142,7 @@ public class ClientContentMediaService {
             managedMedia.markPublic(Instant.now());
             media.save(managedMedia);
         }
-        return LocalMediaStorage.PUBLIC_MEDIA_PATH + managedMedia.getStorageKey();
+        return MediaPaths.publicPath(managedMedia.getStorageKey());
     }
 
     @Transactional
@@ -196,18 +197,25 @@ public class ClientContentMediaService {
         return expectedType == MediaType.VIDEO ? isVideo : !isVideo;
     }
 
-    private static PrivateMediaDownload requireManagedPrivateDownload(ManagedMedia managedMedia, AppUser currentUser) {
+    private MediaDownload requireExistingPrivateDownload(String filename, String contentType) throws IOException {
+        if (!storage.privateExists(filename)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
+        }
+        return storage.readPrivate(filename).withContentType(contentType);
+    }
+
+    private static String requireManagedPrivateDownload(ManagedMedia managedMedia, AppUser currentUser) {
         if (managedMedia.getStatus() == ManagedMediaStatus.PUBLIC || managedMedia.getStatus() == ManagedMediaStatus.DELETED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
         }
         if (!managedMedia.isOwnedBy(currentUser) && currentUser.getRole() != UserRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
         }
-        return new PrivateMediaDownload(managedMedia.getContentType());
+        return managedMedia.getContentType();
     }
 
-    private PrivateMediaDownload requireLegacyPrivateDownload(String filename, AppUser currentUser) {
-        String privateMediaPath = LocalMediaStorage.PRIVATE_MEDIA_PATH + filename;
+    private String requireLegacyPrivateDownload(String filename, AppUser currentUser) {
+        String privateMediaPath = MediaPaths.privatePath(filename);
         boolean allowed = clientPosts.existsVisibleLegacyPrivateMedia(
                 privateMediaPath,
                 currentUser.getId(),
@@ -215,9 +223,6 @@ public class ClientContentMediaService {
         if (!allowed) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
         }
-        return new PrivateMediaDownload(null);
-    }
-
-    public record PrivateMediaDownload(String contentType) {
+        return null;
     }
 }

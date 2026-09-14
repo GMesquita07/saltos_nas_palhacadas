@@ -1,14 +1,10 @@
 package pt.saltosnaspalhacadas.backend.media;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
 import java.util.Locale;
 
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.CacheControl;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +21,16 @@ import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 public class UserAvatarController {
 
     private final AppUserRepository users;
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
 
-    public UserAvatarController(AppUserRepository users, LocalMediaStorage storage) {
+    public UserAvatarController(AppUserRepository users, MediaStorage storage) {
         this.users = users;
         this.storage = storage;
     }
 
     @GetMapping
     @Transactional(readOnly = true)
-    ResponseEntity<FileSystemResource> show(Authentication authentication) {
+    ResponseEntity<Resource> show(Authentication authentication) throws IOException {
         AppUser user = findCurrentUser(authentication);
         ManagedMedia avatar = user.getProfileMedia();
         if (avatar == null
@@ -45,22 +41,11 @@ public class UserAvatarController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Foto de perfil não encontrada");
         }
 
-        Path file = storage.privatePath(avatar.getStorageKey());
-        if (!Files.exists(file)) {
+        if (!storage.privateExists(avatar.getStorageKey())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Foto de perfil não encontrada");
         }
 
-        MediaType contentType = MediaType.parseMediaType(avatar.getContentType());
-        if (!contentType.isConcrete()) {
-            contentType = MediaTypeFactory.getMediaType(file.getFileName().toString())
-                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
-        }
-
-        return ResponseEntity.ok()
-                .contentType(contentType)
-                .cacheControl(CacheControl.noStore())
-                .header("X-Content-Type-Options", "nosniff")
-                .body(new FileSystemResource(file));
+        return MediaHttpResponses.ok(storage.readPrivate(avatar.getStorageKey()).withContentType(avatar.getContentType()), true);
     }
 
     private AppUser findCurrentUser(Authentication authentication) {

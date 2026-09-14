@@ -31,10 +31,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
+import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.notification.EmailService;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
@@ -52,7 +52,7 @@ public class AuthController {
     private final JwtService jwt;
     private final IpRateLimiter rateLimiter;
     private final ClientContentMediaService mediaService;
-    private final LocalMediaStorage storage;
+    private final MediaStorage storage;
     private final EmailService emailService;
     private final AccountLifecycleService accountLifecycle;
     private final int authRateLimitPerMinute;
@@ -66,7 +66,7 @@ public class AuthController {
             JwtService jwt,
             IpRateLimiter rateLimiter,
             ClientContentMediaService mediaService,
-            LocalMediaStorage storage,
+            MediaStorage storage,
             EmailService emailService,
             AccountLifecycleService accountLifecycle,
             @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute,

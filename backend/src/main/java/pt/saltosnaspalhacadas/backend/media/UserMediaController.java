@@ -49,7 +49,7 @@ public class UserMediaController {
         AppUser user = findCurrentUser(authentication);
         ManagedMedia media = mediaService.uploadPrivateAvatar(user, file);
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path(LocalMediaStorage.PRIVATE_MEDIA_PATH)
+                .path(MediaPaths.PRIVATE_MEDIA_PATH)
                 .path(media.getStorageKey())
                 .toUriString();
         return new MediaUploadResponse(media.getId(), url, media.getContentType());

@@ -1,5 +1,7 @@
 package pt.saltosnaspalhacadas.backend.config;
 
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -20,6 +22,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/contacts/**", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/profiles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/materials").permitAll()

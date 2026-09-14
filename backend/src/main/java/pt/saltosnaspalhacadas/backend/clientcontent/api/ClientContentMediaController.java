@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
-import pt.saltosnaspalhacadas.backend.media.LocalMediaStorage;
+import pt.saltosnaspalhacadas.backend.media.MediaPaths;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
@@ -52,7 +52,7 @@ public class ClientContentMediaController {
         assertUploadAllowed(request);
         ManagedMedia media = mediaService.uploadPrivate(user, file);
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path(LocalMediaStorage.PRIVATE_MEDIA_PATH)
+                .path(MediaPaths.PRIVATE_MEDIA_PATH)
                 .path(media.getStorageKey())
                 .toUriString();
         return new MediaUploadResponse(media.getId(), url, media.getContentType());

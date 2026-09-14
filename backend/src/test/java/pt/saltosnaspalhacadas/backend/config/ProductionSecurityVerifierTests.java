@@ -12,7 +12,7 @@ import org.springframework.mock.env.MockEnvironment;
 class ProductionSecurityVerifierTests {
 
     @Test
-    void ignoresNonProductionProfiles() {
+    void allowsDevWithoutMediaStorageProvider() {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("dev");
 
@@ -72,14 +72,71 @@ class ProductionSecurityVerifierTests {
     }
 
     @Test
-    void acceptsProductionWithRequiredSecuritySettings() {
-        assertThatCode(() -> new ProductionSecurityVerifier(validProductionEnvironment()).run(null))
+    void rejectsProductionWithoutMediaStorageProvider() {
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(validProductionEnvironment()).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MEDIA_STORAGE_PROVIDER deve ser r2 em produção");
+    }
+
+    @Test
+    void rejectsProductionWithLocalMediaStorageProvider() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.media.storage-provider", "local");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("storage local não é persistente");
+    }
+
+    @Test
+    void acceptsProductionWithValidR2Configuration() {
+        assertThatCode(() -> new ProductionSecurityVerifier(validProductionEnvironmentWithR2()).run(null))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    void rejectsProductionEmailWithoutTls() {
+    void rejectsProductionWithUnknownMediaStorageProvider() {
         MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.media.storage-provider", "ftp");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MEDIA_STORAGE_PROVIDER");
+    }
+
+    @Test
+    void rejectsProductionR2WithoutCredentials() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.media.r2.secret-access-key", "");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("R2_SECRET_ACCESS_KEY");
+    }
+
+    @Test
+    void rejectsProductionR2WithHttpEndpoint() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.media.r2.endpoint", "http://account.eu.r2.cloudflarestorage.com");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("R2_ENDPOINT");
+    }
+
+    @Test
+    void rejectsProductionR2WithSameBucketForPublicAndPrivateMedia() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.media.r2.private-bucket", "saltos-public");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("buckets diferentes");
+    }
+
+    @Test
+    void rejectsProductionEmailWithoutTls() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
                 .withProperty("app.booking.email.enabled", "true")
                 .withProperty("app.booking.email.smtp-host", "smtp.example.test")
                 .withProperty("app.booking.email.from", "no-reply@saltosnaspalhacadas.pt")
@@ -93,7 +150,7 @@ class ProductionSecurityVerifierTests {
 
     @Test
     void rejectsProductionAiWithoutModel() {
-        MockEnvironment environment = validProductionEnvironment()
+        MockEnvironment environment = validProductionEnvironmentWithR2()
                 .withProperty("app.support.ai.enabled", "true")
                 .withProperty("app.support.ai.api-key", "sk-test")
                 .withProperty("app.support.ai.endpoint", "https://api.openai.com/v1/responses")
@@ -119,6 +176,16 @@ class ProductionSecurityVerifierTests {
                 .withProperty("app.support.ai.enabled", "false")
                 .withProperty("app.booking.email.enabled", "false");
         return environment;
+    }
+
+    private static MockEnvironment validProductionEnvironmentWithR2() {
+        return validProductionEnvironment()
+                .withProperty("app.media.storage-provider", "r2")
+                .withProperty("app.media.r2.endpoint", "https://account.eu.r2.cloudflarestorage.com")
+                .withProperty("app.media.r2.access-key-id", "access-key-id")
+                .withProperty("app.media.r2.secret-access-key", "secret-access-key")
+                .withProperty("app.media.r2.public-bucket", "saltos-public")
+                .withProperty("app.media.r2.private-bucket", "saltos-private");
     }
 
     private static String base64Secret() {

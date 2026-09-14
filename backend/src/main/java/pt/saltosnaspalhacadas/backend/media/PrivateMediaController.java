@@ -1,15 +1,11 @@
 package pt.saltosnaspalhacadas.backend.media;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
 import java.util.Locale;
 
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,38 +19,18 @@ import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 @RequestMapping("/api/v1/private-media")
 public class PrivateMediaController {
 
-    private final LocalMediaStorage storage;
     private final ClientContentMediaService mediaService;
     private final AppUserRepository users;
 
-    public PrivateMediaController(LocalMediaStorage storage, ClientContentMediaService mediaService, AppUserRepository users) {
-        this.storage = storage;
+    public PrivateMediaController(ClientContentMediaService mediaService, AppUserRepository users) {
         this.mediaService = mediaService;
         this.users = users;
     }
 
     @GetMapping("/{filename:.+}")
-    ResponseEntity<FileSystemResource> show(@PathVariable String filename, Authentication authentication) {
+    ResponseEntity<Resource> show(@PathVariable String filename, Authentication authentication) throws IOException {
         AppUser user = findCurrentUser(authentication);
-        ClientContentMediaService.PrivateMediaDownload media = mediaService.requirePrivateDownload(filename, user);
-
-        Path file = storage.privatePath(filename);
-        if (!Files.exists(file)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ficheiro não encontrado");
-        }
-
-        MediaType contentType = media.contentType() == null
-                ? MediaTypeFactory.getMediaType(file.getFileName().toString()).orElse(MediaType.APPLICATION_OCTET_STREAM)
-                : MediaType.parseMediaType(media.contentType());
-        if (!contentType.isConcrete()) {
-            contentType = MediaTypeFactory.getMediaType(file.getFileName().toString())
-                .orElse(MediaType.APPLICATION_OCTET_STREAM);
-        }
-        return ResponseEntity.ok()
-                .contentType(contentType)
-                .cacheControl(CacheControl.noStore())
-                .header("X-Content-Type-Options", "nosniff")
-                .body(new FileSystemResource(file));
+        return MediaHttpResponses.ok(mediaService.requirePrivateDownload(filename, user), true);
     }
 
     private AppUser findCurrentUser(Authentication authentication) {
