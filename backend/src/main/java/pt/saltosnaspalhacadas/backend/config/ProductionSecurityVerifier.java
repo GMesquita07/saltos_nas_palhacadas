@@ -24,6 +24,15 @@ class ProductionSecurityVerifier implements ApplicationRunner {
     private static final Set<String> FORBIDDEN_JWT_SECRETS = Set.of(
             "c2FsdG9zLWRldi1zZWNyZXQtY2hhbmdlLW1lLTIwMjYtMDE=",
             "c2FsdG9zLXRlc3Qtc2VjcmV0LWNoYW5nZS1tZS0yMDI2LTAx");
+    private static final Set<String> FORBIDDEN_MAINTENANCE_KEY_PARTS = Set.of(
+            "admin",
+            "change-me",
+            "changeme",
+            "example",
+            "maintenance",
+            "password",
+            "secret",
+            "test");
 
     private final Environment environment;
 
@@ -38,6 +47,7 @@ class ProductionSecurityVerifier implements ApplicationRunner {
         }
 
         requireStrongJwtSecret();
+        requireStrongMaintenanceApiKey();
         requireStrongAdminCredentials();
         requireProductionCors();
         requireHttpsHeaders();
@@ -70,6 +80,14 @@ class ProductionSecurityVerifier implements ApplicationRunner {
         String adminPassword = required("app.bootstrap.admin.password", "ADMIN_PASSWORD é obrigatório em produção");
         if (adminPassword.length() < 12 || FORBIDDEN_ADMIN_PASSWORDS.contains(adminPassword.toLowerCase())) {
             throw new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 12 caracteres e não pode ser uma password de exemplo");
+        }
+    }
+
+    private void requireStrongMaintenanceApiKey() {
+        String apiKey = required("app.maintenance.api-key", "MAINTENANCE_API_KEY é obrigatório em produção");
+        String normalized = apiKey.toLowerCase(Locale.ROOT);
+        if (apiKey.length() < 32 || FORBIDDEN_MAINTENANCE_KEY_PARTS.stream().anyMatch(normalized::contains)) {
+            throw new IllegalStateException("MAINTENANCE_API_KEY deve ter pelo menos 32 caracteres e não pode ser uma chave de exemplo");
         }
     }
 

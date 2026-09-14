@@ -2,7 +2,9 @@ package pt.saltosnaspalhacadas.backend.media;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -10,6 +12,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -116,6 +120,22 @@ class ClientContentMediaServiceTests {
         order.verify(clientPosts).existsVisibleLegacyPrivateMedia(MediaPaths.privatePath(STORAGE_KEY), owner.getId(), false);
         order.verify(storage).privateExists(STORAGE_KEY);
         order.verify(storage).readPrivate(STORAGE_KEY);
+    }
+
+    @Test
+    void cleanupExpiredPrivateUploadsNowDeletesPendingPrivateMediaAndReturnsCount() throws Exception {
+        AppUser owner = user(1L, UserRole.CUSTOMER);
+        ManagedMedia expiredMedia = new ManagedMedia(owner, STORAGE_KEY, "image/png", 12);
+        when(media.findAllByStatusAndCreatedAtBeforeAndDeletedAtIsNull(eq(ManagedMediaStatus.PENDING), any(Instant.class)))
+                .thenReturn(List.of(expiredMedia));
+
+        int deleted = service.cleanupExpiredPrivateUploadsNow();
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(expiredMedia.getStatus()).isEqualTo(ManagedMediaStatus.DELETED);
+        assertThat(expiredMedia.getDeletedAt()).isNotNull();
+        verify(storage).deletePrivate(STORAGE_KEY);
+        verify(media).save(expiredMedia);
     }
 
     private static MediaDownload download(String contentType) {

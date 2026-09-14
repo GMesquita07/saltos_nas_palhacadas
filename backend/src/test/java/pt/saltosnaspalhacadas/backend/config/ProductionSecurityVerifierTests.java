@@ -72,6 +72,26 @@ class ProductionSecurityVerifierTests {
     }
 
     @Test
+    void rejectsProductionWithoutMaintenanceApiKey() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.maintenance.api-key", "");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MAINTENANCE_API_KEY");
+    }
+
+    @Test
+    void rejectsProductionWithWeakMaintenanceApiKey() {
+        MockEnvironment environment = validProductionEnvironment()
+                .withProperty("app.maintenance.api-key", "change-me-maintenance-secret-key-2026");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MAINTENANCE_API_KEY");
+    }
+
+    @Test
     void rejectsProductionWithoutMediaStorageProvider() {
         assertThatThrownBy(() -> new ProductionSecurityVerifier(validProductionEnvironment()).run(null))
                 .isInstanceOf(IllegalStateException.class)
@@ -91,6 +111,15 @@ class ProductionSecurityVerifierTests {
     @Test
     void acceptsProductionWithValidR2Configuration() {
         assertThatCode(() -> new ProductionSecurityVerifier(validProductionEnvironmentWithR2()).run(null))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void acceptsProductionWithStrongMaintenanceApiKey() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.maintenance.api-key", "8Rq4Vz7Lm2Np5Qx9Tb3Yw6Gc1Hd4Ks2P");
+
+        assertThatCode(() -> new ProductionSecurityVerifier(environment).run(null))
                 .doesNotThrowAnyException();
     }
 
@@ -168,6 +197,7 @@ class ProductionSecurityVerifierTests {
                 .withProperty("app.security.jwt.secret", base64Secret())
                 .withProperty("app.bootstrap.admin.email", "admin@saltosnaspalhacadas.pt")
                 .withProperty("app.bootstrap.admin.password", "uma-password-forte-2026")
+                .withProperty("app.maintenance.api-key", "9xVf7Qr2Lm8Np4Ts6Yb3Wd5Gh7Jk2MzQ")
                 .withProperty("app.cors.allowed-origins", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.frontend.public-url", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.security.hsts.enabled", "true")
