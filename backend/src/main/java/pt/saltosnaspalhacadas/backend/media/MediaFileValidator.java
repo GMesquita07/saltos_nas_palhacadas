@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class MediaFileValidator {
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-    private static final long MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+    private static final long MAX_VIDEO_SIZE = 30 * 1024 * 1024;
     private static final Map<String, AllowedMedia> ALLOWED_MEDIA = Map.of(
             "image/jpeg", new AllowedMedia(".jpg", MAX_IMAGE_SIZE, MediaFileValidator::isJpeg),
             "image/png", new AllowedMedia(".png", MAX_IMAGE_SIZE, MediaFileValidator::isPng),
