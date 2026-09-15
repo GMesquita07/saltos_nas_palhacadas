@@ -1,99 +1,84 @@
 # Saltos nas Palhaçadas
 
-Site full-stack para apresentação, gestão e contacto de um animador de eventos. O projeto permite publicar perfis de artistas, portfólios, avaliações, materiais disponíveis, contactos, pedidos de agendamento e conteúdos submetidos por clientes, com moderação no painel de administração.
+Aplicação full-stack para apresentar artistas de animação de eventos, gerir portfólios, receber pedidos de agendamento, moderar avaliações e publicar partilhas de clientes.
 
-## Visão Geral
+Este repositório contém:
 
-O objetivo do site é centralizar a presença digital da marca **Saltos nas Palhaçadas**: mostrar artistas e serviços, receber pedidos de eventos, recolher feedback de clientes e facilitar o contacto com potenciais interessados.
+- `frontend/`: SPA React + TypeScript + Vite, publicada em Cloudflare Pages.
+- `backend/`: API Java 21 + Spring Boot + Maven, publicada em Google Cloud Run.
+- `docker-compose.yml`: PostgreSQL local para desenvolvimento.
+- `render.yaml`: configuração histórica/alternativa, não é a produção atual.
+- `docs/`: documentação técnica e operacional atualizada.
 
-O projeto tem duas aplicações:
+## Estado Atual
 
-- **Frontend:** React, TypeScript e Vite.
-- **Backend:** Java 21, Spring Boot, Maven, Spring Security, JWT, Flyway e PostgreSQL.
+Produção atual validada na branch `feat/production-launch`:
 
-Em produção, a arquitetura recomendada é:
+| Área | Provider atual | Estado |
+| --- | --- | --- |
+| Frontend | Cloudflare Pages | Em produção temporária em `saltos-nas-palhacadas-prod.pages.dev` |
+| Backend | Google Cloud Run | Em produção com imagem `backend:ee8d9c1` |
+| Base de dados | Neon PostgreSQL | Produção separada com Flyway até V19 |
+| Media | Cloudflare R2 | Público/privado validado E2E |
+| Jobs | Google Cloud Scheduler | Cleanup privado validado; reminders bloqueados por SMTP |
+| Anti-bot | Cloudflare Turnstile | Implementado e validado |
+| Email | Brevo | Em progresso; SMTP real ainda pendente |
+| Domínio | Cloudflare DNS + Dominios.pt | Registo feito; delegação/custom domain pendentes de confirmação |
 
-- **Frontend estático:** Cloudflare Pages, Netlify, Vercel ou equivalente.
-- **API:** Render, Railway, Fly.io ou outro serviço capaz de correr Docker/Java.
-- **Base de dados:** PostgreSQL gerido, por exemplo Neon, Supabase, Render Postgres ou equivalente.
-- **Uploads:** disco persistente no servidor ou, preferencialmente, storage externo como S3, Cloudinary ou equivalente.
-
-## Funcionalidades
-
-- Homepage com perfis de artistas ordenáveis pelo administrador.
-- Perfil individual de artista com descrição, foto recortável, vídeo de destaque, portfólio e avaliações.
-- Publicação de fotos e vídeos por artista, ordenada por data e organizada por mês.
-- Conta de cliente com dados pessoais, foto de perfil e favoritos.
-- Recuperação de palavra-passe por email, alteração de palavra-passe na conta e token temporário de reset.
-- Exportação dos dados da conta e eliminação RGPD com confirmação de palavra-passe.
-- Avaliações feitas por utilizadores autenticados e aprovadas pelo administrador.
-- Pedidos de agendamento e orçamento, com calendário público de disponibilidade.
-- Estados de agendamento: pendente, confirmado, alterado, rejeitado e cancelado.
-- Emails automáticos para pedido recebido, aceitação, rejeição, contraproposta, cancelamento e recuperação de palavra-passe.
-- Email automático de lembrete 5 dias antes de eventos confirmados.
-- Lista pública de materiais disponíveis, gerida e ordenada pelo administrador.
-- Contactos públicos geridos e ordenados pelo administrador.
-- Página de partilhas de clientes com upload de fotos/vídeos e aprovação obrigatória.
-- Chatbot de suporte com respostas automáticas locais e fallback opcional por IA.
-
-## Estrutura
+O fluxo de release previsto é:
 
 ```text
-saltos_nas_palhacadas/
-├── backend/              # API Spring Boot
-├── frontend/             # Aplicação React/Vite
-├── docker-compose.yml    # PostgreSQL local
-├── render.yaml           # Blueprint para deploy da API no Render
-├── .env.example          # Exemplo de variáveis locais, sem segredos reais
-└── README.md
+feat/production-launch -> PR para dev -> PR final para main
 ```
 
-## Pré-requisitos
+Depois do merge final, o Cloudflare Pages deve passar a usar `main` como production branch.
 
-- Java 21
-- Node.js 22 ou superior
-- npm
-- Docker Desktop ou Docker Engine
-- Conta num provider de alojamento para deploy
-- Conta SMTP para envio real de emails
-- Conta OpenAI, apenas se quiseres ativar IA no chatbot
+## Stack
+
+- Frontend: React, TypeScript, Vite, CSS Modules.
+- Backend: Java 21, Spring Boot, Spring Security, JWT, JPA/Hibernate, Flyway.
+- Dados: PostgreSQL em Neon, `ddl-auto=validate` em produção.
+- Media: Cloudflare R2 com buckets separados para objetos públicos e privados.
+- Segurança: BCrypt, roles `ADMIN`/`CUSTOMER`, CORS allowlist, HSTS, CSP, rate limiting por IP, validação DTO, validação de uploads por MIME e magic bytes, Turnstile.
+- CI: GitHub Actions, CodeQL e Dependabot.
+
+## Funcionalidades Principais
+
+- Perfis públicos de artistas, portfólio, materiais e contactos.
+- Registo, login, recuperação de password, alteração de password e área de conta.
+- Favoritos, reviews moderadas e pedidos de agendamento com disponibilidade.
+- Backoffice admin para perfis, portfólio, contactos, materiais, reviews, bookings e partilhas.
+- Uploads privados de clientes, aprovação admin e publicação para media pública.
+- Exportação de dados da conta e eliminação/anomização de conta.
+- Chat de suporte com respostas locais e fallback OpenAI opcional.
+- Páginas legais, FAQ, cookie consent, metadata SEO, sitemap, robots e 404.
 
 ## Desenvolvimento Local
 
-Na raiz do projeto:
+Pré-requisitos:
+
+- Java 21
+- Node.js 22
+- npm
+- Docker
+
+Configuração inicial:
 
 ```bash
-cd ~/SaltosNasPalhaçadas/saltos_nas_palhacadas
 cp .env.example .env
 ```
 
-Edita o ficheiro `.env` e define, no mínimo:
-
-```bash
-DB_PASSWORD=saltos_dev
-ADMIN_EMAIL=admin@example.test
-ADMIN_PASSWORD=uma-password-local-com-12-caracteres
-```
-
-Para gerar um `JWT_SECRET` local:
+Define pelo menos `DB_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` e um `JWT_SECRET` Base64 forte. Para gerar um segredo local:
 
 ```bash
 openssl rand -base64 64
 ```
 
-Depois cola o valor em:
-
-```bash
-JWT_SECRET=<valor_gerado>
-```
-
-Arranca a base de dados:
+Arrancar dependências e aplicações:
 
 ```bash
 docker compose up -d
 ```
-
-Terminal 1, API:
 
 ```bash
 cd backend
@@ -101,402 +86,54 @@ set -a && source ../.env && set +a
 ./mvnw spring-boot:run
 ```
 
-Terminal 2, frontend:
-
 ```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-Abre:
+URLs locais:
 
-```text
-http://localhost:5173
-```
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8080/api/v1`
+- Health: `http://localhost:8080/actuator/health`
 
-A API fica disponível em:
+## Validação Local
 
-```text
-http://localhost:8080/api/v1
-```
-
-Se precisares de correr a API na porta `8081`, usa:
-
-```bash
-cd backend
-set -a && source ../.env && set +a
-SERVER_PORT=8081 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 ./mvnw spring-boot:run
-```
-
-E o frontend:
-
-```bash
-cd frontend
-VITE_API_URL=http://localhost:8081/api/v1 npm run dev -- --host 127.0.0.1
-```
-
-## Comandos de Validação
-
-Antes de abrir pull request ou fazer deploy:
-
-```bash
-cd frontend
-npm run lint
-npm run build
-```
+Backend:
 
 ```bash
 cd backend
 ./mvnw test
 ```
 
-Para verificar vulnerabilidades conhecidas nas dependências frontend:
+Frontend:
 
 ```bash
 cd frontend
+npm ci
+npm test
+npm run lint
+npm run build
 npm audit --audit-level=moderate
 ```
 
-Para auditoria Java com OWASP Dependency Check, configura primeiro uma NVD API key e corre:
-
-```bash
-cd backend
-NVD_API_KEY=<nvd_api_key> ./mvnw org.owasp:dependency-check-maven:check -DskipTests
-```
-
-## Variáveis de Ambiente
-
-Nunca coloques segredos reais em `.env.example`, no README, em commits ou no frontend.
-
-### Backend
-
-| Variável | Obrigatória em produção | Descrição |
-| --- | --- | --- |
-| `SPRING_PROFILES_ACTIVE` | Sim | Usar `prod` em produção. |
-| `DB_URL` | Sim | JDBC URL da base PostgreSQL. |
-| `DB_USERNAME` | Sim | Utilizador da base de dados. |
-| `DB_PASSWORD` | Sim | Password da base de dados. |
-| `CORS_ALLOWED_ORIGINS` | Sim | Domínio público do frontend, sem `*` e sem `localhost`. |
-| `APP_PUBLIC_URL` | Sim | URL público do frontend usado em links enviados por email, como recuperação de password. |
-| `PUBLIC_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas públicas. Valor recomendado: `200`. |
-| `PRIVATE_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas privadas do utilizador. Valor recomendado: `200`. |
-| `ADMIN_API_RESPONSE_LIMIT` | Não | Máximo de itens devolvidos por listas administrativas. Valor recomendado: `500`. |
-| `JWT_SECRET` | Sim | Segredo Base64 com pelo menos 32 bytes descodificados. |
-| `JWT_EXPIRATION_HOURS` | Não | Duração dos tokens JWT. Valor recomendado: `8`. |
-| `SECURITY_HSTS_ENABLED` | Sim | Ativa `Strict-Transport-Security` em HTTPS. Valor recomendado: `true`. |
-| `SECURITY_HSTS_MAX_AGE_SECONDS` | Não | Tempo de HSTS em segundos. Valor recomendado: `31536000`. |
-| `SECURITY_HSTS_INCLUDE_SUBDOMAINS` | Não | Inclui subdomínios no HSTS. Valor recomendado: `true` se todos os subdomínios forem HTTPS. |
-| `SECURITY_HSTS_PRELOAD` | Não | Só usar `true` depois de confirmar requisitos de preload. |
-| `REQUIRE_DATABASE_SSL` | Sim | Exige SSL na ligação PostgreSQL em produção. Valor recomendado: `true`. |
-| `TURNSTILE_ENABLED` | Sim | Ativa validação Cloudflare Turnstile no backend para login, registo e recuperação de password. Em produção deve ser `true`. |
-| `TURNSTILE_SECRET` | Sim | Secret Turnstile usado exclusivamente pelo backend para validar tokens no endpoint Siteverify. Nunca colocar no frontend. |
-| `TURNSTILE_SITEVERIFY_URL` | Não | Endpoint oficial de validação Turnstile. Valor recomendado: `https://challenges.cloudflare.com/turnstile/v0/siteverify`. |
-| `TURNSTILE_ALLOWED_HOSTNAMES` | Sim | Hostnames aceites na resposta Turnstile, separados por vírgulas, sem `https://`, paths ou wildcards. |
-| `ADMIN_EMAIL` | Sim | Email do primeiro administrador. |
-| `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
-| `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login, registo e recuperação de password. |
-| `PASSWORD_RESET_TOKEN_MINUTES` | Não | Validade, em minutos, dos links de recuperação de password. Valor recomendado: `30`. |
-| `BOOKING_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para criação de pedidos de agendamento. |
-| `REVIEW_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de avaliações. |
-| `CLIENT_CONTENT_SUBMIT_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para submissão de partilhas de clientes. |
-| `MEDIA_STORAGE_PROVIDER` | Sim | `local` em desenvolvimento/testes; `r2` em staging/produção. |
-| `MEDIA_LOCAL_DIRECTORY` | Sim se usares `local` | Diretório onde a API guarda uploads locais. |
-| `MEDIA_PRIVATE_LOCAL_DIRECTORY` | Não | Diretório privado para media pendente de aprovação em storage local. Se vazio, usa uma pasta irmã de `MEDIA_LOCAL_DIRECTORY`. |
-| `R2_ENDPOINT` | Sim se usares `r2` | Endpoint S3 do Cloudflare R2, por exemplo `https://<account_id>.eu.r2.cloudflarestorage.com`. |
-| `R2_ACCESS_KEY_ID` | Sim se usares `r2` | Access key do token R2, guardada apenas no backend/provider. |
-| `R2_SECRET_ACCESS_KEY` | Sim se usares `r2` | Secret access key do token R2, guardada apenas no backend/provider. |
-| `R2_PUBLIC_BUCKET` | Sim se usares `r2` | Bucket para objetos publicados. |
-| `R2_PRIVATE_BUCKET` | Sim se usares `r2` | Bucket privado para objetos pendentes/avatars. Tem de ser diferente do público. |
-| `R2_REGION` | Não | Região de assinatura do R2. Valor recomendado: `auto`. |
-| `MEDIA_UPLOAD_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para uploads. |
-| `CLIENT_CONTENT_MAX_PENDING_UPLOADS_PER_USER` | Não | Máximo de uploads pendentes/anexados por cliente antes de aprovação. |
-| `CLIENT_CONTENT_MAX_PENDING_UPLOAD_BYTES_PER_USER` | Não | Limite total temporário, em bytes, dos uploads pendentes/anexados por cliente. |
-| `CLIENT_CONTENT_PRIVATE_UPLOAD_RETENTION_HOURS` | Não | Horas até apagar automaticamente uploads privados pendentes que nunca foram submetidos. |
-| `CLIENT_CONTENT_PRIVATE_UPLOAD_CLEANUP_CRON` | Não | Cron do job que limpa uploads privados órfãos. |
-| `MEDIA_MAX_FILE_SIZE` | Não | Tamanho máximo por ficheiro. |
-| `MEDIA_MAX_REQUEST_SIZE` | Não | Tamanho máximo por pedido multipart. |
-| `BOOKING_EMAIL_ENABLED` | Não | Ativa envio real de emails de agendamento. |
-| `BOOKING_EMAIL_SMTP_HOST` | Sim se email ativo | Host SMTP. |
-| `BOOKING_EMAIL_SMTP_PORT` | Sim se email ativo | Porta SMTP. |
-| `BOOKING_EMAIL_SMTP_SSL` | Não | Usar SSL direto. |
-| `BOOKING_EMAIL_SMTP_STARTTLS` | Não | Usar STARTTLS. |
-| `BOOKING_EMAIL_USERNAME` | Sim se email ativo | Utilizador SMTP. |
-| `BOOKING_EMAIL_PASSWORD` | Sim se email ativo | Password/app password SMTP. |
-| `BOOKING_EMAIL_FROM` | Sim se email ativo | Remetente dos emails. |
-| `BOOKING_REMINDER_DAYS_BEFORE` | Não | Dias antes do evento para enviar lembrete. Valor atual: `5`. |
-| `BOOKING_REMINDER_CRON` | Não | Cron do job de lembretes. |
-| `BOOKING_REMINDER_ZONE` | Não | Fuso horário dos lembretes. Valor recomendado: `Europe/Lisbon`. |
-| `SUPPORT_AI_ENABLED` | Não | Ativa fallback com IA no chatbot. |
-| `OPENAI_API_KEY` | Sim se IA ativa | Chave OpenAI guardada apenas no backend. |
-| `OPENAI_API_ENDPOINT` | Não | Endpoint da API OpenAI. |
-| `OPENAI_MODEL` | Não | Modelo usado pelo chatbot. Usa um modelo disponível no teu projeto OpenAI. |
-| `OPENAI_MAX_OUTPUT_TOKENS` | Não | Limite de tokens por resposta IA. |
-| `SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para o chatbot. |
-
-### Frontend
-
-| Variável | Descrição |
-| --- | --- |
-| `VITE_API_URL` | URL pública da API, por exemplo `https://api.exemplo.pt/api/v1`. |
-| `VITE_TURNSTILE_SITE_KEY` | Site key pública do Cloudflare Turnstile usada nos formulários de login, registo e recuperação de password. Obrigatória em produção. |
-
-Só variáveis com prefixo `VITE_` entram no bundle do frontend. Não uses esse prefixo para segredos.
-A site key Turnstile é pública; o secret Turnstile é exclusivamente backend e nunca deve existir como `VITE_`.
-
-## Segurança Implementada
-
-O backend inclui várias proteções importantes para deploy:
-
-- Autenticação com JWT.
-- Separação de permissões entre `CUSTOMER` e `ADMIN`.
-- Endpoints administrativos protegidos por role `ADMIN`.
-- Rate limit por IP em login, registo, uploads e chatbot.
-- Cloudflare Turnstile validado no backend em login, registo e recuperação de palavra-passe.
-- Validação de URLs públicas guardadas em conteúdos, materiais e perfis.
-- Uploads com allowlist de MIME, validação por assinatura do ficheiro, limites de tamanho e nome gerado pelo servidor.
-- Partilhas de clientes carregadas para zona privada e promovidas para media pública apenas após aprovação.
-- Ficheiros privados de partilhas ligados ao utilizador dono; outro cliente recebe `404` mesmo que tente adivinhar o URL.
-- Quotas temporárias por cliente e limpeza automática de uploads privados órfãos.
-- Partilhas públicas escondem email, local e data completa por defeito; o cliente escolhe nome público e consente antes de submeter.
-- Respostas de listas públicas, privadas e administrativas têm limites configuráveis.
-- JSON com campos desconhecidos é rejeitado para evitar tentativas de mass assignment.
-- Headers de segurança aplicados no backend e no frontend, incluindo HSTS em produção.
-- Migrations Flyway com `ddl-auto=validate` em produção.
-- Arranque em `prod` bloqueado quando faltam segredos ou quando o CORS está inseguro.
-- Open Session in View desativado.
-- `.env` ignorado pelo Git.
-
-## Deploy Seguro
-
-### 1. Base de Dados
-
-Cria uma base PostgreSQL gerida. Para Neon, copia uma connection string compatível com JDBC:
-
-```text
-jdbc:postgresql://<host>/<database>?sslmode=require
-```
-
-Em produção, prefere uma ligação direta para migrations Flyway. Se usares pooler/PgBouncer, confirma primeiro que o modo de pooling é compatível com as migrations.
-
-### 2. API
-
-No Render ou provider equivalente:
-
-1. Cria um Web Service a partir do repositório.
-2. Usa o `render.yaml` existente ou configura manualmente o Dockerfile em `backend/Dockerfile`.
-3. Define `SPRING_PROFILES_ACTIVE=prod`.
-4. Define todas as variáveis obrigatórias no painel do provider.
-5. Não coloques passwords, API keys ou connection strings diretamente no `render.yaml`.
-6. Confirma que o health check aponta para `/actuator/health`.
-
-O blueprint inclui região europeia, plano não-free e disco persistente para reduzir o risco de perda de uploads. Confirma custos e limites no provider antes de publicar. Para produção mais robusta, troca o armazenamento local por object storage.
-
-Se usares Render com Docker, evita usar segredos em build args ou no Dockerfile. Os segredos devem existir apenas como variáveis de runtime no painel do provider.
-
-### 3. Frontend
-
-Para Cloudflare Pages:
-
-| Campo | Valor |
-| --- | --- |
-| Root directory | `frontend` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Environment variable | `VITE_API_URL=https://<api-publica>/api/v1` |
-
-Depois do primeiro deploy, copia o domínio público do frontend e atualiza `CORS_ALLOWED_ORIGINS` na API.
-Define também `APP_PUBLIC_URL` com esse mesmo domínio público para os links enviados por email:
-
-```bash
-APP_PUBLIC_URL=https://<dominio-do-frontend>
-```
-
-O ficheiro `frontend/public/_headers` inclui uma Content Security Policy funcional para Cloudflare Pages. Se usares Render Static Sites, replica estes headers no Dashboard ou no blueprint `headers`.
-Antes da publicação final, troca o `connect-src 'self' https:` por uma lista explícita com o domínio real da API, por exemplo:
-
-```text
-connect-src 'self' https://api.exemplo.pt;
-```
-
-Mantém `frame-src` apenas para os domínios usados nos vídeos incorporados, como YouTube ou YouTube NoCookie.
-
-Se o frontend for publicado como SPA no Render e forem criadas rotas reais no browser, adiciona uma regra `rewrite` de `/*` para `/index.html` no Dashboard ou no blueprint `routes`. A app atual navega por estado interno, por isso a homepage continua a ser a rota pública principal.
-
-### 4. CORS e Domínios
-
-Em produção:
-
-```bash
-CORS_ALLOWED_ORIGINS=https://<dominio-do-frontend>
-```
-
-Não uses:
-
-```bash
-CORS_ALLOWED_ORIGINS=*
-CORS_ALLOWED_ORIGINS=http://localhost:5173
-```
-
-Se tiveres domínio principal e domínio `www`, lista ambos explicitamente:
-
-```bash
-CORS_ALLOWED_ORIGINS=https://exemplo.pt,https://www.exemplo.pt
-```
-
-### 5. Uploads e Media
-
-O projeto aceita uploads de imagens e vídeos. O backend escolhe o provider através de `MEDIA_STORAGE_PROVIDER`.
-
-- Para desenvolvimento/testes: `MEDIA_STORAGE_PROVIDER=local` e `MEDIA_LOCAL_DIRECTORY=uploads`.
-- Para staging/produção sem filesystem persistente: `MEDIA_STORAGE_PROVIDER=r2`.
-- Em R2, mantém dois buckets diferentes: um público para media publicada e um privado para pendentes/avatars.
-
-Mesmo com R2, os URLs públicos e privados continuam a passar pela API (`/api/v1/media/{key}` e `/api/v1/private-media/{key}`). Não exponhas o bucket privado, não uses `r2.dev` para estes objetos e não guardes endpoints S3 na base de dados.
-
-### 6. Emails
-
-Para emails reais:
-
-```bash
-BOOKING_EMAIL_ENABLED=true
-BOOKING_EMAIL_SMTP_HOST=<smtp_host>
-BOOKING_EMAIL_SMTP_PORT=587
-BOOKING_EMAIL_SMTP_STARTTLS=true
-BOOKING_EMAIL_USERNAME=<smtp_user>
-BOOKING_EMAIL_PASSWORD=<smtp_password_ou_app_password>
-BOOKING_EMAIL_FROM=no-reply@<dominio>
-```
-
-Testa estes casos antes do lançamento:
-
-- Pedido de agendamento criado por cliente autenticado.
-- Email de confirmação recebido pelo cliente.
-- Evento confirmado pelo admin.
-- Pedido rejeitado, contraproposta e cancelamento.
-- Recuperação de palavra-passe com link recebido por email.
-- Disponibilidade atualizada no calendário.
-- Lembrete enviado 5 dias antes da data do evento.
-- Evento cancelado sem novo lembrete posterior.
-
-### 7. Chatbot com IA
-
-O chatbot funciona sem IA através de respostas locais. Para ativar IA:
-
-```bash
-SUPPORT_AI_ENABLED=true
-OPENAI_API_KEY=<openai_api_key>
-OPENAI_MODEL=<modelo_disponivel_no_teu_projeto>
-OPENAI_MAX_OUTPUT_TOKENS=320
-```
-
-Regras importantes:
-
-- A `OPENAI_API_KEY` fica apenas no backend.
-- O frontend chama apenas `/api/v1/support-chat`.
-- Define limites de custo e alertas na conta OpenAI.
-- Mantém `SUPPORT_CHAT_RATE_LIMIT_PER_MINUTE` ativo para evitar abuso.
-- Não envies dados sensíveis desnecessários para o modelo.
-
-## Checklist Antes de Produção
-
-Obrigatório antes de abrir o site ao público:
-
-- `SPRING_PROFILES_ACTIVE=prod`.
-- `JWT_SECRET` gerado com `openssl rand -base64 64`.
-- `ADMIN_EMAIL` real e `ADMIN_PASSWORD` forte.
-- `CORS_ALLOWED_ORIGINS` com domínio público real.
-- `APP_PUBLIC_URL` com o domínio HTTPS público do frontend.
-- `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` definidos no provider, com SSL ativo.
-- `SECURITY_HSTS_ENABLED=true` e `REQUIRE_DATABASE_SSL=true`.
-- Base de dados com SSL ativo.
-- `VITE_API_URL` aponta para a API pública.
-- Emails testados com SMTP real, se `BOOKING_EMAIL_ENABLED=true`.
-- Uploads apontam para storage persistente.
-- `npm run lint`, `npm run build` e `./mvnw test` passam.
-- `npm audit --audit-level=moderate` sem vulnerabilidades críticas/relevantes.
-- Auditoria Java executada com OWASP Dependency Check ou ferramenta equivalente.
-- OpenAI com chave só no backend, rate limit ativo e limites de custo configurados.
-- Política de privacidade e cookies preparada, especialmente porque existem contas, contactos, uploads e mensagens.
-
-## Operação Depois do Deploy
-
-Depois de publicar:
-
-- Cria uma conta admin e guarda as credenciais num gestor de passwords.
-- Testa login, criação de conta, perfil, favoritos, avaliações e upload de media.
-- Testa o painel admin: perfis, ordem dos perfis, materiais, contactos, avaliações, partilhas e agendamentos.
-- Testa agendamento completo: pedido do cliente, email, confirmação admin, disponibilidade e lembrete.
-- Verifica logs da API depois dos primeiros testes reais.
-- Ativa alertas do provider para erros, consumo de storage, consumo de base de dados e uso da OpenAI.
-- Mantém backups automáticos da base de dados.
-- Planeia rotação periódica de segredos, principalmente `JWT_SECRET`, SMTP e OpenAI.
-
-## Rotas Principais
-
-### Públicas
-
-- `GET /api/v1/health`
-- `GET /api/v1/profiles`
-- `GET /api/v1/profiles/{slug}`
-- `GET /api/v1/profiles/{slug}/portfolio`
-- `GET /api/v1/profiles/{slug}/availability`
-- `GET /api/v1/contacts`
-- `GET /api/v1/materials`
-- `GET /api/v1/client-posts`
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/forgot-password`
-- `POST /api/v1/auth/reset-password`
-- `POST /api/v1/support-chat`
-
-### Autenticadas
-
-- `GET /api/v1/auth/me`
-- `PUT /api/v1/auth/me`
-- `PUT /api/v1/auth/me/password`
-- `GET /api/v1/auth/me/export`
-- `DELETE /api/v1/auth/me`
-- `POST /api/v1/media`
-- `GET /api/v1/favorites`
-- `POST /api/v1/favorites/{portfolioItemId}`
-- `DELETE /api/v1/favorites/{portfolioItemId}`
-- `POST /api/v1/profiles/{slug}/reviews`
-- `POST /api/v1/bookings`
-- `GET /api/v1/bookings/mine`
-- `PUT /api/v1/bookings/{bookingId}/cancel`
-- `PUT /api/v1/bookings/{bookingId}/counter-proposal/decision`
-- `POST /api/v1/client-posts`
-
-### Administração
-
-- `/api/v1/admin/**`
-
-Todos os endpoints administrativos requerem token JWT com role `ADMIN`.
-
-## Boas Práticas de Desenvolvimento
-
-- Não alterar migrations Flyway já aplicadas. Criar sempre uma nova migration.
-- Não guardar ficheiros de upload no Git.
-- Não guardar `.env` ou credenciais reais no repositório.
-- Validar frontend e backend antes de cada deploy.
-- Fazer deploy primeiro para ambiente de staging ou preview quando possível.
-- Rever logs após cada migration de base de dados.
-
-## Documentos Operacionais
-
-- [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) define o processo para responder a incidentes de segurança ou privacidade.
-- [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) descreve backups, restore e recuperação após falha.
-- [RGPD_REGISTER.md](RGPD_REGISTER.md) mantém o registo de tratamentos e tarefas RGPD a validar.
-- [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) mapeia a checklist de segurança, SEO, legal e operação antes do lançamento.
-
-## Referências de Segurança
-
-- [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
-- [OWASP REST Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)
-- [OWASP CSRF Prevention Cheat Sheet, CORS e origens controladas](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
-- [OpenAI API Reference, autenticação e proteção de API keys](https://developers.openai.com/api/reference/overview)
-- [Render Docs, environment variables e secrets](https://render.com/docs/configure-environment-variables)
-- [Render Docs, persistent disks](https://render.com/docs/disks)
-- [Cloudflare Pages, build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/)
-- [Neon Docs, connection pooling](https://neon.com/docs/connect/connection-pooling)
+## Documentação
+
+- [Estado do projeto](docs/PROJECT_STATUS.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Funcionalidades](docs/FEATURES.md)
+- [Produção](docs/PRODUCTION.md)
+- [Segurança](docs/SECURITY.md)
+- [Operações](docs/OPERATIONS.md)
+- [Testes](docs/TESTING.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Decisões técnicas](docs/DECISIONS.md)
+- [Prontidão para produção](PRODUCTION_READINESS.md)
+- [Recuperação e backups](DISASTER_RECOVERY.md)
+- [Resposta a incidentes](INCIDENT_RESPONSE.md)
+- [Registo RGPD](RGPD_REGISTER.md)
+
+## Regra de Segredos
+
+Nunca colocar valores reais de passwords, tokens, access keys, connection strings privadas ou secrets em Git, Markdown, frontend ou logs. Em produção, os segredos conhecidos ficam no Google Secret Manager e são injetados no runtime do Cloud Run ou configurados como variáveis seguras no provider apropriado.

@@ -1,117 +1,82 @@
 # Prontidão para Produção
 
-Este documento resume o estado do projeto **Saltos nas Palhaçadas** para lançamento em produção.
+Documento-resumo. A documentação detalhada está em [docs/PRODUCTION.md](docs/PRODUCTION.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) e [docs/ROADMAP.md](docs/ROADMAP.md).
 
-## Segurança e API
+Last verified: 2026-09-15, branch `feat/production-launch`, HEAD `ee8d9c1`.
 
-| Ponto | Estado | Notas |
-| --- | --- | --- |
-| API keys privadas | Coberto no código | Segredos ficam em variáveis de ambiente. `.env` e `.env.*` estão ignorados pelo Git. Em produção, usar apenas painel do provider ou secret manager. |
-| Separar dev/staging/produção | Coberto | `dev`, `test` e `prod` estão separados. Staging e produção devem usar serviços, bases de dados e segredos diferentes. |
-| Backups automáticos | Requer provider | Ativar backups automáticos da base de dados e versioning/lifecycle no storage. Fazer teste de restore antes do lançamento. |
-| Forçar HTTPS | Coberto + provider | Backend e frontend emitem HSTS. `prod` falha se `APP_PUBLIC_URL`/CORS não forem HTTPS. Ativar redirect HTTP para HTTPS no provider/CDN. |
-| Encriptar dados sensíveis | Parcial | Usar PostgreSQL/storage/backups com encryption at rest. Para encriptação por campo, adicionar chave gerida por KMS/secret manager e converters AES-GCM nos campos que não precisam de pesquisa direta. |
-| Server-side auth | Coberto | Spring Security valida JWT e role no backend em todos os endpoints protegidos. |
-| Restringir acesso | Coberto | `/api/v1/admin/**` exige `ADMIN`; endpoints privados exigem sessão; media privada valida dono ou admin. |
-| Bloquear mass assignment | Coberto | Requests usam DTOs/records e mapeamento manual. JSON com propriedades desconhecidas passa a ser rejeitado. |
-| Proteger cookies | Parcial | A autenticação atual usa Bearer token, não cookies de sessão. Se mudares para cookies: usar `HttpOnly`, `Secure`, `SameSite=Lax/Strict`, rotação e CSRF token. |
-| Hash de palavras-passe | Coberto | Palavras-passe são guardadas com BCrypt. Tokens de reset são guardados com SHA-256, não em claro. |
-| Rate limiting | Coberto | Login, registo, reset, uploads, chatbot, agendamentos, reviews e submissões de partilhas têm rate limit por IP. |
-| Proteção contra bots | Parcial | Rate limit existe. Para produção pública, adicionar WAF/CDN e desafio tipo Turnstile/reCAPTCHA em login, registo, chatbot, reviews e uploads. Validar sempre o token no backend. |
-| Queries parametrizadas | Coberto | JPA repositories usam métodos Spring Data ou `@Query` com parâmetros nomeados. |
-| Validar inputs | Coberto | Jakarta Validation, validação de telefone/URLs, datas, horários, enums e limites de tamanho. |
-| Não expor dados sensíveis | Coberto | Responses públicas não incluem password hash, tokens, emails de submissões de clientes nem media privada sem auth. |
-| Restringir uploads | Coberto | Allowlist de tipos, validação por assinatura, limites de tamanho, UUID gerado pelo servidor e área privada antes de aprovação. |
-| Limitar respostas da API | Coberto | Listas públicas, privadas e admin têm limites configuráveis por ambiente. |
-| Security headers | Coberto + provider | Backend envia headers de API. Frontend tem `_headers` para Cloudflare Pages; noutros providers, como Render Static Sites, replica-os no Dashboard ou no blueprint. |
-| Dependency scan | Coberto em CI + executar antes do deploy | CI já corre `npm audit`; Dependabot e CodeQL estão ativos. Antes de produção, correr também OWASP Dependency Check no backend com NVD API key. |
-| Não confiar apenas no RLS | Coberto | As regras críticas estão no serviço/backend: ownership, roles e estados são validados na aplicação. |
+## Estado Geral
 
-## Produto, SEO e Legal
+| Área | Estado |
+| --- | --- |
+| Frontend Cloudflare Pages | DONE em URL temporário |
+| Backend Google Cloud Run | DONE |
+| Neon PostgreSQL | DONE |
+| Cloudflare R2 | DONE |
+| Turnstile | DONE/VALIDATED |
+| Cleanup Scheduler | DONE/VALIDATED |
+| Domínio final | IN PROGRESS |
+| Brevo/SMTP | IN PROGRESS/TODO |
+| Booking reminders em produção | BLOCKED BY SMTP |
+| Backups/restore drill | PENDING |
+| Final merge para `main` | TODO |
+
+## Checklist Técnico
 
 | Ponto | Estado | Notas |
 | --- | --- | --- |
-| Privacy policy | Existe | Rever com apoio jurídico antes do lançamento. |
-| Terms page | Existe | Rever com apoio jurídico antes do lançamento. |
-| Clear CTA | Existe | CTA principal de agendamento está visível no header e nos perfis. |
-| FAQ | Adicionado | Página FAQ acessível pelo footer. |
-| robots.txt | Existe | Inclui sitemap e bloqueia rotas privadas convencionais. |
-| sitemap.xml | Existe | Como a app é SPA sem URLs públicas por perfil, lista a homepage. Se forem criadas rotas reais, adicionar essas URLs. |
-| Custom 404 | Adicionado | `frontend/public/404.html`. |
-| Alt text | Melhorado | Imagens de perfis e media principal têm texto alternativo. |
-| Analytics | Requer decisão | Só ativar depois de escolher provider, atualizar política de cookies e respeitar consentimento. |
-| Meta titles | Existe | Atualizados dinamicamente por vista. |
-| Meta description | Existe | Atualizada dinamicamente por vista. |
-| Social share | Melhorado | Metadata Open Graph/Twitter aponta para imagem pública de partilha. Idealmente substituir por PNG/JPG 1200x630 final. |
-| Favicon | Existe | `frontend/public/favicon.svg`. |
-| Canonical URLs | Existe | Como a app usa uma única URL pública, canonical aponta para a homepage. |
-| Cookie consents | Adicionado | Banner para aceitar/rejeitar opcionais. Não ativa analytics por si só. |
-| Mobile version | A validar visualmente | CSS tem media queries e layout responsivo; validar em telemóvel real antes do deploy final. |
-| Accessibility | Parcial | Labels/aria e alt text existem; correr teste manual com teclado e leitor de ecrã leve. |
-| Test forms | Coberto por testes backend + validar staging | Testar login, registo, reset, agendamento, reviews, uploads, contactos e admin no staging. |
-| Broken links | A validar antes do deploy | Fazer clique manual no staging e confirmar contactos externos. |
-| Performance | Parcial | Build Vite estático. Antes de produção, comprimir assets no provider/CDN, usar cache e otimizar imagens reais carregadas pelo admin. |
+| API keys privadas | Coberto | Secrets em variáveis/provider/Secret Manager; não em frontend ou Git. |
+| Separar dev/prod | Coberto | Profiles `dev`, `test`, `prod`; produção exige R2 e DB SSL. |
+| Backups automáticos | PENDING | Confirmar Neon/PITR e R2 versioning/lifecycle; executar restore drill. |
+| Forçar HTTPS | Coberto + provider | HSTS no backend/frontend; Cloudflare deve forçar HTTPS no domínio final. |
+| Encriptação de dados sensíveis | Parcial | Passwords com hash; TLS/SSL/at-rest dependem dos providers; encriptação por campo não implementada. |
+| Server-side auth | Coberto | Spring Security valida JWT e roles. |
+| Restringir acesso | Coberto | Admin, owner checks e endpoints privados. |
+| Bloquear mass assignment | Coberto | DTOs/records, mapeamento manual e unknown JSON rejeitado. |
+| Cookies | N/A parcial | Auth atual usa JWT em `sessionStorage`, não cookies HttpOnly. |
+| Hash passwords | Coberto | BCrypt; reset tokens com SHA-256. |
+| Rate limiting | Coberto | App-level/in-memory por IP. Avaliar WAF Cloudflare. |
+| Proteção bots | Coberto | Turnstile em login/registo/forgot-password. |
+| Queries parametrizadas | Coberto | Spring Data/JPA com parâmetros. |
+| Validar inputs | Coberto | Jakarta Validation, URL validation e validação de media. |
+| Não expor dados sensíveis | Coberto | Responses públicas limitadas; errors sem stacktrace. |
+| Restringir uploads | Coberto | MIME allowlist, magic bytes, UUID, tamanho e R2 privado antes de aprovação. |
+| Limitar respostas da API | Coberto | Limites configuráveis por público/privado/admin. |
+| Security headers | Coberto | Backend filter e `_headers` do Pages. |
+| Dependency scan | Coberto | CI com npm audit, CodeQL e Dependabot; backend Dependency Check é opcional/manual. |
+| Não confiar apenas em RLS | Coberto | Autorização na aplicação; RLS não é a fronteira principal. |
 
-## Como Ativar Backups Automáticos
+## Checklist Produto/SEO/Legal
 
-1. Base de dados: ativa backups diários ou point-in-time recovery no provider PostgreSQL.
-2. Retenção: define pelo menos 7 a 30 dias, conforme custo e risco.
-3. Storage/media: usa object storage com versioning/lifecycle ou disco persistente com snapshot automático.
-4. Segredos: guarda cópia em gestor de passwords, nunca em Git.
-5. Restore drill: antes de produção, restaura um backup para ambiente isolado e valida login, perfis, uploads e agendamentos.
+| Ponto | Estado | Notas |
+| --- | --- | --- |
+| Privacy policy | DONE técnico | Rever juridicamente. |
+| Terms page | DONE técnico | Rever juridicamente. |
+| FAQ | DONE | SPA interna. |
+| Clear CTA | DONE | Booking visível no header/perfis. |
+| robots.txt | DONE | Bloqueia rotas privadas convencionais e aponta sitemap. |
+| sitemap.xml | Parcial | Só homepage; rotas por perfil ficam para roadmap. |
+| Custom 404 | DONE | `frontend/public/404.html`. |
+| Alt text | Parcial | Existe nas principais imagens; validar manualmente. |
+| Analytics | TODO | Só com consentimento e política atualizada. |
+| Meta titles/descriptions | DONE técnico | Atualização client-side por view. |
+| Social share | DONE técnico | OG/Twitter configurados; validar imagem final. |
+| Favicon/canonical | DONE | Canonical aponta para domínio pretendido. |
+| Cookie consent | DONE técnico | Preferência local para opcionais. |
+| Mobile/accessibility/performance | TODO QA | Fazer QA antes do release final. |
+| Broken links/forms | TODO QA | Teste final E2E. |
 
-## Como Ativar Proteção Contra Bots
+## Bloqueadores Antes do Release Final
 
-1. Coloca o frontend atrás de CDN/WAF com regras de rate limit por IP, país e path.
-2. Adiciona desafio Turnstile/reCAPTCHA aos formulários públicos e de maior risco.
-3. Envia o token do desafio para o backend.
-4. No backend, valida o token junto do provider antes de aceitar o pedido.
-5. Mantém os rate limits atuais mesmo com WAF ativo.
+1. Confirmar delegação DNS Cloudflare e zona Active.
+2. Ligar `www.saltosnaspalhacadas.pt` ao Pages e configurar redirect apex -> `www`.
+3. Concluir Brevo DNS/domain verification.
+4. Configurar SMTP real e testar forgot-password/bookings.
+5. Criar Scheduler de booking reminders só depois do SMTP validado.
+6. Confirmar backups e executar restore drill.
+7. Fazer QA mobile, links, legal e E2E.
+8. Abrir PR `feat/production-launch` -> `dev`, depois PR `dev` -> `main`.
+9. Mudar Cloudflare Pages production branch para `main`.
 
-## Como Fazer Encriptação por Campo
+## Render
 
-Usa isto apenas para dados que não precisem de pesquisa direta, como notas internas, descrições sensíveis ou telefone secundário.
-
-1. Criar uma chave `DATA_ENCRYPTION_KEY` fora do Git, guardada em KMS/secret manager.
-2. Criar um `AttributeConverter` JPA com AES-GCM.
-3. Guardar nonce + ciphertext + tag no campo.
-4. Versionar a chave para permitir rotação.
-5. Nunca encriptar password: passwords continuam com hash BCrypt.
-
-## Comandos Antes do Deploy
-
-```bash
-cd frontend
-npm ci
-npm run lint
-npm run build
-npm audit --audit-level=moderate
-```
-
-```bash
-cd backend
-./mvnw test
-NVD_API_KEY=<nvd_api_key> ./mvnw org.owasp:dependency-check-maven:check -DskipTests
-```
-
-## Variáveis Obrigatórias em Produção
-
-- `SPRING_PROFILES_ACTIVE=prod`
-- `DB_URL` com SSL, por exemplo `jdbc:postgresql://...?...sslmode=require`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `CORS_ALLOWED_ORIGINS=https://<dominio-frontend>`
-- `APP_PUBLIC_URL=https://<dominio-frontend>`
-- `JWT_SECRET` gerado com `openssl rand -base64 64`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-- `SECURITY_HSTS_ENABLED=true`
-- `REQUIRE_DATABASE_SSL=true`
-- `MEDIA_STORAGE_PROVIDER=r2`
-- `R2_ENDPOINT=https://<account_id>.eu.r2.cloudflarestorage.com`
-- `R2_ACCESS_KEY_ID=<r2_access_key_id>`
-- `R2_SECRET_ACCESS_KEY=<r2_secret_access_key>`
-- `R2_PUBLIC_BUCKET=<r2_public_bucket>`
-- `R2_PRIVATE_BUCKET=<r2_private_bucket>`
-- `R2_REGION=auto`
-- `VITE_API_URL=https://<api-publica>/api/v1`
+`render.yaml` permanece no repositório como configuração histórica/alternativa. A produção atual documentada é Cloudflare Pages + Google Cloud Run + Neon + R2.
