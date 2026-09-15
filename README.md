@@ -189,6 +189,10 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | `SECURITY_HSTS_INCLUDE_SUBDOMAINS` | Não | Inclui subdomínios no HSTS. Valor recomendado: `true` se todos os subdomínios forem HTTPS. |
 | `SECURITY_HSTS_PRELOAD` | Não | Só usar `true` depois de confirmar requisitos de preload. |
 | `REQUIRE_DATABASE_SSL` | Sim | Exige SSL na ligação PostgreSQL em produção. Valor recomendado: `true`. |
+| `TURNSTILE_ENABLED` | Sim | Ativa validação Cloudflare Turnstile no backend para login, registo e recuperação de password. Em produção deve ser `true`. |
+| `TURNSTILE_SECRET` | Sim | Secret Turnstile usado exclusivamente pelo backend para validar tokens no endpoint Siteverify. Nunca colocar no frontend. |
+| `TURNSTILE_SITEVERIFY_URL` | Não | Endpoint oficial de validação Turnstile. Valor recomendado: `https://challenges.cloudflare.com/turnstile/v0/siteverify`. |
+| `TURNSTILE_ALLOWED_HOSTNAMES` | Sim | Hostnames aceites na resposta Turnstile, separados por vírgulas, sem `https://`, paths ou wildcards. |
 | `ADMIN_EMAIL` | Sim | Email do primeiro administrador. |
 | `ADMIN_PASSWORD` | Sim | Password forte do primeiro administrador. |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | Não | Limite por IP para login, registo e recuperação de password. |
@@ -235,8 +239,10 @@ Nunca coloques segredos reais em `.env.example`, no README, em commits ou no fro
 | Variável | Descrição |
 | --- | --- |
 | `VITE_API_URL` | URL pública da API, por exemplo `https://api.exemplo.pt/api/v1`. |
+| `VITE_TURNSTILE_SITE_KEY` | Site key pública do Cloudflare Turnstile usada nos formulários de login, registo e recuperação de password. Obrigatória em produção. |
 
 Só variáveis com prefixo `VITE_` entram no bundle do frontend. Não uses esse prefixo para segredos.
+A site key Turnstile é pública; o secret Turnstile é exclusivamente backend e nunca deve existir como `VITE_`.
 
 ## Segurança Implementada
 
@@ -246,6 +252,7 @@ O backend inclui várias proteções importantes para deploy:
 - Separação de permissões entre `CUSTOMER` e `ADMIN`.
 - Endpoints administrativos protegidos por role `ADMIN`.
 - Rate limit por IP em login, registo, uploads e chatbot.
+- Cloudflare Turnstile validado no backend em login, registo e recuperação de palavra-passe.
 - Validação de URLs públicas guardadas em conteúdos, materiais e perfis.
 - Uploads com allowlist de MIME, validação por assinatura do ficheiro, limites de tamanho e nome gerado pelo servidor.
 - Partilhas de clientes carregadas para zona privada e promovidas para media pública apenas após aprovação.

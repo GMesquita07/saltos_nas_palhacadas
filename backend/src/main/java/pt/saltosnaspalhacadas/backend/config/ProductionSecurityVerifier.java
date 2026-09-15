@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -33,6 +34,8 @@ class ProductionSecurityVerifier implements ApplicationRunner {
             "password",
             "secret",
             "test");
+    private static final Pattern HOSTNAME_PATTERN = Pattern.compile(
+            "(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?");
 
     private final Environment environment;
 
@@ -48,6 +51,7 @@ class ProductionSecurityVerifier implements ApplicationRunner {
 
         requireStrongJwtSecret();
         requireStrongMaintenanceApiKey();
+        requireTurnstileConfiguration();
         requireStrongAdminCredentials();
         requireProductionCors();
         requireHttpsHeaders();
@@ -88,6 +92,48 @@ class ProductionSecurityVerifier implements ApplicationRunner {
         String normalized = apiKey.toLowerCase(Locale.ROOT);
         if (apiKey.length() < 32 || FORBIDDEN_MAINTENANCE_KEY_PARTS.stream().anyMatch(normalized::contains)) {
             throw new IllegalStateException("MAINTENANCE_API_KEY deve ter pelo menos 32 caracteres e não pode ser uma chave de exemplo");
+        }
+    }
+
+    private void requireTurnstileConfiguration() {
+        if (!environment.getProperty("app.security.turnstile.enabled", Boolean.class, false)) {
+            throw new IllegalStateException("TURNSTILE_ENABLED deve estar true em produção");
+        }
+
+        required("app.security.turnstile.secret", "TURNSTILE_SECRET é obrigatório em produção");
+
+        String allowedHostnames = required("app.security.turnstile.allowed-hostnames", "TURNSTILE_ALLOWED_HOSTNAMES é obrigatório em produção");
+        for (String hostname : allowedHostnames.split(",", -1)) {
+            requireValidTurnstileHostname(hostname);
+        }
+
+        String siteverifyUrl = environment.getProperty("app.security.turnstile.siteverify-url");
+        if (siteverifyUrl != null && !siteverifyUrl.isBlank()) {
+            URI uri = parseUri(siteverifyUrl, "TURNSTILE_SITEVERIFY_URL deve ser um URL HTTPS válido");
+            String normalized = siteverifyUrl.toLowerCase(Locale.ROOT);
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                    || uri.getHost() == null
+                    || normalized.contains("localhost")
+                    || normalized.contains("127.0.0.1")) {
+                throw new IllegalStateException("TURNSTILE_SITEVERIFY_URL deve ser HTTPS e não pode apontar para localhost em produção");
+            }
+        }
+    }
+
+    private static void requireValidTurnstileHostname(String rawHostname) {
+        String hostname = rawHostname == null ? "" : rawHostname.trim();
+        String normalized = hostname.toLowerCase(Locale.ROOT);
+        if (hostname.isBlank()
+                || "*".equals(hostname)
+                || normalized.contains("localhost")
+                || normalized.contains("127.0.0.1")
+                || normalized.contains("://")
+                || hostname.contains("/")
+                || hostname.contains("?")
+                || hostname.contains("#")
+                || hostname.contains(":")
+                || !HOSTNAME_PATTERN.matcher(hostname).matches()) {
+            throw new IllegalStateException("TURNSTILE_ALLOWED_HOSTNAMES deve conter apenas hostnames públicos válidos, sem scheme, path, query, fragment, wildcard ou entradas vazias");
         }
     }
 

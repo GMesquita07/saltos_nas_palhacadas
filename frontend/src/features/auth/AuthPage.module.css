@@ -13,6 +13,7 @@
 .panel input { width: 100%; border: 1px solid var(--color-line); padding: 11px; color: var(--color-ink); background: var(--color-surface); }
 .panel input:focus { outline: 2px solid rgb(35 34 32 / 25%); outline-offset: 1px; }
 .panel small { color: var(--color-muted); font-size: 11px; }
+.turnstile { min-height: 65px; }
 .panel form > button { border: 0; padding: 12px; color: white; background: var(--color-ink); }
 .panel form > .textButton { border: 0; padding: 4px 0; color: var(--color-muted); background: transparent; text-align: left; }
 .panel form > .textButton:hover { color: var(--color-ink); }

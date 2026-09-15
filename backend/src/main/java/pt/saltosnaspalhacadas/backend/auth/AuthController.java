@@ -39,6 +39,7 @@ import pt.saltosnaspalhacadas.backend.notification.EmailService;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
+import pt.saltosnaspalhacadas.backend.security.TurnstileService;
 import pt.saltosnaspalhacadas.backend.user.*;
 
 @RestController
@@ -51,6 +52,7 @@ public class AuthController {
     private final PasswordEncoder passwords;
     private final JwtService jwt;
     private final IpRateLimiter rateLimiter;
+    private final TurnstileService turnstileService;
     private final ClientContentMediaService mediaService;
     private final MediaStorage storage;
     private final EmailService emailService;
@@ -65,6 +67,7 @@ public class AuthController {
             PasswordEncoder passwords,
             JwtService jwt,
             IpRateLimiter rateLimiter,
+            TurnstileService turnstileService,
             ClientContentMediaService mediaService,
             MediaStorage storage,
             EmailService emailService,
@@ -77,6 +80,7 @@ public class AuthController {
         this.passwords = passwords;
         this.jwt = jwt;
         this.rateLimiter = rateLimiter;
+        this.turnstileService = turnstileService;
         this.mediaService = mediaService;
         this.storage = storage;
         this.emailService = emailService;
@@ -87,8 +91,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    TokenResponse login(HttpServletRequest servletRequest, @Valid @RequestBody LoginRequest request) {
-        assertAuthAllowed(servletRequest);
+    TokenResponse login(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody LoginRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "login", clientIp);
         AppUser user = users.findByEmailAndActiveTrue(normalizeEmail(request.email()))
                 .filter(candidate -> passwords.matches(request.password(), candidate.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou palavra-passe inválidos"));
@@ -99,8 +107,12 @@ public class AuthController {
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
-    void forgotPassword(HttpServletRequest servletRequest, @Valid @RequestBody ForgotPasswordRequest request) {
-        assertAuthAllowed(servletRequest);
+    void forgotPassword(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "forgot_password", clientIp);
         String email = normalizeEmail(request.email());
 
         users.findByEmailAndActiveTrue(email).ifPresent(user -> {
@@ -152,8 +164,12 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    TokenResponse register(HttpServletRequest servletRequest, @Valid @RequestBody RegisterRequest request) {
-        assertAuthAllowed(servletRequest);
+    TokenResponse register(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody RegisterRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "register", clientIp);
         String email = normalizeEmail(request.email());
         validatePhone(request.phone());
         if (users.existsByEmail(email)) {
@@ -255,10 +271,12 @@ public class AuthController {
         passwordResetTokens.deleteAllByUserId(user.getId());
     }
 
-    private void assertAuthAllowed(HttpServletRequest servletRequest) {
-        if (!rateLimiter.tryAcquire("auth", ClientIpAddress.from(servletRequest), authRateLimitPerMinute, Duration.ofMinutes(1))) {
+    private String assertAuthAllowed(HttpServletRequest servletRequest) {
+        String clientIp = ClientIpAddress.from(servletRequest);
+        if (!rateLimiter.tryAcquire("auth", clientIp, authRateLimitPerMinute, Duration.ofMinutes(1))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas tentativas em pouco tempo. Tenta novamente dentro de instantes.");
         }
+        return clientIp;
     }
 
     private static String normalizeEmail(String email) {

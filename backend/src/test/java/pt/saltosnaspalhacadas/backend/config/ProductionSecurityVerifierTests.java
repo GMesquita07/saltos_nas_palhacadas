@@ -124,6 +124,75 @@ class ProductionSecurityVerifierTests {
     }
 
     @Test
+    void rejectsProductionWithTurnstileDisabled() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.security.turnstile.enabled", "false");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("TURNSTILE_ENABLED");
+    }
+
+    @Test
+    void rejectsProductionWithoutTurnstileSecret() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.security.turnstile.secret", "");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("TURNSTILE_SECRET");
+    }
+
+    @Test
+    void rejectsProductionWithoutTurnstileAllowedHostnames() {
+        MockEnvironment environment = validProductionEnvironmentWithR2()
+                .withProperty("app.security.turnstile.allowed-hostnames", "");
+
+        assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("TURNSTILE_ALLOWED_HOSTNAMES");
+    }
+
+    @Test
+    void rejectsProductionWithUnsafeTurnstileAllowedHostnames() {
+        for (String hostname : new String[] {
+                "localhost",
+                "127.0.0.1",
+                "*",
+                "https://saltosnaspalhacadas.pt",
+                "saltosnaspalhacadas.pt/path",
+                "saltosnaspalhacadas.pt?debug=true",
+                "saltosnaspalhacadas.pt#fragment",
+                "saltosnaspalhacadas.pt,"
+        }) {
+            MockEnvironment environment = validProductionEnvironmentWithR2()
+                    .withProperty("app.security.turnstile.allowed-hostnames", hostname);
+
+            assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                    .as(hostname)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("TURNSTILE_ALLOWED_HOSTNAMES");
+        }
+    }
+
+    @Test
+    void rejectsProductionWithUnsafeTurnstileSiteverifyUrl() {
+        for (String siteverifyUrl : new String[] {
+                "http://challenges.cloudflare.com/turnstile/v0/siteverify",
+                "https://localhost/turnstile",
+                "https://127.0.0.1/turnstile"
+        }) {
+            MockEnvironment environment = validProductionEnvironmentWithR2()
+                    .withProperty("app.security.turnstile.siteverify-url", siteverifyUrl);
+
+            assertThatThrownBy(() -> new ProductionSecurityVerifier(environment).run(null))
+                    .as(siteverifyUrl)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("TURNSTILE_SITEVERIFY_URL");
+        }
+    }
+
+    @Test
     void rejectsProductionWithUnknownMediaStorageProvider() {
         MockEnvironment environment = validProductionEnvironment()
                 .withProperty("app.media.storage-provider", "ftp");
@@ -198,6 +267,10 @@ class ProductionSecurityVerifierTests {
                 .withProperty("app.bootstrap.admin.email", "admin@saltosnaspalhacadas.pt")
                 .withProperty("app.bootstrap.admin.password", "uma-password-forte-2026")
                 .withProperty("app.maintenance.api-key", "9xVf7Qr2Lm8Np4Ts6Yb3Wd5Gh7Jk2MzQ")
+                .withProperty("app.security.turnstile.enabled", "true")
+                .withProperty("app.security.turnstile.secret", "turnstile-secret-placeholder")
+                .withProperty("app.security.turnstile.siteverify-url", "https://challenges.cloudflare.com/turnstile/v0/siteverify")
+                .withProperty("app.security.turnstile.allowed-hostnames", "saltosnaspalhacadas.pt,www.saltosnaspalhacadas.pt")
                 .withProperty("app.cors.allowed-origins", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.frontend.public-url", "https://saltosnaspalhacadas.pt")
                 .withProperty("app.security.hsts.enabled", "true")

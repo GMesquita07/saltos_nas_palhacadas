@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient'
+import { turnstileHeaders } from './turnstileHeaders'
 import type { AuthSession, AuthUser, UserRole } from '../types/auth'
 
 type TokenResponse = {
@@ -51,18 +52,20 @@ export type AccountDataExport = {
   reviews: unknown[]
 }
 
-export async function login(credentials: Credentials): Promise<AuthSession> {
+export async function login(credentials: Credentials, turnstileToken?: string): Promise<AuthSession> {
   const response = await apiClient<TokenResponse>('/auth/login', {
     method: 'POST',
+    headers: turnstileHeaders(turnstileToken),
     body: JSON.stringify(credentials),
   })
 
   return toSession(response, credentials.email)
 }
 
-export async function register(credentials: RegisterCredentials): Promise<AuthSession> {
+export async function register(credentials: RegisterCredentials, turnstileToken?: string): Promise<AuthSession> {
   const response = await apiClient<TokenResponse>('/auth/register', {
     method: 'POST',
+    headers: turnstileHeaders(turnstileToken),
     body: JSON.stringify(credentials),
   })
 
@@ -80,9 +83,10 @@ export function updateCurrentUser(input: UpdateAccountInput, token: string): Pro
   }, token)
 }
 
-export function forgotPassword(email: string): Promise<void> {
+export function forgotPassword(email: string, turnstileToken?: string): Promise<void> {
   return apiClient<void>('/auth/forgot-password', {
     method: 'POST',
+    headers: turnstileHeaders(turnstileToken),
     body: JSON.stringify({ email }),
   })
 }
