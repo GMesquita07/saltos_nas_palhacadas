@@ -60,6 +60,31 @@ class TurnstileServiceTests {
     }
 
     @Test
+    void enabledAllowsFullCloudflareSiteverifyResponseWithAdditionalFields() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        TurnstileService service = service(builder, true, "secret-value", "saltos-nas-palhacadas-prod.pages.dev");
+
+        server.expect(requestTo(SITEVERIFY_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("""
+                        {
+                          "success": true,
+                          "challenge_ts": "2026-09-15T00:00:00.000Z",
+                          "hostname": "saltos-nas-palhacadas-prod.pages.dev",
+                          "error-codes": [],
+                          "action": "login",
+                          "cdata": "",
+                          "metadata": {}
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThatCode(() -> service.verify("token-value", "login", "203.0.113.10"))
+                .doesNotThrowAnyException();
+        server.verify();
+    }
+
+    @Test
     void emptyTokenFailsWithForbidden() {
         TurnstileService service = service(RestClient.builder(), true, "secret-value", "saltos.example.test");
 

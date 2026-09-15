@@ -15,6 +15,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -105,10 +106,21 @@ public class TurnstileService {
         }
 
         try {
-            return objectMapper.readValue(body, SiteverifyResponse.class);
+            return parseSiteverifyResponse(body);
         } catch (RuntimeException exception) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, GENERIC_FORBIDDEN_MESSAGE);
         }
+    }
+
+    private SiteverifyResponse parseSiteverifyResponse(String body) {
+        JsonNode root = objectMapper.readTree(body);
+        JsonNode success = root.path("success");
+        JsonNode action = root.path("action");
+        JsonNode hostname = root.path("hostname");
+        return new SiteverifyResponse(
+                success.isBoolean() ? success.booleanValue() : null,
+                action.isTextual() ? action.asText() : "",
+                hostname.isTextual() ? hostname.asText() : "");
     }
 
     private static Set<String> parseAllowedHostnames(String rawHostnames) {
