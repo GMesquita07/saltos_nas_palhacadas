@@ -1,6 +1,6 @@
 # Funcionalidades
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Matriz
 
@@ -12,24 +12,25 @@ Last verified: 2026-09-15.
 | Contactos | Público/Admin | `ContactPage`, admin | `ContactController`, `AdminContactController` | `contacts` | Nenhuma | DONE |
 | Materiais | Público/Admin | `MaterialsPage`, admin | `MaterialController`, `AdminMaterialController` | `materials` | R2/media pública | DONE |
 | Registo/login | Público | `AuthPage`, `AuthContext` | `AuthController`, `JwtService` | `app_users` | Turnstile | DONE |
-| Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Email pendente | Parcial: token existe, email real pendente |
+| Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | DONE/VALIDATED |
 | Conta do cliente | Cliente | `AccountPage` | `AuthController` | `app_users` | R2 para avatar | DONE |
 | Alteração de password | Cliente | `AccountPage` | `AuthController` | `app_users` | Nenhuma | DONE |
 | Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, posts, favorites, reviews | Nenhuma | DONE técnico |
 | Eliminação de conta | Cliente | `AccountPage` | `AccountLifecycleService` | Anonimiza/apaga dados relacionados | R2 para apagar media | DONE técnico |
 | Favoritos | Cliente | `FavoritesPage`, `AuthContext` | `FavoriteController`, `FavoriteService` | `user_favorites` | Nenhuma | DONE |
-| Booking | Cliente | `BookingPage` | `BookingController`, `BookingService` | `booking_requests` | Email pendente | DONE sem SMTP real |
+| Booking | Cliente | `BookingPage` | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
 | Disponibilidade | Público | `BookingPage` | `ProfileAvailabilityController` | `booking_requests` | Nenhuma | DONE |
-| Decisões/counter-proposals | Cliente/Admin | `BookingPage`, admin | `BookingController`, `AdminBookingController` | `booking_requests` | Email pendente | DONE |
-| Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Email pendente | DONE |
-| Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService` | N/A | Brevo/SMTP | IN PROGRESS |
-| Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `booking_requests.reminder_sent_at` | Scheduler + SMTP | BLOCKED BY SMTP |
+| Decisões/counter-proposals | Cliente/Admin | `BookingPage`, admin | `BookingController`, `AdminBookingController` | `booking_requests` | Brevo SMTP | DONE |
+| Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
+| Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED |
+| Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `booking_requests.reminder_sent_at` | Scheduler + SMTP | DONE/VALIDATED |
 | Upload admin media | Admin | `AdminArea`, `MaterialManagement` | `MediaController`, `MediaStorage` | R2/local | R2 em prod | DONE |
 | Upload cliente | Cliente | `ClientContentPage` | `ClientContentMediaController`, `ClientContentMediaService` | `media_objects` | R2 | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |
 | Media pública | Público | Imagens/vídeos no site | `PublicMediaController` | paths públicos | R2 public bucket | DONE |
 | Moderação partilhas | Admin | `AdminArea` | `AdminClientContentController` | `client_content_posts`, `media_objects` | R2 copy/delete | DONE |
 | Cleanup media privada | Maintenance | N/A | `ClientContentMediaService`, `MaintenanceController` | `media_objects` | Scheduler + R2 | DONE |
+| Backup R2 | Operação | N/A | Cloud Run Job `saltos-r2-backup` | R2 snapshots | Scheduler + rclone | DONE/VALIDATED |
 | Chat suporte | Público | `SupportChat` | `SupportChatController`, `SupportChatService` | Sem persistência própria confirmada | OpenAI opcional | DONE local; IA opcional |
 | Privacy/Terms/Cookies | Público | `LegalPage`, `Footer` | N/A | `localStorage` para consentimento | Nenhuma | DONE técnico |
 | FAQ | Público | `FAQPage` | N/A | N/A | Nenhuma | DONE |
@@ -48,6 +49,6 @@ Last verified: 2026-09-15.
 ## Limitações Funcionais Conhecidas
 
 - O frontend é SPA sem rotas públicas por perfil, limitando SEO individual de artistas.
-- Brevo/SMTP ainda não está ativo; emails podem ser preparados/logados pelo backend sem envio real quando email está disabled.
-- O Scheduler de booking reminders ainda não deve ser criado.
+- Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
+- Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.

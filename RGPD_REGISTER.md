@@ -2,7 +2,7 @@
 
 Documento de trabalho para inventariar tratamentos de dados pessoais. Deve ser revisto por profissional jurídico antes de produção pública com domínio final.
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Responsável
 
@@ -44,13 +44,13 @@ Last verified: 2026-09-15.
 | --- | --- | --- |
 | Google Cloud Run | Alojamento backend | Ativo |
 | Google Secret Manager | Gestão de secrets | Ativo |
-| Google Cloud Scheduler | Jobs agendados | Ativo para cleanup |
+| Google Cloud Scheduler | Jobs agendados | Ativo para R2 backup, cleanup e reminders |
 | Neon | PostgreSQL gerido | Ativo |
 | Cloudflare Pages | Frontend estático | Ativo |
 | Cloudflare R2 | Storage media | Ativo |
-| Cloudflare DNS/CDN/TLS | Domínio, TLS, CDN | Domínio em progresso |
+| Cloudflare DNS/CDN/TLS | Domínio, TLS, CDN | `www` live; confirmação administrativa .PT pendente |
 | Cloudflare Turnstile | Anti-bot | Ativo |
-| Brevo | Email transacional | Em progresso |
+| Brevo | Email transacional | Ativo e validado |
 | OpenAI | Fallback IA do chat | Opcional, só se ativado |
 
 ## Direitos dos Titulares
@@ -72,4 +72,4 @@ Processos suportados tecnicamente ou a formalizar:
 - Confirmar DPAs/subprocessors dos providers.
 - Confirmar transferências internacionais quando OpenAI/Brevo estiverem ativos.
 - Confirmar política de logs e retenção.
-- Confirmar backups e restore drill.
+- Manter drills periódicos de backup/restore já validados.

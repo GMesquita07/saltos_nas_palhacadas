@@ -2,22 +2,22 @@
 
 Documento-resumo. A documentação detalhada está em [docs/PRODUCTION.md](docs/PRODUCTION.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) e [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Last verified: 2026-09-15, branch `feat/production-launch`, HEAD `ee8d9c1`.
+Last verified: 2026-09-16, branch `feat/production-launch`, branch HEAD `25383c0`.
 
 ## Estado Geral
 
 | Área | Estado |
 | --- | --- |
-| Frontend Cloudflare Pages | DONE em URL temporário |
+| Frontend Cloudflare Pages | DONE em domínio oficial; production branch ainda `feat/production-launch` |
 | Backend Google Cloud Run | DONE |
 | Neon PostgreSQL | DONE |
-| Cloudflare R2 | DONE |
+| Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
-| Domínio final | IN PROGRESS |
-| Brevo/SMTP | IN PROGRESS/TODO |
-| Booking reminders em produção | BLOCKED BY SMTP |
-| Backups/restore drill | PENDING |
+| Booking reminder Scheduler | DONE/VALIDATED |
+| Domínio final | DONE técnico; confirmação administrativa .PT pendente |
+| Brevo/SMTP | DONE/VALIDATED |
+| Backups/restore drill | DONE/VALIDATED |
 | Final merge para `main` | TODO |
 
 ## Checklist Técnico
@@ -26,7 +26,7 @@ Last verified: 2026-09-15, branch `feat/production-launch`, HEAD `ee8d9c1`.
 | --- | --- | --- |
 | API keys privadas | Coberto | Secrets em variáveis/provider/Secret Manager; não em frontend ou Git. |
 | Separar dev/prod | Coberto | Profiles `dev`, `test`, `prod`; produção exige R2 e DB SSL. |
-| Backups automáticos | PENDING | Confirmar Neon/PITR e R2 versioning/lifecycle; executar restore drill. |
+| Backups automáticos | Coberto | Neon snapshot/restore validado; R2 backup em bucket separado com lock/lifecycle; manter drills periódicos. |
 | Forçar HTTPS | Coberto + provider | HSTS no backend/frontend; Cloudflare deve forçar HTTPS no domínio final. |
 | Encriptação de dados sensíveis | Parcial | Passwords com hash; TLS/SSL/at-rest dependem dos providers; encriptação por campo não implementada. |
 | Server-side auth | Coberto | Spring Security valida JWT e roles. |
@@ -67,15 +67,16 @@ Last verified: 2026-09-15, branch `feat/production-launch`, HEAD `ee8d9c1`.
 
 ## Bloqueadores Antes do Release Final
 
-1. Confirmar delegação DNS Cloudflare e zona Active.
-2. Ligar `www.saltosnaspalhacadas.pt` ao Pages e configurar redirect apex -> `www`.
-3. Concluir Brevo DNS/domain verification.
-4. Configurar SMTP real e testar forgot-password/bookings.
-5. Criar Scheduler de booking reminders só depois do SMTP validado.
-6. Confirmar backups e executar restore drill.
-7. Fazer QA mobile, links, legal e E2E.
-8. Abrir PR `feat/production-launch` -> `dev`, depois PR `dev` -> `main`.
-9. Mudar Cloudflare Pages production branch para `main`.
+1. Fazer QA mobile.
+2. Fazer QA de links/navegação.
+3. Rever legal/privacy/cookies/contact-content conforme aplicável.
+4. Fazer E2E/smoke final mais amplo em produção.
+5. Rever consistência final da documentação.
+6. Abrir PR `feat/production-launch` -> `dev` e validar CI/CodeQL.
+7. Abrir PR `dev` -> `main`.
+8. Mudar Cloudflare Pages production branch para `main`.
+9. Fazer verificação final pós-merge.
+10. Acompanhar confirmação administrativa .PT externa.
 
 ## Render
 

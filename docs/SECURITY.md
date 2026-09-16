@@ -1,6 +1,6 @@
 # Segurança
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Autenticação
 
@@ -71,7 +71,7 @@ Frontend Pages:
 - `_headers` define HSTS, CSP, frame ancestors, object-src none, Permissions-Policy e outros headers.
 - CSP permite Turnstile em `script-src` e `frame-src`.
 
-Cloudflare deve forçar HTTPS no domínio final.
+Cloudflare força HTTPS no domínio oficial validado. O apex redireciona para `https://www.saltosnaspalhacadas.pt` com 301.
 
 ## CORS
 
@@ -95,6 +95,8 @@ Cloudflare deve forçar HTTPS no domínio final.
 - Validação lê apenas o cabeçalho necessário; upload para R2 continua streaming.
 - R2 usa buckets separados para privado e público.
 - `publishPrivate` copia private -> public com `MetadataDirective.COPY` e só depois apaga o privado.
+- Runtime buckets não têm bucket lock/lifecycle genérico porque a aplicação precisa de apagar/mover objetos.
+- Backups usam bucket separado `saltos-prod-backup`, credenciais separadas e service account dedicada.
 
 ## Dados Sensíveis
 
@@ -104,6 +106,7 @@ Cloudflare deve forçar HTTPS no domínio final.
 - Tokens de reset são guardados com hash SHA-256.
 - DB SSL obrigatório em produção quando `REQUIRE_DATABASE_SSL=true`.
 - `server.error.include-*` está configurado para não expor detalhes internos.
+- SMTP password, maintenance key, R2 credentials, Turnstile secret e credenciais de backup ficam no Google Secret Manager.
 
 ## Startup Verifier
 
@@ -132,7 +135,7 @@ Em profile `prod`, `ProductionSecurityVerifier` falha o startup se faltarem ou f
 
 - JWT em `sessionStorage`.
 - Rate limiting é app-level/in-memory.
-- Backups e restore drill ainda não confirmados.
+- Neon restore e R2 backup/restore foram validados; continuar drills periódicos.
 - Legal/privacy carecem de revisão profissional.
 - Avaliar Cloudflare WAF e regras específicas para uploads/auth.
 - Avaliar alertas de budget/logs e rotação periódica de secrets.

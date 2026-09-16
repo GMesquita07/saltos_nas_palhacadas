@@ -16,14 +16,14 @@ Produção atual validada na branch `feat/production-launch`:
 
 | Área | Provider atual | Estado |
 | --- | --- | --- |
-| Frontend | Cloudflare Pages | Em produção temporária em `saltos-nas-palhacadas-prod.pages.dev` |
-| Backend | Google Cloud Run | Em produção com imagem `backend:ee8d9c1` |
-| Base de dados | Neon PostgreSQL | Produção separada com Flyway até V19 |
-| Media | Cloudflare R2 | Público/privado validado E2E |
-| Jobs | Google Cloud Scheduler | Cleanup privado validado; reminders bloqueados por SMTP |
+| Frontend | Cloudflare Pages | `https://www.saltosnaspalhacadas.pt` live; production branch ainda `feat/production-launch` |
+| Backend | Google Cloud Run | Healthy; código de produção baseado em `ee8d9c1`; revisões posteriores só config/secrets |
+| Base de dados | Neon PostgreSQL | Produção/default com Flyway até V19; snapshot/restore validado |
+| Media | Cloudflare R2 | Público/privado e backup bucket validados |
+| Jobs | Google Cloud Scheduler | R2 backup, cleanup privado e booking reminders validados |
 | Anti-bot | Cloudflare Turnstile | Implementado e validado |
-| Email | Brevo | Em progresso; SMTP real ainda pendente |
-| Domínio | Cloudflare DNS + Dominios.pt | Registo feito; delegação/custom domain pendentes de confirmação |
+| Email | Brevo | SMTP real ativo e validado com DKIM/DMARC |
+| Domínio | Cloudflare DNS + Dominios.pt | `www` live com HTTPS; apex 301 para `www`; confirmação administrativa .PT pendente |
 
 O fluxo de release previsto é:
 
@@ -31,7 +31,7 @@ O fluxo de release previsto é:
 feat/production-launch -> PR para dev -> PR final para main
 ```
 
-Depois do merge final, o Cloudflare Pages deve passar a usar `main` como production branch.
+Depois do merge final, o Cloudflare Pages deve passar a usar `main` como production branch. Até lá, não tratar `main` como branch publicada.
 
 ## Stack
 

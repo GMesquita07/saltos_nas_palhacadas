@@ -1,6 +1,6 @@
 # Testes
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Suites
 
@@ -27,6 +27,19 @@ Executado em 2026-09-15:
 | `cd frontend && npm run lint` | OK |
 | `cd frontend && npm run build` | OK; Vite build concluído |
 | `cd frontend && npm audit --audit-level=moderate` | 0 vulnerabilities |
+
+Validações de produção reportadas em 2026-09-16:
+
+| Área | Resultado |
+| --- | --- |
+| Cloud Run backend | Healthy; recentes logs ERROR limpos |
+| Turnstile | Admin login no domínio oficial validado; hostname production funciona |
+| Email Brevo | Forgot/reset password, booking recebido, booking aceite e booking cancelado validados |
+| Scheduler cleanup | Execução manual de `private-media-cleanup` sucedeu |
+| Scheduler reminders | Execução manual de `booking-reminders` sucedeu |
+| Neon restore | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada; dados/Flyway inspecionados; branch temporária apagada |
+| R2 backup | Execução manual e via Scheduler sucederam; `rclone check` com 0 diferenças; restore de PNG validado |
+| Domínio | `www` live com HTTPS; apex 301 para `www` preserva query strings |
 
 ## Testes Relevantes por Tema
 

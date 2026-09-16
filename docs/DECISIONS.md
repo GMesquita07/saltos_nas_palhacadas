@@ -1,6 +1,6 @@
 # Decisões Técnicas
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Cloudflare Pages para Frontend
 
@@ -10,7 +10,7 @@ Contexto: o frontend é uma SPA React/Vite estática.
 
 Razão: deploy simples, CDN global, TLS e `_headers` com CSP/HSTS.
 
-Consequências: a branch de produção deve passar para `main` depois do release final; SEO por perfil continua limitado enquanto não houver rotas reais.
+Consequências: a branch de produção ainda é `feat/production-launch` e deve passar para `main` depois do release final; SEO por perfil continua limitado enquanto não houver rotas reais.
 
 ## Google Cloud Run para Backend
 
@@ -30,7 +30,7 @@ Contexto: a aplicação usa JPA/Flyway e PostgreSQL.
 
 Razão: base gerida separada para produção, SSL e migrations controladas.
 
-Consequências: backups/PITR e restore drill precisam confirmação operacional.
+Consequências: produção usa snapshot manual durável `pre-launch-2026-09-16`, PITR/history observado de 6 horas no plano atual e restore drill validado em branch isolada.
 
 ## Cloudflare R2 com Buckets Separados
 
@@ -50,7 +50,27 @@ Contexto: Cloud Run pode escalar para zero, logo cron interno não é garantia o
 
 Razão: Scheduler externo aciona endpoints internos com OIDC e `X-Maintenance-Key`.
 
-Consequências: `@Scheduled` fica para dev/test; prod usa cron `-` em `application-prod.properties`.
+Consequências: `@Scheduled` fica para dev/test; prod usa cron `-` em `application-prod.properties`. Scheduler externo aciona cleanup privado, booking reminders e backup R2.
+
+## R2 Backup Separado
+
+Status: Accepted / validated.
+
+Contexto: os buckets runtime precisam de apagar e mover objetos, por isso não podem ter bucket lock/lifecycle agressivo.
+
+Razão: usar um bucket separado `saltos-prod-backup`, credenciais separadas e Cloud Run Job com `rclone copy --immutable` permite snapshots independentes sem dar acesso de backup à aplicação principal.
+
+Consequências: backups ficam em `snapshots/<CLOUD_RUN_EXECUTION>/public` e `private`, com bucket lock de 30 dias e lifecycle delete aos 35 dias. O Scheduler do backup corre às 02:30 Europe/Lisbon, antes do cleanup privado às 03:30.
+
+## Brevo SMTP em Produção
+
+Status: Accepted / validated.
+
+Contexto: forgot/reset password e notificações de booking precisam de email transacional real.
+
+Razão: Brevo foi autenticado para `saltosnaspalhacadas.pt` com DKIM/DMARC e SMTP 587 STARTTLS.
+
+Consequências: booking reminders já podem correr em produção; continuar a monitorizar entregabilidade e manter SMTP password no Secret Manager.
 
 ## Turnstile em Auth Pública
 

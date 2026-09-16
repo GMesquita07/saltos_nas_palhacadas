@@ -1,6 +1,6 @@
 # Arquitetura
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Visão Geral
 
@@ -13,9 +13,11 @@ flowchart LR
   CloudRun -->|S3 API| R2Private[Cloudflare R2\nprivate bucket]
   Scheduler[Google Cloud Scheduler] -->|POST + OIDC + X-Maintenance-Key| Maintenance[/Internal maintenance endpoints/]
   Maintenance --> CloudRun
+  Scheduler -->|OAuth| R2BackupJob[Cloud Run Job\nsaltos-r2-backup]
+  R2BackupJob -->|rclone copy --immutable| R2Backup[Cloudflare R2\nbackup bucket]
   Browser <-->|Turnstile widget| Turnstile[Cloudflare Turnstile]
   CloudRun <-->|Siteverify| Turnstile
-  CloudRun -. pending .-> Brevo[Brevo SMTP]
+  CloudRun -->|SMTP 587 STARTTLS| Brevo[Brevo SMTP]
   Secrets[Google Secret Manager] --> CloudRun
   Cloudflare[Cloudflare DNS/CDN/TLS] --> Pages
 ```
@@ -24,14 +26,14 @@ flowchart LR
 
 | Componente | Responsabilidade |
 | --- | --- |
-| Cloudflare Pages | Serve o frontend estático, `_headers`, `robots.txt`, `sitemap.xml`, `404.html` e assets Vite. |
-| Google Cloud Run | Executa a API Spring Boot stateless; `min instances=0`, `max instances=2`, CPU 1, memória 1 GiB. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL e Flyway até V19. |
-| Cloudflare R2 | Armazena media. Bucket público para media publicada; bucket privado para uploads pendentes/privados. |
-| Google Cloud Scheduler | Aciona tarefas em produção porque Cloud Run pode escalar para zero. |
+| Cloudflare Pages | Serve o frontend estático no domínio oficial e mantém production branch temporária `feat/production-launch`. |
+| Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL, Flyway até V19, PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
+| Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |
 | Cloudflare Turnstile | Protege fluxos públicos de autenticação contra bots. |
-| Brevo | Email transacional planeado; ainda em progresso. |
+| Brevo | Email transacional ativo por SMTP 587 STARTTLS. |
 
 `render.yaml` existe no repositório mas deve ser tratado como configuração histórica/alternativa, não como a arquitetura principal de produção.
 
@@ -45,6 +47,8 @@ flowchart LR
 6. Endpoints admin exigem role `ADMIN`.
 
 O frontend atual usa navegação por estado interno em `App.tsx`, não rotas públicas reais por perfil. O sitemap lista essencialmente a homepage; SEO por animador requer rotas futuras como `/animadores/kidg`.
+
+Produção pública atual: `https://www.saltosnaspalhacadas.pt`. O apex `saltosnaspalhacadas.pt` redireciona com 301 para `www` preservando query strings.
 
 ## Fluxo de Auth e Turnstile
 
@@ -87,12 +91,29 @@ Em dev/test, os métodos `@Scheduled` continuam ativos por configuração. Em pr
 
 Em produção:
 
-- Cloud Scheduler chama `POST /internal/maintenance/private-media-cleanup`.
-- O request usa OIDC e header `X-Maintenance-Key`.
-- O controller valida a chave em comparação resistente a timing attacks.
-- Só depois executa o serviço.
+- Cloud Scheduler chama `POST /internal/maintenance/private-media-cleanup` todos os dias às 03:30 Europe/Lisbon.
+- Cloud Scheduler chama `POST /internal/maintenance/booking-reminders` todos os dias às 09:00 Europe/Lisbon.
+- Ambos usam OIDC, service account dedicado e header `X-Maintenance-Key`.
+- O controller valida a chave em comparação resistente a timing attacks antes de executar qualquer serviço.
+- Cloud Scheduler também invoca o Cloud Run Job `saltos-r2-backup` às 02:30 Europe/Lisbon, antes do cleanup privado.
 
-O endpoint `POST /internal/maintenance/booking-reminders` existe, mas o Scheduler respetivo ainda não deve ser criado enquanto SMTP real não estiver ativo e validado.
+Os dois maintenance endpoints e o Scheduler do backup R2 foram executados manualmente com sucesso. O backup R2 também foi validado via trigger do Scheduler.
+
+## Fluxo de Backup R2
+
+```mermaid
+flowchart TD
+  SchedulerBackup[Cloud Scheduler\nsaltos-r2-backup-daily] --> Job[Cloud Run Job\nsaltos-r2-backup]
+  Job --> SourcePublic[R2 public bucket\nread-only source token]
+  Job --> SourcePrivate[R2 private bucket\nread-only source token]
+  Job --> Backup[R2 backup bucket\nread/write destination token]
+  SourcePublic --> SnapshotPublic[snapshots/execution/public]
+  SourcePrivate --> SnapshotPrivate[snapshots/execution/private]
+  SnapshotPublic --> Check[rclone check]
+  SnapshotPrivate --> Check
+```
+
+O job usa `rclone copy`, não `sync`, com `--immutable`, e executa `rclone check` depois das cópias. O bucket `saltos-prod-backup` usa bucket lock de 30 dias para `snapshots/` e lifecycle de delete após 35 dias. Os buckets runtime não têm estas regras porque a aplicação precisa de apagar e mover objetos.
 
 ## Modelo Lógico de Dados
 

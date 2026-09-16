@@ -2,7 +2,7 @@
 
 Runbook para recuperar o site **Saltos nas Palhaçadas** após falha de deploy, perda de dados, indisponibilidade de provider ou incidente de segurança.
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Componentes Críticos
 
@@ -19,8 +19,9 @@ Last verified: 2026-09-15.
 
 | Área | Estado | Ação necessária |
 | --- | --- | --- |
-| Neon | PENDING CONFIRMATION | Confirmar backups automáticos/PITR, retenção e restore. |
-| R2 | PENDING CONFIRMATION | Confirmar versioning/lifecycle ou estratégia de cópia. |
+| Neon | VALIDATED | PITR/history observado de 6 horas; snapshot durável `pre-launch-2026-09-16`; restore drill em branch isolada validado. |
+| R2 runtime | VALIDATED | Buckets runtime sem lifecycle genérico nem bucket lock para permitir delete/move da aplicação. |
+| R2 backup | VALIDATED | Bucket `saltos-prod-backup`, snapshots independentes, `rclone check` 0 diferenças, restore de PNG validado. |
 | Secret Manager | PENDING PROCESS | Manter inventário de nomes e rotação; nunca exportar valores para docs. |
 | Cloud Run | DONE técnico | Rollback por revisão anterior. |
 | Cloudflare Pages | DONE técnico | Rollback por deployment anterior. |
@@ -28,7 +29,7 @@ Last verified: 2026-09-15.
 
 ## Restore DB Neon
 
-1. Identificar último backup válido ou ponto no tempo.
+1. Identificar snapshot ou ponto no tempo válido.
 2. Restaurar para branch/projeto isolado primeiro.
 3. Configurar ambiente temporário da API com a base restaurada.
 4. Confirmar Flyway/schema.
@@ -37,13 +38,13 @@ Last verified: 2026-09-15.
 
 ## Recovery Media R2
 
-1. Identificar objetos afetados e bucket (`public` ou `private`).
-2. Restaurar via versioning/cópia externa se configurado.
+1. Identificar objetos afetados e bucket runtime (`public` ou `private`).
+2. Restaurar a partir de `saltos-prod-backup` quando aplicável.
 3. Validar que metadata da DB aponta para os objetos esperados.
 4. Confirmar que media pública responde em `/api/v1/media/{key}`.
 5. Confirmar que media privada exige auth e owner/admin.
 
-Se versioning/lifecycle ainda não estiver configurado, este ponto fica como risco operacional.
+O backup R2 usa snapshots em `snapshots/<CLOUD_RUN_EXECUTION>/public` e `private`, com bucket lock de 30 dias e lifecycle de delete aos 35 dias no bucket de backup.
 
 ## Rollback Cloud Run
 

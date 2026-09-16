@@ -2,7 +2,7 @@
 
 Processo mínimo para incidentes de segurança, privacidade ou disponibilidade no projeto **Saltos nas Palhaçadas**.
 
-Last verified: 2026-09-15.
+Last verified: 2026-09-16.
 
 ## Objetivos
 
@@ -23,7 +23,7 @@ Last verified: 2026-09-15.
 | Cloud Run/GCP | Projeto `saltos-prod-gmesquita` |
 | Cloudflare | Pages, DNS, TLS, Turnstile, R2 |
 | Neon | Projeto `saltos-production` |
-| SMTP | Brevo, em progresso |
+| SMTP | Brevo ativo e validado |
 
 ## Severidade
 
@@ -61,7 +61,7 @@ Last verified: 2026-09-15.
 | Upload malicioso | Remover objeto, bloquear conta/IP quando aplicável, rever validação e logs. |
 | Conta admin comprometida | Desativar/rodar password admin, rever ações admin, rodar secrets se houve exposição. |
 | Turnstile outage | Avaliar impacto em auth pública; manter fail-closed ou decidir mitigação temporária controlada. |
-| SMTP outage | Desativar emails/reminders, não marcar reminders como enviados sem validação real. |
+| SMTP outage | Pausar/monitorizar emails e reminders; confirmar se houve marcação indevida de reminders. |
 
 ## Dados Que Não Devem Ir Para Logs
 
