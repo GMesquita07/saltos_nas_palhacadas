@@ -1,10 +1,14 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from './AuthContext'
 import { forgotPassword, resetPassword } from '../../services/authService'
 import type { AuthSession } from '../../types/auth'
+import { Turnstile, type TurnstileHandle } from './Turnstile'
+import type { AuthMode } from './authTypes'
+import { canSubmitProtectedAuth, protectedAuthRequiresSiteKey, turnstileActionForMode } from './turnstileAuth'
 import styles from './AuthPage.module.css'
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'reset'
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
+const isProduction = import.meta.env.PROD
 
 type AuthPageProps = {
   initialMode: 'login' | 'register'
@@ -27,15 +31,39 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileHandle | null>(null)
 
   const isRegistering = mode === 'register'
   const isRecoveringPassword = mode === 'forgot'
   const isResettingPassword = mode === 'reset'
+  const turnstileAction = turnstileActionForMode(mode)
+  const hasTurnstileSiteKey = turnstileSiteKey.length > 0
+  const turnstileConfigError = protectedAuthRequiresSiteKey(mode, isProduction, turnstileSiteKey)
+    ? 'A proteção anti-bot não está configurada. Contacta a equipa Saltos nas Palhaçadas.'
+    : null
+  const isSubmitDisabled = isSubmitting || !canSubmitProtectedAuth(mode, turnstileSiteKey, turnstileToken, isProduction)
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken(null)
+    turnstileRef.current?.reset()
+  }, [])
+
+  const handleTurnstileError = useCallback(() => {
+    setTurnstileToken(null)
+    setError('Não foi possível validar a proteção anti-bot. Tenta novamente.')
+  }, [])
+
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken(null)
+    setError('A validação anti-bot expirou. Confirma novamente antes de continuar.')
+  }, [])
 
   function changeMode(nextMode: AuthMode) {
     setMode(nextMode)
     setError(null)
     setNotice(null)
+    resetTurnstile()
     setUsername('')
     setFirstName('')
     setLastName('')
@@ -53,16 +81,27 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
       return
     }
 
+    if (turnstileConfigError) {
+      setError(turnstileConfigError)
+      return
+    }
+
+    if (turnstileAction && hasTurnstileSiteKey && !turnstileToken) {
+      setError('Confirma a validação anti-bot antes de continuar.')
+      return
+    }
+
     if (isRecoveringPassword) {
       setIsSubmitting(true)
       setError(null)
       setNotice(null)
       try {
-        await forgotPassword(normalizedEmail)
+        await forgotPassword(normalizedEmail, turnstileToken ?? undefined)
         setNotice('Se existir uma conta com esse email, vais receber um link para recuperar a palavra-passe.')
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : 'Não foi possível pedir a recuperação.')
       } finally {
+        resetTurnstile()
         setIsSubmitting(false)
       }
       return
@@ -148,12 +187,14 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
           lastName: lastName.trim(),
           phone: phone.trim(),
           password,
-        })
-        : await login({ email: normalizedEmail, password })
+        }, turnstileToken ?? undefined)
+        : await login({ email: normalizedEmail, password }, turnstileToken ?? undefined)
+      resetTurnstile()
+      setIsSubmitting(false)
       onAuthenticated(session)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível concluir a autenticação.')
-    } finally {
+      resetTurnstile()
       setIsSubmitting(false)
     }
   }
@@ -278,9 +319,21 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
               />
             </label>
           )}
+          {turnstileAction && hasTurnstileSiteKey && (
+            <Turnstile
+              action={turnstileAction}
+              className={styles.turnstile}
+              onError={handleTurnstileError}
+              onExpire={handleTurnstileExpire}
+              onToken={setTurnstileToken}
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+            />
+          )}
           {notice && <p className={styles.success} role="status">{notice}</p>}
+          {turnstileConfigError && <p className={styles.error} role="alert">{turnstileConfigError}</p>}
           {error && <p className={styles.error} role="alert">{error}</p>}
-          <button disabled={isSubmitting} type="submit">
+          <button disabled={isSubmitDisabled} type="submit">
             {isSubmitting ? 'A processar...' : submitLabel(mode)}
           </button>
           {!isRegistering && !isRecoveringPassword && !isResettingPassword && (

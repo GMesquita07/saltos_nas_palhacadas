@@ -36,14 +36,24 @@ public class BookingReminderService {
     @Scheduled(cron = "${app.booking.reminder.cron:0 0 9 * * *}", zone = "${app.booking.reminder.zone:Europe/Lisbon}")
     @Transactional
     public void sendScheduledReminders() {
-        int sent = sendDueReminders(LocalDate.now(reminderZone));
+        sendDueRemindersNow();
+    }
+
+    @Transactional
+    public int sendDueRemindersNow() {
+        int sent = sendDueRemindersForDate(LocalDate.now(reminderZone));
         if (sent > 0) {
             log.info("Foram preparados/enviados {} lembretes de eventos", sent);
         }
+        return sent;
     }
 
     @Transactional
     public int sendDueReminders(LocalDate today) {
+        return sendDueRemindersForDate(today);
+    }
+
+    private int sendDueRemindersForDate(LocalDate today) {
         LocalDate reminderDate = today.plusDays(daysBefore);
         List<Booking> dueBookings = bookings.findAcceptedBookingsDueForReminder(BookingStatus.ACCEPTED, reminderDate);
         int sentCount = 0;

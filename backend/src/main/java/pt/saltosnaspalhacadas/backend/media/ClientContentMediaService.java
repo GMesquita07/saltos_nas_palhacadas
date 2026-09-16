@@ -163,6 +163,11 @@ public class ClientContentMediaService {
     @Scheduled(cron = "${app.media.client-content.cleanup-cron:0 30 3 * * *}", zone = "${app.booking.reminder.zone:Europe/Lisbon}")
     @Transactional
     public void cleanupExpiredPrivateUploads() {
+        cleanupExpiredPrivateUploadsNow();
+    }
+
+    @Transactional
+    public int cleanupExpiredPrivateUploadsNow() {
         Instant cutoff = Instant.now().minus(Duration.ofHours(privateUploadRetentionHours));
         int deleted = 0;
 
@@ -178,6 +183,7 @@ public class ClientContentMediaService {
         if (deleted > 0) {
             log.info("Foram apagados {} uploads privados órfãos", deleted);
         }
+        return deleted;
     }
 
     private void assertQuotaAvailable(AppUser owner, long nextUploadBytes) {

@@ -16,8 +16,8 @@ type AuthContextValue = {
   isSessionReady: boolean
   favorites: Favorite[]
   isFavoritesLoading: boolean
-  login: (credentials: Credentials) => Promise<AuthSession>
-  register: (credentials: RegisterCredentials) => Promise<AuthSession>
+  login: (credentials: Credentials, turnstileToken?: string) => Promise<AuthSession>
+  register: (credentials: RegisterCredentials, turnstileToken?: string) => Promise<AuthSession>
   logout: () => void
   refreshFavorites: () => Promise<void>
   toggleFavorite: (portfolioItemId: string) => Promise<void>
@@ -115,14 +115,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [session])
 
-  const login = useCallback(async (credentials: Credentials) => {
-    const nextSession = await requestLogin(credentials)
+  const login = useCallback(async (credentials: Credentials, turnstileToken?: string) => {
+    const nextSession = await requestLogin(credentials, turnstileToken)
     saveSession(nextSession)
     return nextSession
   }, [saveSession])
 
-  const register = useCallback(async (credentials: RegisterCredentials) => {
-    const nextSession = await requestRegistration(credentials)
+  const register = useCallback(async (credentials: RegisterCredentials, turnstileToken?: string) => {
+    const nextSession = await requestRegistration(credentials, turnstileToken)
     saveSession(nextSession)
     return nextSession
   }, [saveSession])
