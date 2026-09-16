@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /favorites
+
+Sitemap: https://www.saltosnaspalhacadas.pt/sitemap.xml

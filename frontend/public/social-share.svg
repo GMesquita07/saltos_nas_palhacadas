@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Saltos nas Palhaçadas</title>
+  <desc id="desc">Imagem de partilha social para animação de eventos.</desc>
+  <rect width="1200" height="630" fill="#faf9f6"/>
+  <rect x="72" y="72" width="1056" height="486" fill="#ffffff" stroke="#dfddd7" stroke-width="2"/>
+  <path fill="#863bff" d="M232 438c-9 11-27 5-27-10V290c0-17-14-31-31-31H19c-12 0-20-14-12-24L109 92c3-4 8-7 13-7h386c12 0 20 14 12 24L420 249c-14 20 0 48 25 48h152c13 0 20 14 12 25L232 438Z" transform="translate(82 56) scale(.82)"/>
+  <text x="510" y="260" fill="#252421" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600">Saltos nas</text>
+  <text x="510" y="345" fill="#252421" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600">Palhaçadas</text>
+  <text x="512" y="408" fill="#716f6a" font-family="Inter, Arial, sans-serif" font-size="30">Animação de eventos, artistas e pedidos de agendamento</text>
+</svg>

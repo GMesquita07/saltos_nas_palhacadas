@@ -1,0 +1,511 @@
+package pt.saltosnaspalhacadas.backend.auth;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.Locale;
+import java.util.UUID;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
+import pt.saltosnaspalhacadas.backend.media.MediaStorage;
+import pt.saltosnaspalhacadas.backend.notification.EmailService;
+import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
+import pt.saltosnaspalhacadas.backend.security.TurnstileService;
+import pt.saltosnaspalhacadas.backend.user.*;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private final AppUserRepository users;
+    private final PasswordResetTokenRepository passwordResetTokens;
+    private final PasswordEncoder passwords;
+    private final JwtService jwt;
+    private final IpRateLimiter rateLimiter;
+    private final TurnstileService turnstileService;
+    private final ClientContentMediaService mediaService;
+    private final MediaStorage storage;
+    private final EmailService emailService;
+    private final AccountLifecycleService accountLifecycle;
+    private final int authRateLimitPerMinute;
+    private final int passwordResetTokenMinutes;
+    private final String frontendPublicUrl;
+
+    public AuthController(
+            AppUserRepository users,
+            PasswordResetTokenRepository passwordResetTokens,
+            PasswordEncoder passwords,
+            JwtService jwt,
+            IpRateLimiter rateLimiter,
+            TurnstileService turnstileService,
+            ClientContentMediaService mediaService,
+            MediaStorage storage,
+            EmailService emailService,
+            AccountLifecycleService accountLifecycle,
+            @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute,
+            @Value("${app.auth.password-reset-token-minutes:30}") int passwordResetTokenMinutes,
+            @Value("${app.frontend.public-url:http://localhost:5173}") String frontendPublicUrl) {
+        this.users = users;
+        this.passwordResetTokens = passwordResetTokens;
+        this.passwords = passwords;
+        this.jwt = jwt;
+        this.rateLimiter = rateLimiter;
+        this.turnstileService = turnstileService;
+        this.mediaService = mediaService;
+        this.storage = storage;
+        this.emailService = emailService;
+        this.accountLifecycle = accountLifecycle;
+        this.authRateLimitPerMinute = authRateLimitPerMinute;
+        this.passwordResetTokenMinutes = Math.max(5, passwordResetTokenMinutes);
+        this.frontendPublicUrl = frontendPublicUrl == null ? "" : frontendPublicUrl.trim();
+    }
+
+    @PostMapping("/login")
+    TokenResponse login(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody LoginRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "login", clientIp);
+        AppUser user = users.findByEmailAndActiveTrue(normalizeEmail(request.email()))
+                .filter(candidate -> passwords.matches(request.password(), candidate.getPasswordHash()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou palavra-passe inválidos"));
+
+        return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void forgotPassword(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "forgot_password", clientIp);
+        String email = normalizeEmail(request.email());
+
+        users.findByEmailAndActiveTrue(email).ifPresent(user -> {
+            passwordResetTokens.deleteAllByUserId(user.getId());
+            String rawToken = createSecureToken();
+            passwordResetTokens.save(new PasswordResetToken(
+                    user,
+                    tokenHash(rawToken),
+                    Instant.now().plus(passwordResetTokenMinutes, ChronoUnit.MINUTES)));
+
+            emailService.send(
+                    user.getEmail(),
+                    "Recuperar palavra-passe",
+                    """
+                            Olá %s,
+
+                            Recebemos um pedido para recuperar a palavra-passe da tua conta Saltos nas Palhaçadas.
+
+                            Para definires uma nova palavra-passe, abre este link nos próximos %d minutos:
+                            %s
+
+                            Se não fizeste este pedido, podes ignorar este email.
+
+                            Obrigado,
+                            Saltos nas Palhaçadas
+                            """.formatted(displayName(user), passwordResetTokenMinutes, resetLink(rawToken)));
+        });
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void resetPassword(HttpServletRequest servletRequest, @Valid @RequestBody ResetPasswordRequest request) {
+        assertAuthAllowed(servletRequest);
+        PasswordResetToken resetToken = passwordResetTokens.findByTokenHashAndUsedAtIsNull(tokenHash(request.token()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou"));
+
+        Instant now = Instant.now();
+        if (!resetToken.isUsable(now) || !resetToken.getUser().isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou");
+        }
+
+        AppUser user = resetToken.getUser();
+        user.changePassword(passwords.encode(request.newPassword()));
+        resetToken.markUsed(now);
+        users.save(user);
+        passwordResetTokens.save(resetToken);
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    TokenResponse register(
+            HttpServletRequest servletRequest,
+            @RequestHeader(value = "X-Turnstile-Token", required = false) String turnstileToken,
+            @Valid @RequestBody RegisterRequest request) {
+        String clientIp = assertAuthAllowed(servletRequest);
+        turnstileService.verify(turnstileToken, "register", clientIp);
+        String email = normalizeEmail(request.email());
+        validatePhone(request.phone());
+        if (users.existsByEmail(email)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma conta com este email");
+        }
+        String username = normalizeUsername(request.username());
+        if (users.existsByUsernameIgnoreCase(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma conta com este nome de utilizador");
+        }
+
+        AppUser user = users.save(new AppUser(
+                email,
+                username,
+                request.firstName().trim(),
+                request.lastName().trim(),
+                request.phone().trim(),
+                null,
+                "50% 50%",
+                1.0,
+                passwords.encode(request.password()),
+                UserRole.CUSTOMER));
+        return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
+    }
+
+    @GetMapping("/me")
+    AuthenticatedUserResponse currentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para continuar");
+        }
+
+        AppUser user = users.findByEmailAndActiveTrue(normalizeEmail(authentication.getName()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
+        return AuthenticatedUserResponse.from(user, profileImageUrl(user));
+    }
+
+    @PutMapping("/me")
+    @Transactional(rollbackFor = IOException.class)
+    AuthenticatedUserResponse updateCurrentUser(Authentication authentication, @Valid @RequestBody UpdateUserRequest request) throws IOException {
+        AppUser user = findCurrentUser(authentication);
+        validatePhone(request.phone());
+        String username = normalizeUsername(request.username());
+        ManagedMedia previousAvatar = user.getProfileMedia();
+        String previousLegacyUrl = user.getProfileImageUrl();
+        ProfileImageSelection profileImage = resolveProfileImage(user, request);
+
+        users.findByEmailAndActiveTrue(user.getEmail())
+                .filter(current -> current.getId().equals(user.getId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
+
+        if (!username.equalsIgnoreCase(nullToEmpty(user.getUsername())) && users.existsByUsernameIgnoreCase(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma conta com este nome de utilizador");
+        }
+
+        user.updateProfile(
+                username,
+                request.firstName().trim(),
+                request.lastName().trim(),
+                request.phone().trim(),
+                profileImage.legacyUrl(),
+                profileImage.media(),
+                defaultImagePosition(request.profileImagePosition()),
+                defaultImageZoom(request.profileImageZoom()));
+
+        AppUser savedUser = users.save(user);
+        cleanupPreviousProfileImage(previousAvatar, previousLegacyUrl, profileImage);
+
+        return AuthenticatedUserResponse.from(savedUser, profileImageUrl(savedUser));
+    }
+
+    @PutMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        AppUser user = findCurrentUser(authentication);
+        if (!passwords.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A palavra-passe atual não está correta");
+        }
+
+        user.changePassword(passwords.encode(request.newPassword()));
+        users.save(user);
+        passwordResetTokens.deleteAllByUserId(user.getId());
+    }
+
+    @GetMapping("/me/export")
+    AccountLifecycleService.AccountDataExport exportCurrentUser(Authentication authentication) {
+        return accountLifecycle.exportFor(findCurrentUser(authentication).getId());
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional(rollbackFor = IOException.class)
+    void deleteCurrentUser(Authentication authentication, @Valid @RequestBody DeleteAccountRequest request) throws IOException {
+        AppUser user = findCurrentUser(authentication);
+        if (!passwords.matches(request.password(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A palavra-passe não está correta");
+        }
+
+        accountLifecycle.deleteAccount(user.getId(), passwords.encode(createSecureToken()));
+        passwordResetTokens.deleteAllByUserId(user.getId());
+    }
+
+    private String assertAuthAllowed(HttpServletRequest servletRequest) {
+        String clientIp = ClientIpAddress.from(servletRequest);
+        if (!rateLimiter.tryAcquire("auth", clientIp, authRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas tentativas em pouco tempo. Tenta novamente dentro de instantes.");
+        }
+        return clientIp;
+    }
+
+    private static String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String normalizeUsername(String username) {
+        return username.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private AppUser findCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicia sessão para continuar");
+        }
+
+        return users.findByEmailAndActiveTrue(normalizeEmail(authentication.getName()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
+    }
+
+    private static String defaultImagePosition(String value) {
+        return value == null || value.isBlank() ? "50% 50%" : value.trim();
+    }
+
+    private static double defaultImageZoom(Double value) {
+        return value == null ? 1.0 : value;
+    }
+
+    private ProfileImageSelection resolveProfileImage(AppUser user, UpdateUserRequest request) {
+        if (request.profileImageMediaId() != null) {
+            ManagedMedia media = mediaService.attachOwnedPendingMedia(
+                    request.profileImageMediaId(),
+                    user,
+                    MediaType.PHOTO,
+                    ManagedMediaPurpose.PROFILE_AVATAR,
+                    "Carrega a foto através do upload da conta antes de guardar");
+            return new ProfileImageSelection(null, media);
+        }
+
+        String requestedUrl = blankToNull(request.profileImageUrl());
+        if (requestedUrl == null) {
+            return new ProfileImageSelection(null, null);
+        }
+
+        if (user.getProfileMedia() != null && isCurrentAvatarUrl(requestedUrl)) {
+            return new ProfileImageSelection(null, user.getProfileMedia());
+        }
+
+        if (user.getProfileImageUrl() != null && user.getProfileImageUrl().equals(requestedUrl)) {
+            return new ProfileImageSelection(user.getProfileImageUrl(), null);
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Carrega a foto através do upload da conta antes de guardar");
+    }
+
+    private void cleanupPreviousProfileImage(ManagedMedia previousAvatar, String previousLegacyUrl, ProfileImageSelection nextProfileImage) throws IOException {
+        if (previousAvatar != null && !sameMedia(previousAvatar, nextProfileImage.media())) {
+            mediaService.delete(previousAvatar);
+        }
+
+        if (previousLegacyUrl != null && !previousLegacyUrl.equals(nextProfileImage.legacyUrl())) {
+            storage.deleteManagedUrl(previousLegacyUrl);
+        }
+    }
+
+    private static String profileImageUrl(AppUser user) {
+        ManagedMedia media = user.getProfileMedia();
+        if (media != null
+                && media.getPurpose() == ManagedMediaPurpose.PROFILE_AVATAR
+                && media.getStatus() != ManagedMediaStatus.DELETED
+                && media.getDeletedAt() == null) {
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/api/v1/auth/me/avatar")
+                    .toUriString();
+        }
+        return user.getProfileImageUrl();
+    }
+
+    private static boolean sameMedia(ManagedMedia first, ManagedMedia second) {
+        return first != null
+                && second != null
+                && first.getId() != null
+                && first.getId().equals(second.getId());
+    }
+
+    private static boolean isCurrentAvatarUrl(String value) {
+        return value.equals("/api/v1/auth/me/avatar") || value.endsWith("/api/v1/auth/me/avatar");
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static void validatePhone(String phone) {
+        String value = phone.trim();
+        int digitCount = value.replaceAll("\\D", "").length();
+        if (digitCount < 9 || digitCount > 15) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica um contacto telefónico válido");
+        }
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String createSecureToken() {
+        byte[] token = new byte[32];
+        SECURE_RANDOM.nextBytes(token);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(token);
+    }
+
+    private static String tokenHash(String token) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 não está disponível", exception);
+        }
+    }
+
+    private String resetLink(String rawToken) {
+        String baseUrl = frontendPublicUrl.isBlank()
+                ? ServletUriComponentsBuilder.fromCurrentContextPath().toUriString()
+                : frontendPublicUrl;
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        return normalizedBaseUrl + "/?resetToken=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+    }
+
+    private static String displayName(AppUser user) {
+        String fullName = ((user.getFirstName() == null ? "" : user.getFirstName())
+                + " "
+                + (user.getLastName() == null ? "" : user.getLastName())).trim();
+        return fullName.isBlank() ? "cliente" : fullName;
+    }
+
+    record LoginRequest(
+            @NotBlank(message = "O email é obrigatório")
+            @Email(message = "Indica um endereço de email válido")
+            @Size(max = 254, message = "O email pode ter no máximo 254 caracteres")
+            String email,
+            @NotBlank(message = "A palavra-passe é obrigatória")
+            String password) {
+    }
+
+    record RegisterRequest(
+            @NotBlank(message = "O email é obrigatório")
+            @Email(message = "Indica um endereço de email válido")
+            @Size(max = 254, message = "O email pode ter no máximo 254 caracteres")
+            String email,
+            @NotBlank(message = "O nome de utilizador é obrigatório")
+            @Pattern(regexp = "(?!.*\\.\\.)(?!\\.)(?!.*\\.$)[a-z0-9._]{3,30}", message = "O nome de utilizador deve ter 3 a 30 caracteres, em minúsculas, e usar letras, números, ponto ou underscore")
+            String username,
+            @NotBlank(message = "O primeiro nome é obrigatório")
+            @Size(max = 80, message = "O primeiro nome pode ter no máximo 80 caracteres")
+            String firstName,
+            @NotBlank(message = "O último nome é obrigatório")
+            @Size(max = 80, message = "O último nome pode ter no máximo 80 caracteres")
+            String lastName,
+            @NotBlank(message = "O contacto telefónico é obrigatório")
+            @Pattern(regexp = "\\+?[0-9][0-9()\\s.-]{7,24}", message = "Indica um contacto telefónico válido")
+            String phone,
+            @NotBlank(message = "A palavra-passe é obrigatória")
+            @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String password) {
+    }
+
+    record ForgotPasswordRequest(
+            @NotBlank(message = "O email é obrigatório")
+            @Email(message = "Indica um endereço de email válido")
+            @Size(max = 254, message = "O email pode ter no máximo 254 caracteres")
+            String email) {
+    }
+
+    record ResetPasswordRequest(
+            @NotBlank(message = "O token de recuperação é obrigatório")
+            @Size(max = 200, message = "O token de recuperação é inválido")
+            String token,
+            @NotBlank(message = "A nova palavra-passe é obrigatória")
+            @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String newPassword) {
+    }
+
+    record ChangePasswordRequest(
+            @NotBlank(message = "A palavra-passe atual é obrigatória")
+            String currentPassword,
+            @NotBlank(message = "A nova palavra-passe é obrigatória")
+            @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
+            String newPassword) {
+    }
+
+    record DeleteAccountRequest(
+            @NotBlank(message = "Confirma a tua palavra-passe")
+            String password) {
+    }
+
+    record UpdateUserRequest(
+            @NotBlank(message = "O nome de utilizador é obrigatório")
+            @Pattern(regexp = "(?!.*\\.\\.)(?!\\.)(?!.*\\.$)[a-z0-9._]{3,30}", message = "O nome de utilizador deve ter 3 a 30 caracteres, em minúsculas, e usar letras, números, ponto ou underscore")
+            String username,
+            @NotBlank(message = "O primeiro nome é obrigatório")
+            @Size(max = 80, message = "O primeiro nome pode ter no máximo 80 caracteres")
+            String firstName,
+            @NotBlank(message = "O último nome é obrigatório")
+            @Size(max = 80, message = "O último nome pode ter no máximo 80 caracteres")
+            String lastName,
+            @NotBlank(message = "O contacto telefónico é obrigatório")
+            @Pattern(regexp = "\\+?[0-9][0-9()\\s.-]{7,24}", message = "Indica um contacto telefónico válido")
+            String phone,
+            @Size(max = 2048, message = "O URL da foto é demasiado longo")
+            String profileImageUrl,
+            UUID profileImageMediaId,
+            @Pattern(regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%", message = "A posição da foto é inválida")
+            String profileImagePosition,
+            @DecimalMin(value = "1.0", message = "O zoom mínimo da foto é 1")
+            @DecimalMax(value = "3.0", message = "O zoom máximo da foto é 3")
+            Double profileImageZoom) {
+    }
+
+    record ProfileImageSelection(String legacyUrl, ManagedMedia media) {
+    }
+
+    record TokenResponse(String accessToken, String tokenType, String email, String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom, String role) {
+        static TokenResponse from(AppUser user, String token, String profileImageUrl) {
+            return new TokenResponse(token, "Bearer", user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), profileImageUrl, user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
+        }
+    }
+
+    record AuthenticatedUserResponse(String email, String username, String firstName, String lastName, String phone, String profileImageUrl, String profileImagePosition, double profileImageZoom, String role) {
+        static AuthenticatedUserResponse from(AppUser user, String profileImageUrl) {
+            return new AuthenticatedUserResponse(user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getPhone(), profileImageUrl, user.getProfileImagePosition(), user.getProfileImageZoom(), user.getRole().name());
+        }
+    }
+}

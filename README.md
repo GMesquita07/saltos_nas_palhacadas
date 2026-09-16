@@ -1,39 +1,90 @@
 # Saltos nas Palhaçadas
 
-Portfolio digital para o animador **Saltos nas Palhaçadas**: galeria de fotos, vídeos, serviços e contactos.
+Aplicação full-stack para apresentar artistas de animação de eventos, gerir portfólios, receber pedidos de agendamento, moderar avaliações e publicar partilhas de clientes.
 
-## Stack e decisões
+Este repositório contém:
 
-- **Frontend:** React, TypeScript e Vite. É rápido de desenvolver e gera ficheiros estáticos, ideais para alojamento gratuito.
-- **Backend:** Java 21, Spring Boot e Maven. Expõe uma API REST versionada em `/api/v1`.
-- **Base de dados:** PostgreSQL. Localmente corre em Docker; em produção a recomendação é Neon.
-- **Deploy:** Cloudflare Pages (frontend) + Render (API) + Neon (PostgreSQL).
+- `frontend/`: SPA React + TypeScript + Vite, publicada em Cloudflare Pages.
+- `backend/`: API Java 21 + Spring Boot + Maven, publicada em Google Cloud Run.
+- `docker-compose.yml`: PostgreSQL local para desenvolvimento.
+- `render.yaml`: configuração histórica/alternativa, não é a produção atual.
+- `docs/`: documentação técnica e operacional atualizada.
 
-Os vídeos e fotos não devem ficar guardados no repositório nem na base de dados. Publique vídeos no YouTube/Vimeo e imagens num serviço de armazenamento/CDN; a API guarda apenas os metadados e URLs. Isto mantém custos e deploys simples.
+## Estado Atual
 
-## Pré-requisitos
+Produção atual validada na branch `feat/production-launch`:
 
-- Node.js 22+ e npm
+| Área | Provider atual | Estado |
+| --- | --- | --- |
+| Frontend | Cloudflare Pages | `https://www.saltosnaspalhacadas.pt` live; production branch ainda `feat/production-launch` |
+| Backend | Google Cloud Run | Healthy; código de produção baseado em `ee8d9c1`; revisões posteriores só config/secrets |
+| Base de dados | Neon PostgreSQL | Produção/default com Flyway até V19; snapshot/restore validado |
+| Media | Cloudflare R2 | Público/privado e backup bucket validados |
+| Jobs | Google Cloud Scheduler | R2 backup, cleanup privado e booking reminders validados |
+| Anti-bot | Cloudflare Turnstile | Implementado e validado |
+| Email | Brevo | SMTP real ativo e validado com DKIM/DMARC |
+| Domínio | Cloudflare DNS + Dominios.pt | `www` live com HTTPS; apex 301 para `www`; confirmação administrativa .PT pendente |
+
+O fluxo de release previsto é:
+
+```text
+feat/production-launch -> PR para dev -> PR final para main
+```
+
+Depois do merge final, o Cloudflare Pages deve passar a usar `main` como production branch. Até lá, não tratar `main` como branch publicada.
+
+## Stack
+
+- Frontend: React, TypeScript, Vite, CSS Modules.
+- Backend: Java 21, Spring Boot, Spring Security, JWT, JPA/Hibernate, Flyway.
+- Dados: PostgreSQL em Neon, `ddl-auto=validate` em produção.
+- Media: Cloudflare R2 com buckets separados para objetos públicos e privados.
+- Segurança: BCrypt, roles `ADMIN`/`CUSTOMER`, CORS allowlist, HSTS, CSP, rate limiting por IP, validação DTO, validação de uploads por MIME e magic bytes, Turnstile.
+- CI: GitHub Actions, CodeQL e Dependabot.
+
+## Funcionalidades Principais
+
+- Perfis públicos de artistas, portfólio, materiais e contactos.
+- Registo, login, recuperação de password, alteração de password e área de conta.
+- Favoritos, reviews moderadas e pedidos de agendamento com disponibilidade.
+- Backoffice admin para perfis, portfólio, contactos, materiais, reviews, bookings e partilhas.
+- Uploads privados de clientes, aprovação admin e publicação para media pública.
+- Exportação de dados da conta e eliminação/anomização de conta.
+- Chat de suporte com respostas locais e fallback OpenAI opcional.
+- Páginas legais, FAQ, cookie consent, metadata SEO, sitemap, robots e 404.
+
+## Desenvolvimento Local
+
+Pré-requisitos:
+
 - Java 21
-- Docker Desktop ou Docker Engine (para PostgreSQL local)
+- Node.js 22
+- npm
+- Docker
 
-## Desenvolvimento local
-
-Na raiz do projeto:
+Configuração inicial:
 
 ```bash
 cp .env.example .env
+```
+
+Define pelo menos `DB_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` e um `JWT_SECRET` Base64 forte. Para gerar um segredo local:
+
+```bash
+openssl rand -base64 64
+```
+
+Arrancar dependências e aplicações:
+
+```bash
 docker compose up -d
 ```
 
-Terminal 1 — API:
-
 ```bash
 cd backend
+set -a && source ../.env && set +a
 ./mvnw spring-boot:run
 ```
-
-Terminal 2 — site:
 
 ```bash
 cd frontend
@@ -41,54 +92,48 @@ npm ci
 npm run dev
 ```
 
-Abra `http://localhost:5173`. A rota de verificação da API está em `http://localhost:8080/api/v1/health`.
+URLs locais:
 
-Para validar antes de cada commit:
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8080/api/v1`
+- Health: `http://localhost:8080/actuator/health`
 
-```bash
-cd frontend && npm run lint && npm run build
-cd ../backend && ./mvnw test
-```
+## Validação Local
 
-## Configuração
-
-Copie os ficheiros de exemplo; nunca publique os ficheiros `.env`.
-
-- `.env`: configuração local do Docker/API.
-- `frontend/.env`: use `VITE_API_URL=/api/v1` localmente (o Vite encaminha para a API) ou a URL pública da API em produção.
-- `CORS_ALLOWED_ORIGINS`: origem do frontend permitida pela API. Em produção deve ser, por exemplo, `https://saltos-nas-palhacadas.pages.dev`.
-
-O perfil `dev` tem valores locais seguros. O perfil `prod` exige `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` no provedor de alojamento.
-
-## Deploy gratuito
-
-1. Crie uma base PostgreSQL no [Neon](https://neon.com/pricing) e guarde as credenciais apenas nas variáveis de ambiente do Render.
-2. No Render, crie um **Web Service** a partir deste repositório usando `render.yaml`. Defina `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` e, depois de criar o site, `CORS_ALLOWED_ORIGINS`.
-3. No Cloudflare Pages, importe o repositório GitHub com:
-   - **Root directory:** `frontend`
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Environment variable:** `VITE_API_URL=https://<nome-da-api>.onrender.com/api/v1`
-4. Copie o URL `*.pages.dev` para `CORS_ALLOWED_ORIGINS` no Render e faça novo deploy da API.
-
-O Cloudflare Pages faz deploy automático a cada push para `main` e cria previews para pull requests. Render tem um nível gratuito útil para projeto pessoal, mas não é um SLA de produção; confirme sempre os limites atuais antes de apresentar o site ao cliente.
-
-## Fluxo GitHub
-
-O repositório já tem o remoto GitHub configurado. Para o primeiro commit deste setup:
+Backend:
 
 ```bash
-git status
-git add .
-git commit -m "chore: configurar base full-stack"
-git push -u origin main
+cd backend
+./mvnw test
 ```
 
-Antes de `git add .`, confirme que `.env` não aparece na lista. Para alterações futuras, crie uma branch (`feat/galeria`, por exemplo), abra um pull request e só depois faça merge em `main`.
+Frontend:
 
-## Próximas funcionalidades
+```bash
+cd frontend
+npm ci
+npm test
+npm run lint
+npm run build
+npm audit --audit-level=moderate
+```
 
-1. Definir entidades `Media`, `Servico` e `Contacto` com migrations Flyway.
-2. Criar área de administração protegida para o animador gerir o conteúdo.
-3. Integrar o formulário de contacto com um serviço de e-mail; não expor chaves no frontend.
-4. Adicionar testes de API, acessibilidade e uma política de privacidade/cookies antes do lançamento.
+## Documentação
+
+- [Estado do projeto](docs/PROJECT_STATUS.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Funcionalidades](docs/FEATURES.md)
+- [Produção](docs/PRODUCTION.md)
+- [Segurança](docs/SECURITY.md)
+- [Operações](docs/OPERATIONS.md)
+- [Testes](docs/TESTING.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Decisões técnicas](docs/DECISIONS.md)
+- [Prontidão para produção](PRODUCTION_READINESS.md)
+- [Recuperação e backups](DISASTER_RECOVERY.md)
+- [Resposta a incidentes](INCIDENT_RESPONSE.md)
+- [Registo RGPD](RGPD_REGISTER.md)
+
+## Regra de Segredos
+
+Nunca colocar valores reais de passwords, tokens, access keys, connection strings privadas ou secrets em Git, Markdown, frontend ou logs. Em produção, os segredos conhecidos ficam no Google Secret Manager e são injetados no runtime do Cloud Run ou configurados como variáveis seguras no provider apropriado.

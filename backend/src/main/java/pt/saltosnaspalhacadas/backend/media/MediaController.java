@@ -1,0 +1,50 @@
+package pt.saltosnaspalhacadas.backend.media;
+
+import java.io.IOException;
+import java.time.Duration;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
+import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
+
+@RestController
+@RequestMapping("/api/v1/admin/media")
+public class MediaController {
+    private final MediaStorage storage;
+    private final IpRateLimiter rateLimiter;
+    private final int uploadRateLimitPerMinute;
+
+    public MediaController(
+            MediaStorage storage,
+            IpRateLimiter rateLimiter,
+            @Value("${app.media.upload.rate-limit-per-minute:30}") int uploadRateLimitPerMinute) {
+        this.storage = storage;
+        this.rateLimiter = rateLimiter;
+        this.uploadRateLimitPerMinute = uploadRateLimitPerMinute;
+    }
+
+    @PostMapping(consumes = "multipart/form-data")
+    @ResponseStatus(HttpStatus.CREATED)
+    MediaUploadResponse upload(HttpServletRequest request, @RequestParam MultipartFile file) throws IOException {
+        assertUploadAllowed(request);
+        StoredMedia media = storage.storePublic(file);
+        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(MediaPaths.PUBLIC_MEDIA_PATH)
+                .path(media.storageKey())
+                .toUriString();
+        return new MediaUploadResponse(url, media.contentType());
+    }
+
+    private void assertUploadAllowed(HttpServletRequest request) {
+        if (!rateLimiter.tryAcquire("admin-media-upload", ClientIpAddress.from(request), uploadRateLimitPerMinute, Duration.ofMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Demasiados uploads em pouco tempo. Tenta novamente dentro de instantes.");
+        }
+    }
+
+    record MediaUploadResponse(String url, String contentType) { }
+}

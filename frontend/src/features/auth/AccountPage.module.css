@@ -1,0 +1,294 @@
+.page {
+  width: min(960px, calc(100% - 48px));
+  padding: 65px 0 95px;
+  margin: auto;
+}
+
+.back {
+  border: 0;
+  padding: 0;
+  color: var(--color-muted);
+  background: none;
+  font-size: 13px;
+}
+
+.back:hover {
+  color: var(--color-ink);
+}
+
+.content {
+  width: min(100%, 720px);
+  margin: 56px auto;
+}
+
+.accountHeader {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+  margin: 18px 0 30px;
+}
+
+.accountHeader h1 {
+  margin: 0 0 8px;
+}
+
+.accountHeader p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.avatar {
+  width: 116px;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  font: 600 32px/1 Georgia, serif;
+}
+
+.summary,
+.profileForm {
+  display: grid;
+  gap: 18px;
+}
+
+.accountSections {
+  display: grid;
+  gap: 28px;
+  margin-top: 30px;
+  padding-top: 28px;
+  border-top: 1px solid var(--color-line);
+}
+
+.sectionBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionBlock h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 31px);
+}
+
+.sectionBlock p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.quickLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quickLinks button {
+  display: grid;
+  gap: 8px;
+  min-height: 94px;
+  border: 1px solid var(--color-line);
+  padding: 14px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.quickLinks button:hover {
+  border-color: var(--color-ink);
+}
+
+.quickLinks span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.quickLinks strong {
+  align-self: end;
+  font: 600 18px/1.2 Georgia, 'Times New Roman', serif;
+}
+
+.details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.details div {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.details dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.profileForm label,
+.securityForm label,
+.deleteForm label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.profileForm input,
+.securityForm input,
+.deleteForm input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  padding: 11px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.profileForm input[readonly] {
+  color: var(--color-muted);
+  background: #efede8;
+}
+
+.profileForm small {
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.securityForm,
+.deleteForm {
+  display: grid;
+  gap: 12px;
+}
+
+.avatarEditor {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.avatarEditor .avatar {
+  width: 96px;
+  font-size: 28px;
+}
+
+.nameFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.profileForm .actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.actions button {
+  border: 0;
+  padding: 12px;
+  color: white;
+  background: var(--color-ink);
+}
+
+.securityForm button,
+.secondaryButton,
+.dangerButton {
+  border: 0;
+  padding: 12px;
+  color: white;
+  background: var(--color-ink);
+}
+
+.actions button:disabled,
+.securityForm button:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.actions button:nth-child(2) {
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.actions .logout {
+  border: 1px solid #b85c55;
+  color: #9b332c;
+  background: transparent;
+}
+
+.secondaryButton {
+  width: fit-content;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.deleteForm {
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+}
+
+.dangerButton {
+  border: 1px solid #b85c55;
+  color: #9b332c;
+  background: transparent;
+}
+
+.error,
+.success {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.error {
+  color: #9b332c;
+}
+
+.success {
+  color: #3a6848;
+}
+
+@media (max-width: 650px) {
+  .page {
+    width: min(100% - 32px, 960px);
+    padding-top: 40px;
+  }
+
+  .content {
+    margin-top: 45px;
+  }
+
+  .accountHeader,
+  .avatarEditor,
+  .nameFields,
+  .quickLinks,
+  .details div,
+  .actions,
+  .profileForm .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar {
+    width: 94px;
+  }
+}

@@ -1,0 +1,385 @@
+package pt.saltosnaspalhacadas.backend.auth;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.util.HexFormat;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
+import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
+import pt.saltosnaspalhacadas.backend.user.AppUser;
+import pt.saltosnaspalhacadas.backend.user.UserRole;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class AuthAndAdminIntegrationTests {
+    @Autowired private MockMvc mockMvc;
+    @Autowired private JwtService jwtService;
+    @Autowired private AppUserRepository users;
+    @Autowired private PasswordEncoder passwords;
+    @Autowired private ManagedMediaRepository managedMedia;
+    @Autowired private ClientContentMediaService mediaService;
+    @Autowired private PasswordResetTokenRepository passwordResetTokens;
+
+    @BeforeEach
+    void ensureAdmin() {
+        if (users.findByEmailAndActiveTrue("admin@example.test").isEmpty()) {
+            users.save(new AppUser("admin@example.test", passwords.encode("change-me-now"), UserRole.ADMIN));
+        }
+    }
+
+    @Test
+    void adminCanLoginAndCreateProfile() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login").contentType("application/json").content("{\"email\":\"admin@example.test\",\"password\":\"change-me-now\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.role").value("ADMIN"));
+
+        String token = jwtService.createToken(users.findByEmailAndActiveTrue("admin@example.test").orElseThrow());
+        mockMvc.perform(post("/api/v1/admin/profiles").header("Authorization", "Bearer " + token).contentType("application/json").content("{\"slug\":\"dj-teste\",\"name\":\"DJ Teste\",\"role\":\"DJ\",\"description\":\"Perfil de teste\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.slug").value("dj-teste"));
+    }
+
+    @Test
+    void anonymousUserCannotCreateProfile() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/profiles").contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void customerCannotAccessAdminEndpoints() throws Exception {
+        AppUser customer = users.save(new AppUser(
+                "cliente-" + UUID.randomUUID().toString().substring(0, 8) + "@example.test",
+                passwords.encode("palavra123"),
+                UserRole.CUSTOMER));
+
+        try {
+            String token = jwtService.createToken(customer);
+            mockMvc.perform(post("/api/v1/admin/profiles")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType("application/json")
+                            .content("{\"slug\":\"perfil-nao-autorizado\",\"name\":\"Sem permissão\",\"role\":\"DJ\",\"description\":\"Este perfil não deve ser criado\"}"))
+                    .andExpect(status().isForbidden());
+        } finally {
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void registrationRejectsUnexpectedRoleField() throws Exception {
+        String email = "mass-assignment-" + UUID.randomUUID().toString().substring(0, 8) + "@example.test";
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","username":"mass%s","firstName":"Cliente","lastName":"Teste","phone":"+351 912 345 678","password":"palavra123","role":"ADMIN"}
+                """.formatted(email, UUID.randomUUID().toString().substring(0, 6))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O pedido contém campos não permitidos."));
+    }
+
+    @Test
+    void customerCanChangePasswordInsideAccount() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "password-" + suffix + "@example.test",
+                "password." + suffix,
+                "Cliente",
+                "Seguro",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+        String token = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(put("/api/v1/auth/me/password")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"currentPassword\":\"errada\",\"newPassword\":\"password-nova\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(put("/api/v1/auth/me/password")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"currentPassword\":\"password-antiga\",\"newPassword\":\"password-nova\"}"))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"password-%s@example.test\",\"password\":\"password-antiga\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"password-%s@example.test\",\"password\":\"password-nova\"}".formatted(suffix)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.role").value("CUSTOMER"));
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void customerCanResetPasswordWithTemporaryToken() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "reset-" + suffix + "@example.test",
+                "reset." + suffix,
+                "Cliente",
+                "Reset",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+        String rawToken = "reset-token-" + suffix;
+        passwordResetTokens.save(new PasswordResetToken(customer, tokenHash(rawToken), Instant.now().plusSeconds(900)));
+
+        try {
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"token\":\"%s\",\"newPassword\":\"password-nova\"}".formatted(rawToken)))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"reset-%s@example.test\",\"password\":\"password-antiga\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"reset-%s@example.test\",\"password\":\"password-nova\"}".formatted(suffix)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"token\":\"%s\",\"newPassword\":\"outra-password\"}".formatted(rawToken)))
+                    .andExpect(status().isBadRequest());
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void customerCanExportAndDeleteAccountWithPasswordConfirmation() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "rgpd-" + suffix + "@example.test",
+                "rgpd." + suffix,
+                "Cliente",
+                "RGPD",
+                "912345678",
+                null,
+                passwords.encode("password-segura"),
+                UserRole.CUSTOMER));
+        String token = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(get("/api/v1/auth/me/export")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profile.email").value("rgpd-" + suffix + "@example.test"))
+                    .andExpect(jsonPath("$.profile.firstName").value("Cliente"));
+
+            mockMvc.perform(delete("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"password\":\"password-errada\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(delete("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"password\":\"password-segura\"}"))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"rgpd-%s@example.test\",\"password\":\"password-segura\"}".formatted(suffix)))
+                    .andExpect(status().isUnauthorized());
+
+            AppUser deletedUser = users.findById(customer.getId()).orElseThrow();
+            assertThat(deletedUser.isActive()).isFalse();
+            assertThat(deletedUser.getDeletedAt()).isNotNull();
+            assertThat(deletedUser.getEmail()).startsWith("deleted-user-");
+        } finally {
+            if (users.existsById(customer.getId())) {
+                users.deleteById(customer.getId());
+            }
+        }
+    }
+
+    @Test
+    void customerAvatarUploadIsPrivateAndReplacesPreviousAvatar() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "avatar-" + suffix + "@example.test",
+                "avatar." + suffix,
+                "Cliente",
+                "Avatar",
+                "912345678",
+                null,
+                passwords.encode("change-me-now"),
+                UserRole.CUSTOMER));
+        AppUser otherCustomer = users.save(new AppUser(
+                "outro-avatar-" + suffix + "@example.test",
+                "outro." + suffix,
+                "Outro",
+                "Cliente",
+                "919999999",
+                null,
+                passwords.encode("change-me-now"),
+                UserRole.CUSTOMER));
+        String customerToken = jwtService.createToken(customer);
+        String otherToken = jwtService.createToken(otherCustomer);
+
+        try {
+            UploadedAvatar firstAvatar = uploadAvatar(customerToken, "avatar.png", "image/png");
+            String firstPrivatePath = URI.create(firstAvatar.url()).getPath();
+            String firstPublicPath = firstPrivatePath.replace("/api/v1/private-media/", "/api/v1/media/");
+
+            mockMvc.perform(get(firstPublicPath))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get(firstPrivatePath))
+                    .andExpect(status().isForbidden());
+
+            mockMvc.perform(get(firstPrivatePath)
+                            .header("Authorization", "Bearer " + otherToken))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get(firstPrivatePath)
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(put("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + customerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"username":"avatar.%s","firstName":"Cliente","lastName":"Avatar","phone":"912345678","profileImageUrl":"%s","profileImageMediaId":"%s","profileImagePosition":"42%% 58%%","profileImageZoom":1.4}
+                                    """.formatted(suffix, firstAvatar.url(), firstAvatar.id())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profileImageUrl", containsString("/api/v1/auth/me/avatar")))
+                    .andExpect(jsonPath("$.profileImagePosition").value("42% 58%"))
+                    .andExpect(jsonPath("$.profileImageZoom").value(1.4));
+
+            mockMvc.perform(get("/api/v1/auth/me/avatar"))
+                    .andExpect(status().isForbidden());
+
+            mockMvc.perform(get("/api/v1/auth/me/avatar")
+                            .header("Authorization", "Bearer " + otherToken))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get("/api/v1/auth/me/avatar")
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isOk());
+
+            UploadedAvatar secondAvatar = uploadAvatar(customerToken, "novo-avatar.png", "image/png");
+
+            mockMvc.perform(put("/api/v1/auth/me")
+                            .header("Authorization", "Bearer " + customerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"username":"avatar.%s","firstName":"Cliente","lastName":"Avatar","phone":"912345678","profileImageUrl":"%s","profileImageMediaId":"%s","profileImagePosition":"50%% 50%%","profileImageZoom":1.0}
+                                    """.formatted(suffix, secondAvatar.url(), secondAvatar.id())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profileImageUrl", containsString("/api/v1/auth/me/avatar")));
+
+            mockMvc.perform(get(firstPrivatePath)
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get("/api/v1/auth/me/avatar")
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isOk());
+        } finally {
+            deleteManagedMediaFor(customer);
+            deleteManagedMediaFor(otherCustomer);
+            users.deleteById(customer.getId());
+            users.deleteById(otherCustomer.getId());
+        }
+    }
+
+    @Test
+    void adminCanPublishAContactAndItIsPubliclyListed() throws Exception {
+        String token = jwtService.createToken(users.findByEmailAndActiveTrue("admin@example.test").orElseThrow());
+
+        mockMvc.perform(post("/api/v1/admin/contacts").header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"label\":\"Email geral\",\"type\":\"EMAIL\",\"value\":\"ola@example.test\",\"displayOrder\":0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O pedido contém campos não permitidos."));
+
+        mockMvc.perform(post("/api/v1/admin/contacts").header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"label\":\"Email geral\",\"type\":\"EMAIL\",\"value\":\"ola@example.test\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.label").value("Email geral"));
+
+        mockMvc.perform(get("/api/v1/contacts"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].value").value("ola@example.test"));
+    }
+
+    private UploadedAvatar uploadAvatar(String token, String filename, String contentType) throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", filename, contentType, pngHeader());
+
+        String response = mockMvc.perform(multipart("/api/v1/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.contentType").value(contentType))
+                .andExpect(jsonPath("$.url", containsString("/api/v1/private-media/")))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return new UploadedAvatar(
+                com.jayway.jsonpath.JsonPath.read(response, "$.id"),
+                com.jayway.jsonpath.JsonPath.read(response, "$.url"));
+    }
+
+    private void deleteManagedMediaFor(AppUser user) throws Exception {
+        for (ManagedMedia ownedMedia : managedMedia.findAllByOwnerId(user.getId())) {
+            mediaService.delete(ownedMedia);
+            managedMedia.delete(ownedMedia);
+        }
+    }
+
+    private static byte[] pngHeader() {
+        return new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0};
+    }
+
+    private static String tokenHash(String token) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(digest);
+    }
+
+    private record UploadedAvatar(String id, String url) {
+    }
+}

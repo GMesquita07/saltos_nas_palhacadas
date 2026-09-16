@@ -1,0 +1,71 @@
+.page {
+  width: min(860px, calc(100% - 48px));
+  margin: auto;
+  padding: 72px 0 105px;
+}
+
+.header {
+  max-width: 610px;
+  margin: 0 auto 38px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.header p:last-child,
+.feedback {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  width: min(100%, 540px);
+  gap: 30px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.card figure {
+  margin: 0;
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #e6e3dd;
+  object-fit: cover;
+}
+
+.card figcaption {
+  margin: 0;
+  border-top: 1px solid var(--color-line);
+  padding: 20px 24px 22px;
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.12;
+}
+
+@media (max-width: 560px) {
+  .page {
+    width: min(100% - 32px, 860px);
+    padding-top: 50px;
+  }
+
+  .card figcaption {
+    padding: 17px 18px 19px;
+    font-size: 21px;
+  }
+}
