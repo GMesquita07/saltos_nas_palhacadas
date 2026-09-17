@@ -1,3 +1,61 @@
-.splash { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; color: var(--color-paper); background: var(--color-ink); animation: fadeOut 500ms ease 1700ms forwards; }.splash > span { color: inherit; transform: scale(1.18); animation: arrive 700ms ease both; }.hidden { visibility: hidden; pointer-events: none; }
-@keyframes arrive { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1.18); } } @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) { .splash { display: none; } }
+.splash {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  background: #000;
+  transition: background-color 240ms ease;
+}
+
+.docking {
+  background: rgb(0 0 0 / 0%);
+  pointer-events: none;
+}
+
+.logoVideo {
+  display: block;
+
+  width: min(90vw, 650px);
+  height: auto;
+
+  object-fit: contain;
+}
+
+.docking .logoVideo {
+  opacity: 0;
+}
+
+.dockLogo {
+  position: fixed;
+  left: var(--dock-start-left);
+  top: var(--dock-start-top);
+  width: var(--dock-start-width);
+  height: var(--dock-start-height);
+  object-fit: contain;
+  animation: dockLogo 680ms cubic-bezier(.2, .78, .2, 1) forwards;
+  will-change: left, top, width, height;
+}
+
+@keyframes dockLogo {
+  to {
+    left: var(--dock-end-left);
+    top: var(--dock-end-top);
+    width: var(--dock-end-width);
+    height: var(--dock-end-height);
+  }
+}
+
+@media (max-width: 600px) {
+  .logoVideo {
+    width: 94vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    display: none;
+  }
+}

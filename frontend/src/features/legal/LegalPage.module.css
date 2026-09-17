@@ -7,13 +7,17 @@
 .backButton {
   border: 1px solid var(--color-line);
   padding: 10px 14px;
+  margin-bottom: 44px;
   background: transparent;
   color: var(--color-ink);
   font-size: 13px;
+  font-weight: 600;
+  transition: border-color var(--ease), color var(--ease);
 }
 
 .backButton:hover {
-  border-color: var(--color-ink);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
 }
 
 .page h1 {
@@ -65,10 +69,12 @@
   background: var(--color-surface);
   color: var(--color-ink);
   font-size: 13px;
+  transition: border-color var(--ease), color var(--ease);
 }
 
 .cookieActions button:hover {
-  border-color: var(--color-ink);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
 }
 
 .sections {
@@ -97,5 +103,9 @@
   .page {
     width: min(100% - 32px, 850px);
     padding: 48px 0 78px;
+  }
+
+  .backButton {
+    margin-bottom: 34px;
   }
 }

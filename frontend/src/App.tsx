@@ -22,14 +22,13 @@ import type { AuthSession } from './types/auth'
 import type { Profile } from './types/profile'
 import styles from './App.module.css'
 
-const SPLASH_DURATION_MS = 2200
-
 type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
+type SplashPhase = 'playing' | 'docking' | 'done'
 
 function App() {
   const initialPasswordResetToken = new URLSearchParams(window.location.search).get('resetToken') ?? ''
   const { isSessionReady, logout, session } = useAuth()
-  const [isSplashVisible, setIsSplashVisible] = useState(true)
+  const [splashPhase, setSplashPhase] = useState<SplashPhase>(() => prefersReducedMotion() ? 'done' : 'playing')
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [bookingProfile, setBookingProfile] = useState<Profile | null>(null)
   const [shouldReturnToBooking, setShouldReturnToBooking] = useState(false)
@@ -49,11 +48,6 @@ function App() {
     } catch {
       setProfilesError(true)
     }
-  }, [])
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIsSplashVisible(false), SPLASH_DURATION_MS)
-    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -219,9 +213,14 @@ function App() {
 
   return (
     <>
-      <SplashScreen isVisible={isSplashVisible} />
-      <div className={`${styles.application} ${isSplashVisible ? styles.isWaiting : ''}`}>
+      <SplashScreen
+        phase={splashPhase}
+        onDockingEnd={() => setSplashPhase('done')}
+        onDockingStart={() => setSplashPhase('docking')}
+      />
+      <div className={`${styles.application} ${splashPhase === 'playing' ? styles.isWaiting : ''}`}>
         <Header
+          isBrandHidden={splashPhase === 'docking'}
           session={isSessionReady ? session : null}
           onAccountClick={openAccount}
           onAdminClick={openAdmin}
@@ -244,7 +243,7 @@ function App() {
           onTermsClick={() => openLegal('terms')}
         />
         <CookieConsent onManage={() => openLegal('cookies')} />
-        {!isSplashVisible && <SupportChat />}
+        {splashPhase === 'done' && <SupportChat />}
       </div>
     </>
   )
@@ -260,6 +259,10 @@ function refreshProfileReference(current: Profile | null, profiles: Profile[]) {
 function displaySessionName(session: AuthSession) {
   const fullName = [session.firstName, session.lastName].filter(Boolean).join(' ').trim()
   return fullName || session.username || session.email.split('@')[0] || 'user'
+}
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function pageMetadata(view: View, profile: Profile | null) {

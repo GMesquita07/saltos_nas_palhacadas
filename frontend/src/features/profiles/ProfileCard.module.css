@@ -6,13 +6,19 @@
   color: var(--color-ink);
   background: var(--color-surface);
   text-align: left;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
 
 .card:hover {
-  border-color: var(--color-ink);
-  box-shadow: 0 16px 35px rgb(35 34 32 / 9%);
+  border-color: var(--brand-green);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-3px);
+}
+
+.card:focus-visible {
+  border-color: var(--brand-blue);
+  outline: 3px solid rgb(22 139 208 / 24%);
+  outline-offset: 3px;
 }
 
 .portrait {
@@ -25,7 +31,7 @@
   width: min(184px, 76%);
   aspect-ratio: 1;
   border: 1px solid rgb(35 34 32 / 10%);
-  font: 500 40px/1 Georgia, serif;
+  font: 500 40px/1 var(--font-serif);
 }
 
 .details {
@@ -36,7 +42,7 @@
 }
 
 .details small {
-  color: var(--color-muted);
+  color: var(--brand-blue);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 1.3px;
@@ -44,7 +50,7 @@
 }
 
 .details strong {
-  font: 600 25px/1.1 Georgia, serif;
+  font: 600 25px/1.1 var(--font-serif);
 }
 
 .details > span {
