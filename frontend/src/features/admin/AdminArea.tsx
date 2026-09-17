@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { apiClient, uploadFile } from '../../services/apiClient'
@@ -17,6 +17,13 @@ import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
 import { ClientContentModeration } from './clientContent/ClientContentModeration'
 import { MaterialManagement } from './materials/MaterialManagement'
+import {
+  nextReviewPublished,
+  replaceReview,
+  reviewVisibilityLabel,
+  reviewVisibilityNotice,
+  updateReviewPublished,
+} from './reviewModeration'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
@@ -60,10 +67,6 @@ type ContactFormState = {
   label: string
   type: ContactType
   value: string
-}
-
-type ReviewModerationState = {
-  published: boolean
 }
 
 type ContactField = {
@@ -113,12 +116,13 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm)
-  const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewModerationState>>({})
   const [editingProfileSlug, setEditingProfileSlug] = useState<string | null>(null)
   const [editingContentId, setEditingContentId] = useState<string | null>(null)
   const [editingContactId, setEditingContactId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDashboardLoading, setIsDashboardLoading] = useState(false)
+  const [savingReviewIds, setSavingReviewIds] = useState<Set<string>>(() => new Set())
+  const savingReviewIdsRef = useRef<Set<string>>(new Set())
 
   const refreshProfiles = useCallback(async () => {
     try {
@@ -148,7 +152,6 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     try {
       const items = await getAdminReviews(token)
       setReviews(items)
-      setReviewDrafts(toReviewDrafts(items))
       return items
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível carregar as avaliações.' })
@@ -185,7 +188,6 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       setAdminBookings(bookingItems)
       setClientPosts(clientPostItems)
       setReviews(reviewItems)
-      setReviewDrafts(toReviewDrafts(reviewItems))
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível atualizar o resumo do painel.' })
     } finally {
@@ -205,7 +207,6 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         setReviews(reviewItems)
         setAdminBookings(bookingItems)
         setClientPosts(clientPostItems)
-        setReviewDrafts(toReviewDrafts(reviewItems))
       })
       .catch(() => {
         if (isCurrent) {
@@ -579,29 +580,35 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }
 
-  async function saveReviewModeration(review: Review) {
-    const draft = reviewDrafts[review.id] ?? { published: review.published }
+  async function toggleReviewVisibility(review: Review) {
+    if (!token || savingReviewIdsRef.current.has(review.id)) return
 
-    if (!token || isSaving) return
-    setIsSaving(true)
+    const previousPublished = review.published
+    const nextPublished = nextReviewPublished(review)
+
+    savingReviewIdsRef.current.add(review.id)
+    setSavingReviewIds(new Set(savingReviewIdsRef.current))
+    setReviews((current) => updateReviewPublished(current, review.id, nextPublished))
 
     try {
-      await moderateReview(review.id, { published: draft.published }, token)
-      await refreshReviews()
+      const updatedReview = await moderateReview(review.id, { published: nextPublished }, token)
+      setReviews((current) => replaceReview(current, updatedReview))
       window.dispatchEvent(new Event('reviews:changed'))
-      setNotice({ type: 'success', text: draft.published ? 'Avaliação publicada.' : 'Avaliação ocultada.' })
+      setNotice({ type: 'success', text: reviewVisibilityNotice(nextPublished) })
     } catch (error) {
+      setReviews((current) => updateReviewPublished(current, review.id, previousPublished))
       setNotice({
         type: 'error',
         text: error instanceof Error ? error.message : 'Não foi possível moderar a avaliação.',
       })
     } finally {
-      setIsSaving(false)
+      savingReviewIdsRef.current.delete(review.id)
+      setSavingReviewIds(new Set(savingReviewIdsRef.current))
     }
   }
 
   async function deleteReview(review: Review) {
-    if (!token || !window.confirm('Apagar esta avaliação?')) return
+    if (!token || savingReviewIdsRef.current.has(review.id) || !window.confirm('Apagar esta avaliação?')) return
 
     setIsSaving(true)
     try {
@@ -722,11 +729,10 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
 
       {page === 'reviews' && (
         <ReviewManagement
-          drafts={reviewDrafts}
           isSaving={isSaving}
+          savingReviewIds={savingReviewIds}
           reviews={reviews}
-          onChangeDraft={setReviewDrafts}
-          onModerate={saveReviewModeration}
+          onToggleVisibility={toggleReviewVisibility}
           onDelete={deleteReview}
         />
       )}
@@ -1433,18 +1439,16 @@ function ContactOrderList({
 }
 
 function ReviewManagement({
-  drafts,
   isSaving,
+  savingReviewIds,
   reviews,
-  onChangeDraft,
-  onModerate,
+  onToggleVisibility,
   onDelete,
 }: {
-  drafts: Record<string, ReviewModerationState>
   isSaving: boolean
+  savingReviewIds: Set<string>
   reviews: Review[]
-  onChangeDraft: (value: Record<string, ReviewModerationState> | ((current: Record<string, ReviewModerationState>) => Record<string, ReviewModerationState>)) => void
-  onModerate: (review: Review) => Promise<void>
+  onToggleVisibility: (review: Review) => Promise<void>
   onDelete: (review: Review) => Promise<void>
 }) {
   return (
@@ -1461,7 +1465,7 @@ function ReviewManagement({
       ) : (
         <div className={styles.reviewList}>
           {reviews.map((review) => {
-            const draft = drafts[review.id] ?? { published: review.published }
+            const isVisibilitySaving = savingReviewIds.has(review.id)
             return (
               <article className={styles.reviewRow} key={review.id}>
                 <div>
@@ -1471,22 +1475,19 @@ function ReviewManagement({
                   <p className={styles.reviewComment}>{review.comment}</p>
                 </div>
                 <div className={styles.reviewModeration}>
-                  <label>
-                    Estado
-                    <select
-                      onChange={(event) => onChangeDraft((current) => ({
-                        ...current,
-                        [review.id]: { ...draft, published: event.target.value === 'published' },
-                      }))}
-                      value={draft.published ? 'published' : 'hidden'}
-                    >
-                      <option value="published">Publicada</option>
-                      <option value="hidden">Oculta</option>
-                    </select>
-                  </label>
-                  <span className={draft.published ? styles.publishedBadge : styles.hiddenBadge}>{draft.published ? 'Publicada' : 'Oculta'}</span>
-                  <button disabled={isSaving} type="button" onClick={() => { void onModerate(review) }}>Guardar</button>
-                  <button disabled={isSaving} type="button" onClick={() => { void onDelete(review) }}>Apagar</button>
+                  <button
+                    aria-pressed={review.published}
+                    className={[
+                      styles.visibilityToggle,
+                      review.published ? styles.visibilityPublished : styles.visibilityHidden,
+                    ].join(' ')}
+                    disabled={isSaving || isVisibilitySaving}
+                    type="button"
+                    onClick={() => { void onToggleVisibility(review) }}
+                  >
+                    {reviewVisibilityLabel(review.published)}{isVisibilitySaving ? ' · a guardar...' : ''}
+                  </button>
+                  <button disabled={isSaving || isVisibilitySaving} type="button" onClick={() => { void onDelete(review) }}>Apagar</button>
                 </div>
               </article>
             )
@@ -1586,15 +1587,6 @@ function ManagementList<T>({
       )}
     </section>
   )
-}
-
-function toReviewDrafts(reviews: Review[]): Record<string, ReviewModerationState> {
-  return reviews.reduce<Record<string, ReviewModerationState>>((drafts, review) => {
-    drafts[review.id] = {
-      published: review.published,
-    }
-    return drafts
-  }, {})
 }
 
 function toProfile(profile: ApiProfileResponse): Profile {
