@@ -26,11 +26,11 @@
 }
 
 .success {
-  color: #3a6848;
+  color: var(--color-accent-success);
 }
 
 .error {
-  color: #9b332c;
+  color: var(--color-accent-danger);
 }
 
 .submissionArea {
@@ -49,6 +49,7 @@
 
 .submissionPanel {
   padding: 28px;
+  box-shadow: inset 0 3px 0 var(--brand-red);
 }
 
 .myPosts {
@@ -65,7 +66,7 @@
 
 .form {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   margin-top: 24px;
 }
 
@@ -77,9 +78,11 @@
 
 .form label {
   display: grid;
-  gap: 7px;
+  gap: 8px;
+  min-width: 0;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .form input:not([type='file']),
@@ -90,56 +93,98 @@
   padding: 11px;
   background: var(--color-surface);
   color: var(--color-ink);
+  font: inherit;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.form input[type='file'] {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  padding: 9px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+}
+
+.form input[type='file']::file-selector-button {
+  border: 1px solid var(--color-ink);
+  padding: 8px 11px;
+  margin-right: 12px;
+  color: white;
+  background: var(--color-ink);
+  font: inherit;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.form input[type='file']::file-selector-button:hover {
+  color: var(--color-ink);
+  background: transparent;
 }
 
 .form input:focus,
 .form textarea:focus,
 .form select:focus {
-  outline: 2px solid rgb(35 34 32 / 25%);
+  border-color: var(--brand-blue);
+  outline: 2px solid rgb(22 139 208 / 24%);
   outline-offset: 1px;
 }
 
 .form textarea {
-  min-height: 105px;
+  min-height: 125px;
   resize: vertical;
+  line-height: 1.55;
 }
 
 .privacyChoices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--color-line);
+  background: var(--color-paper);
 }
 
 .privacyChoices legend {
   padding: 0 6px;
   color: var(--color-ink);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .privacyChoices label,
 .checkboxGroup label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  width: 100%;
   color: var(--color-ink);
   font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.privacyChoices label {
+  padding: 11px;
+  border: 1px solid var(--color-line-soft);
+  background: var(--color-surface);
 }
 
 .privacyChoices input,
 .checkboxGroup input {
-  flex: 0 0 auto;
+  width: auto;
+  margin: 2px 0 0;
+  accent-color: var(--brand-blue);
 }
 
 .checkboxGroup {
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--color-line);
-  background: #faf9f6;
+  background: var(--color-paper);
 }
 
 .form button,
@@ -150,6 +195,14 @@
   background: var(--color-ink);
   color: white;
   font: inherit;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+}
+
+.form button:hover:not(:disabled),
+.loginGate button:hover,
+.thumbnailPreview button:hover {
+  background: transparent;
+  color: var(--color-ink);
 }
 
 .form button:disabled {
@@ -159,8 +212,9 @@
 
 .uploadedFile {
   margin: -4px 0 0;
-  color: #3a6848;
+  color: var(--color-accent-success);
   font-size: 13px;
+  font-weight: 650;
 }
 
 .thumbnailPreview {
@@ -170,7 +224,7 @@
   gap: 14px;
   padding: 12px;
   border: 1px solid var(--color-line);
-  background: #faf9f6;
+  background: var(--color-paper);
 }
 
 .thumbnailPreview img {
@@ -182,10 +236,15 @@
 
 .thumbnailPreview button {
   width: fit-content;
-  border-color: #b85c55;
+  border-color: var(--color-accent-danger);
   background: transparent;
-  color: #9b332c;
+  color: var(--color-accent-danger);
   font-size: 12px;
+}
+
+.thumbnailPreview button:hover {
+  color: white;
+  background: var(--color-accent-danger);
 }
 
 .loginGate {
@@ -214,7 +273,7 @@
   gap: 5px;
   padding: 14px;
   border: 1px solid var(--color-line);
-  background: #faf9f6;
+  background: var(--color-paper);
 }
 
 .myPostRow strong {
@@ -239,18 +298,18 @@
 }
 
 .pending {
-  border-color: #b28a28;
-  color: #8a681d;
+  border-color: var(--color-accent-warning);
+  color: var(--color-accent-warning);
 }
 
 .approved {
-  border-color: #78907d;
-  color: #3a6848;
+  border-color: var(--color-accent-success);
+  color: var(--color-accent-success);
 }
 
 .rejected {
-  border-color: #b85c55;
-  color: #9b332c;
+  border-color: var(--color-accent-danger);
+  color: var(--color-accent-danger);
 }
 
 .publicSection {
@@ -276,12 +335,14 @@
   color: var(--color-muted);
   background: transparent;
   font-size: 12px;
+  font-weight: 650;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease);
 }
 
 .filters button:hover,
 .filters .active {
-  border-color: var(--color-line);
-  color: var(--color-ink);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
   background: var(--color-surface);
 }
 
@@ -313,6 +374,13 @@
   overflow: hidden;
   border: 1px solid var(--color-line);
   background: var(--color-surface);
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+
+.postCard:hover {
+  border-color: var(--brand-yellow);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
 }
 
 .mediaFrame {
@@ -370,6 +438,10 @@
   .submissionArea {
     grid-template-columns: 1fr;
   }
+
+  .privacyChoices {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -381,6 +453,12 @@
   .formGrid,
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .form input[type='file']::file-selector-button {
+    display: block;
+    width: 100%;
+    margin: 0 0 9px;
   }
 
   .publicHeading {

@@ -13,7 +13,7 @@ export function ProfileSelector({ profiles, viewerName, onProfileSelect }: Profi
     <section className={styles.section}>
       <div className={styles.intro}>
         <p className="eyebrow">Portfólio</p>
-        <h1>{viewerName ? 'Bem vindo ' + viewerName + '!' : 'Bem-vindo!'}</h1>
+        <h1>{viewerName ? `Bem-vindo ${viewerName}!` : 'Bem-vindo!'}</h1>
         <p>Aqui, cada evento ganha ritmo, energia e personalidade. 🎧✨ Explora os perfis, descobre diferentes experiências e encontra a animação certa para transformar o teu momento numa memória inesquecível.</p>
       </div>
       {profiles.length === 0 ? (
