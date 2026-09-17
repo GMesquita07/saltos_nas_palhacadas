@@ -61,7 +61,7 @@ O health endpoint de produção está UP. Recentes logs ERROR do Cloud Run foram
 - `app.security.hsts.enabled=true` por default
 - `app.security.require-database-ssl=true` por default
 - `app.booking.reminder.cron=-`
-- `app.media.client-content.cleanup-cron=-`
+- `app.media.private-upload-cleanup-cron=-`
 
 ## Neon
 

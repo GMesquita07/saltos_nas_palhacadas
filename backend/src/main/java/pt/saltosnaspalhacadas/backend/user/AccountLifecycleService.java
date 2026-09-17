@@ -12,12 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.booking.Booking;
 import pt.saltosnaspalhacadas.backend.booking.BookingRepository;
 import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
-import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPost;
-import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentPostRepository;
-import pt.saltosnaspalhacadas.backend.clientcontent.ClientContentStatus;
 import pt.saltosnaspalhacadas.backend.favorite.Favorite;
 import pt.saltosnaspalhacadas.backend.favorite.FavoriteRepository;
-import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
@@ -29,25 +26,22 @@ public class AccountLifecycleService {
 
     private final AppUserRepository users;
     private final BookingRepository bookings;
-    private final ClientContentPostRepository clientPosts;
     private final FavoriteRepository favorites;
     private final ReviewRepository reviews;
     private final ManagedMediaRepository media;
-    private final ClientContentMediaService mediaService;
+    private final ManagedMediaService mediaService;
     private final MediaStorage storage;
 
     public AccountLifecycleService(
             AppUserRepository users,
             BookingRepository bookings,
-            ClientContentPostRepository clientPosts,
             FavoriteRepository favorites,
             ReviewRepository reviews,
             ManagedMediaRepository media,
-            ClientContentMediaService mediaService,
+            ManagedMediaService mediaService,
             MediaStorage storage) {
         this.users = users;
         this.bookings = bookings;
-        this.clientPosts = clientPosts;
         this.favorites = favorites;
         this.reviews = reviews;
         this.media = media;
@@ -65,7 +59,6 @@ public class AccountLifecycleService {
                 Instant.now(),
                 AccountProfile.from(user),
                 bookings.findAllByUserIdWithProfileOrderByCreatedAtDesc(userId).stream().map(BookingExport::from).toList(),
-                clientPosts.findAllByUserIdOrderByCreatedAtDescIdDesc(userId).stream().map(ClientContentExport::from).toList(),
                 favorites.findAllByUserId(userId).stream().map(FavoriteExport::from).toList(),
                 reviews.findAllByUserId(userId).stream().map(ReviewExport::from).toList());
     }
@@ -86,29 +79,10 @@ public class AccountLifecycleService {
         users.saveAndFlush(user);
 
         storage.deleteManagedUrl(legacyProfileImageUrl);
-        deleteClientPosts(userId);
         reviews.deleteAllByUserId(userId);
         favorites.deleteAllByUserId(userId);
         anonymizeBookings(userId);
         deleteOwnedMedia(userId);
-    }
-
-    private void deleteClientPosts(Long userId) throws IOException {
-        List<ClientContentPost> posts = clientPosts.findAllByUserIdOrderByCreatedAtDescIdDesc(userId);
-        for (ClientContentPost post : posts) {
-            deleteLegacyMediaIfNeeded(post);
-        }
-        clientPosts.deleteAll(posts);
-        clientPosts.flush();
-    }
-
-    private void deleteLegacyMediaIfNeeded(ClientContentPost post) throws IOException {
-        if (post.getMediaObject() == null) {
-            storage.deleteManagedUrl(post.getMediaUrl());
-        }
-        if (post.getThumbnailObject() == null) {
-            storage.deleteManagedUrl(post.getThumbnailUrl());
-        }
     }
 
     private void anonymizeBookings(Long userId) {
@@ -130,7 +104,6 @@ public class AccountLifecycleService {
             Instant exportedAt,
             AccountProfile profile,
             List<BookingExport> bookings,
-            List<ClientContentExport> clientContent,
             List<FavoriteExport> favorites,
             List<ReviewExport> reviews) {
     }
@@ -198,40 +171,6 @@ public class AccountLifecycleService {
                     booking.getCounterEventDate(),
                     booking.getCreatedAt(),
                     booking.getUpdatedAt());
-        }
-    }
-
-    public record ClientContentExport(
-            Long id,
-            String profileName,
-            String mediaType,
-            String title,
-            String location,
-            java.time.LocalDate eventDate,
-            String caption,
-            ClientContentStatus status,
-            String publicDisplayName,
-            boolean showLocation,
-            boolean showEventDate,
-            String consentVersion,
-            Instant consentedAt,
-            Instant createdAt) {
-        static ClientContentExport from(ClientContentPost post) {
-            return new ClientContentExport(
-                    post.getId(),
-                    post.getProfile() == null ? null : post.getProfile().getName(),
-                    post.getMediaType().name(),
-                    post.getTitle(),
-                    post.getLocation(),
-                    post.getEventDate(),
-                    post.getCaption(),
-                    post.getStatus(),
-                    post.getPublicDisplayName(),
-                    post.isShowLocation(),
-                    post.isShowEventDate(),
-                    post.getConsentVersion(),
-                    post.getConsentedAt(),
-                    post.getCreatedAt());
         }
     }
 

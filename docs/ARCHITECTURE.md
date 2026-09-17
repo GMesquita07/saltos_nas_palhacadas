@@ -42,7 +42,7 @@ flowchart LR
 1. O browser carrega a SPA no Cloudflare Pages.
 2. A SPA chama `VITE_API_URL`.
 3. O backend responde por `/api/v1`.
-4. Endpoints públicos incluem perfis, portfólio, materiais, contactos, reviews publicadas, partilhas aprovadas e media pública.
+4. Endpoints públicos incluem perfis, portfólio, materiais, contactos, reviews publicadas e media pública.
 5. Endpoints privados usam JWT no header `Authorization`.
 6. Endpoints admin exigem role `ADMIN`.
 
@@ -122,14 +122,11 @@ erDiagram
   APP_USERS ||--o{ BOOKING_REQUESTS : creates
   APP_USERS ||--o{ USER_FAVORITES : saves
   APP_USERS ||--o{ REVIEWS : writes
-  APP_USERS ||--o{ CLIENT_CONTENT_POSTS : submits
   APP_USERS ||--o{ MEDIA_OBJECTS : owns
   PROFILES ||--o{ PORTFOLIO_ITEMS : has
   PROFILES ||--o{ BOOKING_REQUESTS : booked_for
   PROFILES ||--o{ REVIEWS : reviewed
-  PROFILES ||--o{ CLIENT_CONTENT_POSTS : tagged
   PORTFOLIO_ITEMS ||--o{ USER_FAVORITES : favorited
-  MEDIA_OBJECTS ||--o{ CLIENT_CONTENT_POSTS : media_or_thumbnail
   APP_USERS ||--o{ PASSWORD_RESET_TOKENS : requested
 ```
 
@@ -156,3 +153,4 @@ erDiagram
 | V17 | Cria `media_objects` e liga partilhas a media gerida e consentimento público. |
 | V18 | Migration Java: adiciona purpose de media, avatar gerido em `app_users` e ajusta FK owner. |
 | V19 | Cria tokens de reset de password e `deleted_at` em utilizadores. |
+| V20 | Remove a feature de partilhas de clientes, dropa `client_content_posts` e restringe `media_objects.purpose` a `PROFILE_AVATAR`. |

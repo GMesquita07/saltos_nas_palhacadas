@@ -52,8 +52,6 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | SEO para DJ KidG / João Tomás | STILL TODO | Limitado pela SPA sem rotas públicas individuais |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | STILL TODO | Rever wording/conteúdo apesar do SMTP real já estar ativo |
-| Corrigir página de partilhas de clientes | STILL TODO | UX/layout a melhorar |
-| Partilhas: fotos primeiro e upload melhor posicionado | STILL TODO | Produto/UX |
 | Área pessoal do cliente como botões | STILL TODO | Produto/UX |
 | Zona de notificações in-site | STILL TODO | Nova funcionalidade |
 | Formatação Privacy/Terms/Cookies | STILL TODO | Melhorar UX e pedir revisão jurídica |
@@ -78,7 +76,6 @@ Manter dinâmico:
 - bookings
 - favoritos
 - reviews
-- partilhas de clientes
 - moderação
 - estados operacionais
 

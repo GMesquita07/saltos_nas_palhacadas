@@ -15,7 +15,7 @@ Last verified: 2026-09-17.
 | Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | DONE/VALIDATED |
 | Conta do cliente | Cliente | `AccountPage` | `AuthController` | `app_users` | R2 para avatar | DONE |
 | Alteração de password | Cliente | `AccountPage` | `AuthController` | `app_users` | Nenhuma | DONE |
-| Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, posts, favorites, reviews | Nenhuma | DONE técnico |
+| Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, favorites, reviews | Nenhuma | DONE técnico |
 | Eliminação de conta | Cliente | `AccountPage` | `AccountLifecycleService` | Anonimiza/apaga dados relacionados | R2 para apagar media | DONE técnico |
 | Favoritos | Cliente | `FavoritesPage`, `AuthContext` | `FavoriteController`, `FavoriteService` | `user_favorites` | Nenhuma | DONE |
 | Booking | Cliente | `BookingPage` | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
@@ -25,11 +25,9 @@ Last verified: 2026-09-17.
 | Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED |
 | Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `booking_requests.reminder_sent_at` | Scheduler + SMTP | DONE/VALIDATED |
 | Upload admin media | Admin | `AdminArea`, `MaterialManagement` | `MediaController`, `MediaStorage` | R2/local | R2 em prod | DONE |
-| Upload cliente | Cliente | `ClientContentPage` | `ClientContentMediaController`, `ClientContentMediaService` | `media_objects` | R2 | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |
 | Media pública | Público | Imagens/vídeos no site | `PublicMediaController` | paths públicos | R2 public bucket | DONE |
-| Moderação partilhas | Admin | `AdminArea` | `AdminClientContentController` | `client_content_posts`, `media_objects` | R2 copy/delete | DONE |
-| Cleanup media privada | Maintenance | N/A | `ClientContentMediaService`, `MaintenanceController` | `media_objects` | Scheduler + R2 | DONE |
+| Cleanup media privada | Maintenance | N/A | `ManagedMediaService`, `MaintenanceController` | `media_objects` | Scheduler + R2 | DONE |
 | Backup R2 | Operação | N/A | Cloud Run Job `saltos-r2-backup` | R2 snapshots | Scheduler + rclone | DONE/VALIDATED |
 | Chat suporte | Público | `SupportChat` | `SupportChatController`, `SupportChatService` | Sem persistência própria confirmada | OpenAI opcional | DONE local; IA opcional |
 | Privacy/Terms/Cookies | Público | `LegalPage`, `Footer` | N/A | `localStorage` para consentimento | Nenhuma | DONE técnico |
@@ -40,7 +38,6 @@ Last verified: 2026-09-17.
 
 ## Regras Importantes
 
-- Publicações de clientes começam privadas e só ficam públicas depois de aprovação.
 - Outro cliente não recebe informação sobre existência de media privada alheia; os casos não autorizados devolvem `404`.
 - O backend usa DTOs/records e validação Jakarta; propriedades JSON desconhecidas são rejeitadas globalmente.
 - Passwords usam BCrypt; tokens de reset são guardados como hash SHA-256.

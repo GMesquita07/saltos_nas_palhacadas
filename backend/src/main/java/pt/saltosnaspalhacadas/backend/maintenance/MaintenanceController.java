@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import pt.saltosnaspalhacadas.backend.booking.BookingReminderService;
-import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 
 @RestController
 @RequestMapping("/internal/maintenance")
@@ -20,12 +20,12 @@ class MaintenanceController {
     private static final String MAINTENANCE_KEY_HEADER = "X-Maintenance-Key";
 
     private final BookingReminderService bookingReminders;
-    private final ClientContentMediaService mediaService;
+    private final ManagedMediaService mediaService;
     private final String apiKey;
 
     MaintenanceController(
             BookingReminderService bookingReminders,
-            ClientContentMediaService mediaService,
+            ManagedMediaService mediaService,
             @Value("${app.maintenance.api-key:}") String apiKey) {
         this.bookingReminders = bookingReminders;
         this.mediaService = mediaService;

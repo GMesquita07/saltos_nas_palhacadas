@@ -123,7 +123,7 @@ Razão: reduzir custo e dependência de Neon, Cloud Run e R2 para conteúdo quas
 Consequências propostas:
 
 - mover perfis públicos, fotos principais, textos institucionais e FAQ para assets/dados estáticos quando fizer sentido;
-- manter dinâmico auth, bookings, favoritos, reviews, partilhas, moderação e dados operacionais;
+- manter dinâmico auth, bookings, favoritos, reviews, moderação e dados operacionais;
 - avaliar avatares predefinidos em vez de upload livre, guardando apenas IDs como `avatar-03`.
 
 Nada desta decisão está implementado nesta tarefa documental.

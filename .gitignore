@@ -25,6 +25,7 @@ backend/.mvn/timing.properties
 .env
 .env.*
 !.env.example
+!.env.local.example
 
 frontend/.env
 frontend/.env.*

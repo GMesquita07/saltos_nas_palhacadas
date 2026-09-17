@@ -59,12 +59,6 @@ public class SupportChatService {
                     List.of("Abrir contactos", "Tenho uma dúvida sobre o pedido", "Preciso de alterar um evento"));
         }
 
-        if (hasAny(normalized, "partilha", "publicacao", "publicar", "foto", "fotografia", "video", "cliente")) {
-            return new SupportChatReply(
-                    "Na página Partilhas, os clientes com conta podem enviar fotografias ou vídeos dos eventos em que participaram. A publicação só aparece no site depois de ser aprovada pelo admin.",
-                    List.of("Como publicar fotos?", "A minha publicação ainda não apareceu", "Tenho de estar logado?"));
-        }
-
         if (hasAny(normalized, "perfil", "perfis", "artista", "dj", "portfolio", "portefolio", "joao", "kidg")) {
             return new SupportChatReply(
                     "Na página Perfis consegues ver os artistas disponíveis. Ao abrir um perfil, encontras o portefólio, vídeo de destaque quando existir, conteúdos publicados e avaliações.",
@@ -73,7 +67,7 @@ public class SupportChatService {
 
         if (hasAny(normalized, "conta", "login", "entrar", "registar", "registo", "password", "passe", "utilizador")) {
             return new SupportChatReply(
-                    "Para criar conta ou iniciar sessão, usa Login / Criar Conta no menu. A conta é necessária para enviar pedidos de agendamento, guardar favoritos, fazer avaliações e submeter partilhas de clientes.",
+                    "Para criar conta ou iniciar sessão, usa Login / Criar Conta no menu. A conta é necessária para enviar pedidos de agendamento, guardar favoritos e fazer avaliações.",
                     List.of("Criar conta", "Não consigo entrar", "Porque preciso de conta?"));
         }
 
@@ -119,13 +113,12 @@ public class SupportChatService {
                 .collect(Collectors.joining("; "));
 
         return """
-                O site tem as páginas Perfis, Agendar, Contactos, Materiais, Partilhas, Favoritos e Conta.
-                Só utilizadores com conta podem enviar pedidos de agendamento, guardar favoritos, avaliar artistas e submeter partilhas de clientes.
+                O site tem as páginas Perfis, Agendar, Contactos, Materiais, Favoritos e Conta.
+                Só utilizadores com conta podem enviar pedidos de agendamento, guardar favoritos e avaliar artistas.
                 O cliente não envia orçamento; envia um pedido de orçamento e agendamento. O animador analisa e responde fora do site por email ou telemóvel.
                 O pedido de agendamento pede artista, data, tipo de evento, local, nome, email, telemóvel, descrição/serviços pretendidos, notas opcionais e horas opcionais. Casamento pede nomes dos noivos. Outro pede o tipo de evento.
                 Depois de enviado, o pedido fica em análise/em stand by. Se for aceite, a data/horário fica marcada no calendário. O admin pode alterar, rejeitar ou cancelar com justificação.
                 O site envia email automático de confirmação do pedido e lembrete 5 dias antes de eventos aceites, quando o email estiver configurado.
-                As partilhas de clientes são fotos/vídeos enviados por utilizadores com conta e só aparecem publicamente depois de aprovação do admin.
                 As avaliações são feitas por utilizadores nos perfis dos artistas e o admin escolhe quais aparecem.
                 Perfis publicados: %s
                 Materiais publicados: %s
@@ -147,8 +140,8 @@ public class SupportChatService {
 
     private static SupportChatReply fallbackReply() {
         return new SupportChatReply(
-                "Posso ajudar com agendamentos, orçamentos, materiais, perfis de artistas, contactos, partilhas de clientes, favoritos e avaliações. Escreve a tua dúvida ou escolhe uma das opções rápidas.",
-                List.of("Pedir orçamento", "Ver materiais", "Contactar a equipa", "Publicar fotos do evento"));
+                "Posso ajudar com agendamentos, orçamentos, materiais, perfis de artistas, contactos, favoritos e avaliações. Escreve a tua dúvida ou escolhe uma das opções rápidas.",
+                List.of("Pedir orçamento", "Ver materiais", "Contactar a equipa", "Ver perfis"));
     }
 
     private static boolean hasAny(String text, String... terms) {

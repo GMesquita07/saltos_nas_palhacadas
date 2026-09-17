@@ -359,7 +359,7 @@ function pageIntro(mode: AuthMode) {
   if (mode === 'register') return 'Guarda as publicações de que mais gostas e consulta-as mais tarde.'
   if (mode === 'forgot') return 'Indica o email da conta para receberes um link temporário de recuperação.'
   if (mode === 'reset') return 'Define uma nova palavra-passe para voltares a entrar na tua conta.'
-  return 'Entra para veres os teus favoritos, pedidos e partilhas.'
+  return 'Entra para veres os teus favoritos e pedidos.'
 }
 
 function submitLabel(mode: AuthMode) {
