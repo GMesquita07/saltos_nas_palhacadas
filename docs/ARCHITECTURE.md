@@ -1,6 +1,6 @@
 # Arquitetura
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Visão Geral
 
@@ -26,7 +26,7 @@ flowchart LR
 
 | Componente | Responsabilidade |
 | --- | --- |
-| Cloudflare Pages | Serve o frontend estático no domínio oficial e mantém production branch temporária `feat/production-launch`. |
+| Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
 | Neon PostgreSQL | Persistência relacional; produção usa SSL, Flyway até V19, PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |

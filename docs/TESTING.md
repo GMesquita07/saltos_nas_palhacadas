@@ -1,6 +1,6 @@
 # Testes
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Suites
 
@@ -40,6 +40,21 @@ Validações de produção reportadas em 2026-09-16:
 | Neon restore | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada; dados/Flyway inspecionados; branch temporária apagada |
 | R2 backup | Execução manual e via Scheduler sucederam; `rclone check` com 0 diferenças; restore de PNG validado |
 | Domínio | `www` live com HTTPS; apex 301 para `www` preserva query strings |
+
+Validação final da release `main`:
+
+| Área | Resultado |
+| --- | --- |
+| CI | Passou |
+| PostgreSQL CI | Passou |
+| CodeQL | Passou |
+| Produção manual smoke testing | Passou |
+| Cloudflare Pages | Production deployment vem de `main` |
+| Backend health | UP |
+| Cloud Run logs | Sem ERROR logs recentes durante a verificação final |
+| Turnstile | Funciona em produção |
+| Schedulers enabled | `saltos-r2-backup-daily`, `saltos-private-media-cleanup`, `saltos-booking-reminders` |
+| R2 backups automáticos | Execuções sucederam |
 
 ## Testes Relevantes por Tema
 

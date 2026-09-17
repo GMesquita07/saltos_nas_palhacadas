@@ -2,14 +2,14 @@
 
 Documento-resumo. A documentação detalhada está em [docs/PRODUCTION.md](docs/PRODUCTION.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) e [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Last verified: 2026-09-16, branch `feat/production-launch`, branch HEAD `25383c0`.
+Last verified: 2026-09-17.
 
 ## Estado Geral
 
 | Área | Estado |
 | --- | --- |
-| Frontend Cloudflare Pages | DONE em domínio oficial; production branch ainda `feat/production-launch` |
-| Backend Google Cloud Run | DONE |
+| Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
+| Backend Google Cloud Run | DONE; health UP; sem ERROR logs recentes |
 | Neon PostgreSQL | DONE |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
@@ -18,7 +18,9 @@ Last verified: 2026-09-16, branch `feat/production-launch`, branch HEAD `25383c0
 | Domínio final | DONE técnico; confirmação administrativa .PT pendente |
 | Brevo/SMTP | DONE/VALIDATED |
 | Backups/restore drill | DONE/VALIDATED |
-| Final merge para `main` | TODO |
+| CI/PostgreSQL CI/CodeQL final | DONE |
+| Smoke final de produção | DONE |
+| Final merge para `main` | DONE |
 
 ## Checklist Técnico
 
@@ -62,21 +64,15 @@ Last verified: 2026-09-16, branch `feat/production-launch`, branch HEAD `25383c0
 | Social share | DONE técnico | OG/Twitter configurados; validar imagem final. |
 | Favicon/canonical | DONE | Canonical aponta para domínio pretendido. |
 | Cookie consent | DONE técnico | Preferência local para opcionais. |
-| Mobile/accessibility/performance | TODO QA | Fazer QA antes do release final. |
-| Broken links/forms | TODO QA | Teste final E2E. |
+| Mobile/accessibility/performance | POST-LAUNCH | Smoke final passou; manter melhorias futuras de UX, acessibilidade e performance. |
+| Broken links/forms | DONE técnico | Smoke final de produção passou; continuar regressão em mudanças futuras. |
 
-## Bloqueadores Antes do Release Final
+## Pós-Lançamento Ainda Pendente
 
-1. Fazer QA mobile.
-2. Fazer QA de links/navegação.
-3. Rever legal/privacy/cookies/contact-content conforme aplicável.
-4. Fazer E2E/smoke final mais amplo em produção.
-5. Rever consistência final da documentação.
-6. Abrir PR `feat/production-launch` -> `dev` e validar CI/CodeQL.
-7. Abrir PR `dev` -> `main`.
-8. Mudar Cloudflare Pages production branch para `main`.
-9. Fazer verificação final pós-merge.
-10. Acompanhar confirmação administrativa .PT externa.
+1. Acompanhar confirmação administrativa .PT externa.
+2. Submeter/verificar Google Search Console e sitemap.
+3. Planear melhorias visuais/frontend futuras.
+4. Planear otimização futura de media/assets estáticos.
 
 ## Render
 

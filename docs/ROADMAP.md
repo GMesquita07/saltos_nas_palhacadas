@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -19,30 +19,26 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Neon restore drill | DONE | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada |
 | R2 backup e restore drill | DONE | Backup Scheduler, Cloud Run Job, rclone check e restore PNG validados |
 | Artifact Registry cleanup policy | DONE | Ativa: delete >30 dias, keep pelo menos 5 versões |
-| E2E/smoke final amplo | TODO | Validar fluxos principais antes do PR final |
-| Mobile QA | TODO | Validar em dispositivos reais |
-| Links QA | TODO | Navegação, footer, links externos |
-| Legal/privacy/cookie/contact-content QA | TODO | Revisão de conteúdo e obrigações aplicáveis |
-| Rever consistência final da documentação | TODO | Antes do PR final |
-| PR `feat/production-launch` -> `dev` | TODO | Depois dos QAs finais |
-| CI/CodeQL final | TODO | No PR |
-| PR `dev` -> `main` | TODO | Release final |
-| Mudar Pages production branch para `main` | TODO | Depois do merge final; atualmente ainda é `feat/production-launch` |
-| Verificação final pós-merge | TODO | Confirmar produção depois do switch para `main` |
+| E2E/smoke final amplo | DONE | Smoke manual final de produção passou |
+| CI/PostgreSQL CI/CodeQL final | DONE | Passou na release final `main` |
+| PR `feat/production-launch` -> `dev` | DONE | Integrado |
+| PR `dev` -> `main` | DONE | Integrado |
+| Mudar Pages production branch para `main` | DONE | Production deployment vem de `main` |
+| Verificação final pós-merge | DONE | Domínio, backend health, Turnstile, schedulers e R2 backups validados |
 | Confirmação administrativa .PT | PENDING | Externo; separado de DNS/TLS já funcionais |
 
 ## P1 - Depois do Lançamento
 
 | Item | Estado | Nota |
 | --- | --- | --- |
-| Google Search Console | POST-LAUNCH | Após release final |
-| Submeter sitemap | POST-LAUNCH | Após release final; atualmente só homepage |
+| Google Search Console | POST-LAUNCH | Submeter/verificar |
+| Submeter sitemap | POST-LAUNCH | Atualmente só homepage |
 | Confirmar indexação | POST-LAUNCH | Especialmente marca e artistas |
 | SEO por animador | POST-LAUNCH | Exige rotas reais por perfil |
 | URLs reais por perfil | POST-LAUNCH | Ex.: `/animadores/kidg` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
-| Otimização de imagens/assets | POST-LAUNCH | WebP/AVIF, tamanhos responsivos |
+| Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
 | Performance | POST-LAUNCH | Lighthouse/WebPageTest |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
@@ -52,7 +48,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
 | Item antigo | Estado | Decisão |
 | --- | --- | --- |
-| Deploy online do site | PARTIAL/DONE técnico | Domínio oficial já está live; release final ainda depende de QA, PRs e Pages em `main` |
+| Deploy online do site | DONE técnico | Domínio oficial live; Pages production deployment vem de `main` |
 | SEO para DJ KidG / João Tomás | STILL TODO | Limitado pela SPA sem rotas públicas individuais |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | STILL TODO | Rever wording/conteúdo apesar do SMTP real já estar ativo |
