@@ -47,7 +47,6 @@ export type AccountDataExport = {
   exportedAt: string
   profile: Record<string, unknown>
   bookings: unknown[]
-  clientContent: unknown[]
   favorites: unknown[]
   reviews: unknown[]
 }

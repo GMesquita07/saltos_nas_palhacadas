@@ -3,19 +3,16 @@ import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { apiClient, uploadFile } from '../../services/apiClient'
 import { getAdminBookings } from '../../services/bookingService'
-import { getAdminClientContent } from '../../services/clientContentService'
 import { getContacts, reorderContacts } from '../../services/contactService'
 import { getPortfolioItems } from '../../services/portfolioService'
 import { getProfiles } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
-import type { ClientContentPost } from '../../types/clientContent'
 import type { Contact, ContactType } from '../../types/contact'
 import type { PortfolioItem } from '../../types/portfolio'
 import type { Profile } from '../../types/profile'
 import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
-import { ClientContentModeration } from './clientContent/ClientContentModeration'
 import { MaterialManagement } from './materials/MaterialManagement'
 import {
   nextReviewPublished,
@@ -27,7 +24,7 @@ import {
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'dashboard' | 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'clientContent' | 'bookings'
+type AdminPage = 'dashboard' | 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
@@ -111,7 +108,6 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [adminBookings, setAdminBookings] = useState<Booking[]>([])
-  const [clientPosts, setClientPosts] = useState<ClientContentPost[]>([])
   const [contentItems, setContentItems] = useState<PortfolioItem[]>([])
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
@@ -180,13 +176,11 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
 
     setIsDashboardLoading(true)
     try {
-      const [bookingItems, clientPostItems, reviewItems] = await Promise.all([
+      const [bookingItems, reviewItems] = await Promise.all([
         getAdminBookings(token),
-        getAdminClientContent(token),
         getAdminReviews(token),
       ])
       setAdminBookings(bookingItems)
-      setClientPosts(clientPostItems)
       setReviews(reviewItems)
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível atualizar o resumo do painel.' })
@@ -199,14 +193,13 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     if (!token) return
     let isCurrent = true
 
-    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token), getAdminBookings(token), getAdminClientContent(token)])
-      .then(([profileItems, contactItems, reviewItems, bookingItems, clientPostItems]) => {
+    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token), getAdminBookings(token)])
+      .then(([profileItems, contactItems, reviewItems, bookingItems]) => {
         if (!isCurrent) return
         setProfiles(profileItems)
         setContacts(contactItems)
         setReviews(reviewItems)
         setAdminBookings(bookingItems)
-        setClientPosts(clientPostItems)
       })
       .catch(() => {
         if (isCurrent) {
@@ -649,14 +642,12 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
         <Tab active={page === 'materials'} onClick={() => setPage('materials')}>Materiais</Tab>
         <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => setPage('reviews')}>Avaliações</Tab>
-        <Tab active={page === 'clientContent'} badge={clientPosts.filter((post) => post.status === 'PENDING').length} onClick={() => setPage('clientContent')}>Partilhas de clientes</Tab>
         <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => setPage('bookings')}>Agendamentos</Tab>
       </nav>
 
       {page === 'dashboard' && (
         <AdminDashboard
           bookings={adminBookings}
-          clientPosts={clientPosts}
           isLoading={isDashboardLoading}
           profiles={profiles}
           reviews={reviews}
@@ -744,17 +735,12 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       {page === 'bookings' && (
         <BookingManagement token={token} onNotice={setNotice} />
       )}
-
-      {page === 'clientContent' && (
-        <ClientContentModeration token={token} onNotice={setNotice} />
-      )}
     </section>
   )
 }
 
 function AdminDashboard({
   bookings,
-  clientPosts,
   isLoading,
   profiles,
   reviews,
@@ -762,7 +748,6 @@ function AdminDashboard({
   onRefresh,
 }: {
   bookings: Booking[]
-  clientPosts: ClientContentPost[]
   isLoading: boolean
   profiles: Profile[]
   reviews: Review[]
@@ -772,7 +757,6 @@ function AdminDashboard({
   const today = new Date()
   const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const pendingBookings = bookings.filter((booking) => booking.status === 'PENDING')
-  const pendingClientPosts = clientPosts.filter((post) => post.status === 'PENDING')
   const pendingReviews = reviews.filter((review) => !review.published)
   const upcomingEvents = bookings
     .filter((booking) => booking.status === 'ACCEPTED' && booking.eventDate >= todayValue)
@@ -784,7 +768,7 @@ function AdminDashboard({
       <div className={styles.formHeading}>
         <div>
           <h2 id="admin-overview-heading">Resumo</h2>
-          <p className={styles.intro}>Prioridades do backoffice, próximos eventos e conteúdo por moderar.</p>
+          <p className={styles.intro}>Prioridades do backoffice, próximos eventos e avaliações por moderar.</p>
         </div>
         <button className={styles.refreshButton} disabled={isLoading} type="button" onClick={() => { void onRefresh() }}>
           {isLoading ? 'A atualizar...' : 'Atualizar'}
@@ -795,10 +779,6 @@ function AdminDashboard({
         <button className={styles.metric} type="button" onClick={() => onNavigate('bookings')}>
           <span>Pedidos pendentes</span>
           <strong>{pendingBookings.length}</strong>
-        </button>
-        <button className={styles.metric} type="button" onClick={() => onNavigate('clientContent')}>
-          <span>Partilhas por aprovar</span>
-          <strong>{pendingClientPosts.length}</strong>
         </button>
         <button className={styles.metric} type="button" onClick={() => onNavigate('reviews')}>
           <span>Avaliações por aprovar</span>
@@ -816,15 +796,6 @@ function AdminDashboard({
             <li key={booking.id}>
               <strong>{booking.profileName}</strong>
               <span>{eventTypeSummary(booking)} · {formatAdminDate(booking.eventDate)} · {formatAdminTimeRange(booking.startTime, booking.endTime)}</span>
-            </li>
-          ))}
-        </OverviewPanel>
-
-        <OverviewPanel title="Partilhas por aprovar" empty="Sem partilhas por aprovar." onOpen={() => onNavigate('clientContent')}>
-          {pendingClientPosts.slice(0, 4).map((post) => (
-            <li key={post.id}>
-              <strong>{post.title}</strong>
-              <span>{post.submittedByName} · {post.profileName ?? 'Perfil por confirmar'}</span>
             </li>
           ))}
         </OverviewPanel>

@@ -16,7 +16,6 @@ type HeaderProps = {
   onBookingClick: () => void
   onContactsClick: () => void
   onMaterialsClick: () => void
-  onClientContentClick: () => void
   onFavoritesClick: () => void
   onAccountClick: () => void
   onAuthenticationClick: (mode: AuthenticationMode) => void
@@ -32,7 +31,6 @@ export function Header({
   onBookingClick,
   onContactsClick,
   onMaterialsClick,
-  onClientContentClick,
   onFavoritesClick,
   onAccountClick,
   onAuthenticationClick,
@@ -52,7 +50,6 @@ export function Header({
           <button className={activeClass('booking')} type="button" onClick={onBookingClick}><NavIcon name="booking" />Agendar</button>
           <button className={activeClass('contacts')} type="button" onClick={onContactsClick}><NavIcon name="contacts" />Contactos</button>
           <button className={activeClass('materials')} type="button" onClick={onMaterialsClick}><NavIcon name="materials" />Materiais</button>
-          <button className={activeClass('clientContent')} type="button" onClick={onClientContentClick}><NavIcon name="clientContent" />Partilhas</button>
           {session && <button className={activeClass('favorites')} type="button" onClick={onFavoritesClick}><NavIcon name="favorites" />Favoritos</button>}
           {session?.role === 'ADMIN' && <button type="button" onClick={onAdminClick}><NavIcon name="admin" />Admin</button>}
           {session ? (

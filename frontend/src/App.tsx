@@ -8,7 +8,6 @@ import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
 import { AdminArea } from './features/admin/AdminArea'
 import { BookingPage } from './features/booking/BookingPage'
-import { ClientContentPage } from './features/clientContent/ClientContentPage'
 import { ContactPage } from './features/contacts/ContactPage'
 import { FAQPage } from './features/faq/FAQPage'
 import { FavoritesPage } from './features/favorites/FavoritesPage'
@@ -22,7 +21,7 @@ import type { AuthSession } from './types/auth'
 import type { Profile } from './types/profile'
 import styles from './App.module.css'
 
-type View = 'profiles' | 'contacts' | 'materials' | 'clientContent' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
+type View = 'profiles' | 'contacts' | 'materials' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
 type SplashPhase = 'playing' | 'docking' | 'done'
 
 function App() {
@@ -105,12 +104,6 @@ function App() {
     setSelectedProfile(null)
     setShouldReturnToBooking(false)
     setView('materials')
-  }
-
-  function showClientContent() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('clientContent')
   }
 
   function openBooking(profile: Profile | null = null) {
@@ -197,14 +190,13 @@ function App() {
 
     if (view === 'contacts') return <ContactPage />
     if (view === 'materials') return <MaterialsPage />
-    if (view === 'clientContent') return <ClientContentPage profiles={profiles} onLogin={() => openAuthentication('login')} />
     if (view === 'privacy') return <LegalPage type="privacy" onBack={showProfiles} />
     if (view === 'terms') return <LegalPage type="terms" onBack={showProfiles} />
     if (view === 'cookies') return <LegalPage type="cookies" onBack={showProfiles} />
     if (view === 'faq') return <FAQPage onBack={showProfiles} />
     if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
     if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
-    if (view === 'account' && session) return <AccountPage onBookingsClick={() => openBooking()} onClientContentClick={showClientContent} onExit={showProfiles} onFavoritesClick={openFavorites} />
+    if (view === 'account' && session) return <AccountPage onBookingsClick={() => openBooking()} onExit={showProfiles} onFavoritesClick={openFavorites} />
     if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} onLogin={() => openAuthentication('login')} />
     if (profilesError) return <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
 
@@ -227,7 +219,6 @@ function App() {
           onAdminClick={openAdmin}
           onAuthenticationClick={openAuthentication}
           onBookingClick={() => openBooking()}
-          onClientContentClick={showClientContent}
           onContactsClick={showContacts}
           onFavoritesClick={openFavorites}
           onMaterialsClick={showMaterials}
@@ -276,19 +267,18 @@ function pageMetadata(view: View, profile: Profile | null) {
 
   const defaults = {
     title: 'Saltos nas Palhaçadas | Animação de Eventos',
-    description: 'Perfis de artistas, portfólios, materiais disponíveis, pedidos de agendamento e partilhas de clientes.',
+    description: 'Perfis de artistas, portfólios, materiais disponíveis e pedidos de agendamento.',
   }
 
   const metadata: Partial<Record<View, { title: string; description: string }>> = {
-    account: { title: 'A minha conta | Saltos nas Palhaçadas', description: 'Dados pessoais, foto, segurança, favoritos, agendamentos e partilhas da conta.' },
-    admin: { title: 'Administração | Saltos nas Palhaçadas', description: 'Backoffice para gerir perfis, conteúdos, contactos, materiais, avaliações, partilhas e agendamentos.' },
+    account: { title: 'A minha conta | Saltos nas Palhaçadas', description: 'Dados pessoais, foto, segurança, favoritos e agendamentos da conta.' },
+    admin: { title: 'Administração | Saltos nas Palhaçadas', description: 'Backoffice para gerir perfis, conteúdos, contactos, materiais, avaliações e agendamentos.' },
     auth: { title: 'Login e conta | Saltos nas Palhaçadas', description: 'Entrar, criar conta ou recuperar palavra-passe.' },
     booking: { title: 'Agendar evento | Saltos nas Palhaçadas', description: 'Consulta a disponibilidade dos artistas e envia um pedido de agendamento.' },
-    clientContent: { title: 'Partilhas de clientes | Saltos nas Palhaçadas', description: 'Fotos e vídeos de eventos partilhados pelos clientes.' },
     contacts: { title: 'Contactos | Saltos nas Palhaçadas', description: 'Contactos para pedidos, reservas e apoio.' },
     cookies: { title: 'Cookies | Saltos nas Palhaçadas', description: 'Informação sobre cookies e tecnologias semelhantes.' },
     favorites: { title: 'Favoritos | Saltos nas Palhaçadas', description: 'Conteúdos guardados como favoritos.' },
-    faq: { title: 'FAQ | Saltos nas Palhaçadas', description: 'Perguntas frequentes sobre agendamentos, contas, disponibilidade e partilhas.' },
+    faq: { title: 'FAQ | Saltos nas Palhaçadas', description: 'Perguntas frequentes sobre agendamentos, contas e disponibilidade.' },
     materials: { title: 'Material disponível | Saltos nas Palhaçadas', description: 'Lista de material disponível para eventos.' },
     privacy: { title: 'Privacidade | Saltos nas Palhaçadas', description: 'Informação sobre privacidade e proteção de dados.' },
     terms: { title: 'Termos | Saltos nas Palhaçadas', description: 'Termos de utilização do site Saltos nas Palhaçadas.' },

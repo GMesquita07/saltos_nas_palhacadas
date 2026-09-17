@@ -1,6 +1,6 @@
 # Saltos nas Palhaçadas
 
-Aplicação full-stack para apresentar artistas de animação de eventos, gerir portfólios, receber pedidos de agendamento, moderar avaliações e publicar partilhas de clientes.
+Aplicação full-stack para apresentar artistas de animação de eventos, gerir portfólios, receber pedidos de agendamento e moderar avaliações.
 
 Este repositório contém:
 
@@ -48,8 +48,8 @@ Ainda ficam tarefas pós-lançamento como Search Console/sitemap, confirmação 
 - Perfis públicos de artistas, portfólio, materiais e contactos.
 - Registo, login, recuperação de password, alteração de password e área de conta.
 - Favoritos, reviews moderadas e pedidos de agendamento com disponibilidade.
-- Backoffice admin para perfis, portfólio, contactos, materiais, reviews, bookings e partilhas.
-- Uploads privados de clientes, aprovação admin e publicação para media pública.
+- Backoffice admin para perfis, portfólio, contactos, materiais, reviews e bookings.
+- Uploads privados para avatar/foto de perfil, com media pública para conteúdos admin.
 - Exportação de dados da conta e eliminação/anomização de conta.
 - Chat de suporte com respostas locais e fallback OpenAI opcional.
 - Páginas legais, FAQ, cookie consent, metadata SEO, sitemap, robots e 404.

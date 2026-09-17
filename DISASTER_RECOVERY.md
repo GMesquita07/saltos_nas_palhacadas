@@ -33,7 +33,7 @@ Last verified: 2026-09-17.
 2. Restaurar para branch/projeto isolado primeiro.
 3. Configurar ambiente temporário da API com a base restaurada.
 4. Confirmar Flyway/schema.
-5. Validar login admin, conta cliente, perfis, bookings, reviews e partilhas.
+5. Validar login admin, conta cliente, perfis, bookings e reviews.
 6. Só promover para produção depois de validação.
 
 ## Recovery Media R2
@@ -78,7 +78,7 @@ Nunca documentar valores de secrets ou connection strings completas.
 Executar pelo menos trimestralmente:
 
 - restore Neon para ambiente isolado;
-- validação de uma conta, perfil, booking, review e partilha;
+- validação de uma conta, perfil, booking e review;
 - validação de media pública e privada;
 - validação de rollback Cloud Run e Pages;
 - revisão do inventário de secrets;

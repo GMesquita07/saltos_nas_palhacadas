@@ -1,7 +1,7 @@
 {
   "name": "Saltos nas Palhacadas",
   "short_name": "Saltos",
-  "description": "Animacao de eventos, portfolios de artistas, agendamentos e partilhas de clientes.",
+  "description": "Animacao de eventos, portfolios de artistas, materiais e agendamentos.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

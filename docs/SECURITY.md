@@ -18,7 +18,7 @@ Limitação conhecida: o JWT ainda não usa cookies `HttpOnly`. Se a arquitetura
 - `SecurityConfig` define uma API stateless.
 - Endpoints públicos são explicitamente permitidos.
 - `/api/v1/admin/**` exige `ADMIN`.
-- `/api/v1/auth/me`, favoritos, bookings, partilhas privadas e media privada exigem sessão.
+- `/api/v1/auth/me`, favoritos, bookings e media privada exigem sessão.
 - Media privada valida owner ou `ADMIN` antes de consultar/devolver objetos geridos.
 - Falhas de autorização em media privada devolvem `404` para não revelar existência de objetos de outros utilizadores.
 
@@ -47,8 +47,7 @@ O parser aceita campos adicionais oficiais da Cloudflare sem desativar globalmen
 - auth pública
 - bookings
 - reviews
-- uploads admin/user/client-content
-- submissão de partilhas
+- uploads admin/user
 - support chat
 
 Como o rate limiting é em memória por instância, avaliar Cloudflare WAF/rate limiting para defesa distribuída e tráfego público em escala.

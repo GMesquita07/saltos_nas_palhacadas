@@ -4,7 +4,7 @@ import type { SupportChatMessage } from '../../types/supportChat'
 import styles from './SupportChat.module.css'
 
 const defaultSuggestions = ['Pedir orçamento', 'Ver materiais', 'Contactar a equipa']
-const moreSuggestions = ['Ver perfis', 'Publicar fotos do evento', 'Criar conta', 'Ver avaliações']
+const moreSuggestions = ['Ver perfis', 'Criar conta', 'Ver avaliações', 'Agendar evento']
 
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,7 +14,7 @@ export function SupportChat() {
   const [showMore, setShowMore] = useState(false)
   const [suggestions, setSuggestions] = useState(defaultSuggestions)
   const [messages, setMessages] = useState<SupportChatMessage[]>(() => [
-    createMessage('assistant', 'Olá! Sou o assistente virtual dos Saltos nas Palhaçadas. Posso ajudar com agendamentos, orçamentos, materiais, perfis, contactos e partilhas.'),
+    createMessage('assistant', 'Olá! Sou o assistente virtual dos Saltos nas Palhaçadas. Posso ajudar com agendamentos, orçamentos, materiais, perfis e contactos.'),
     createMessage('assistant', 'Escolhe uma opção rápida ou escreve a tua pergunta.'),
   ])
   const threadRef = useRef<HTMLDivElement | null>(null)

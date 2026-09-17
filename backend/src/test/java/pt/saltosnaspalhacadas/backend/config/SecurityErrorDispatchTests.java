@@ -45,7 +45,7 @@ class SecurityErrorDispatchTests {
         return request -> {
             request.setDispatcherType(DispatcherType.ERROR);
             request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, HttpStatus.INTERNAL_SERVER_ERROR.value());
-            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/api/v1/client-posts/media");
+            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/api/v1/media");
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, new IllegalStateException("unexpected upload failure"));
             return request;
         };

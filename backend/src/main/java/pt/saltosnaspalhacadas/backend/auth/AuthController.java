@@ -30,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
 import pt.saltosnaspalhacadas.backend.media.MediaStorage;
@@ -53,7 +53,7 @@ public class AuthController {
     private final JwtService jwt;
     private final IpRateLimiter rateLimiter;
     private final TurnstileService turnstileService;
-    private final ClientContentMediaService mediaService;
+    private final ManagedMediaService mediaService;
     private final MediaStorage storage;
     private final EmailService emailService;
     private final AccountLifecycleService accountLifecycle;
@@ -68,7 +68,7 @@ public class AuthController {
             JwtService jwt,
             IpRateLimiter rateLimiter,
             TurnstileService turnstileService,
-            ClientContentMediaService mediaService,
+            ManagedMediaService mediaService,
             MediaStorage storage,
             EmailService emailService,
             AccountLifecycleService accountLifecycle,

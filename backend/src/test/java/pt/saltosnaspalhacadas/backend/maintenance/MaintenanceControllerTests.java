@@ -19,7 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pt.saltosnaspalhacadas.backend.booking.BookingReminderService;
-import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,7 +36,7 @@ class MaintenanceControllerTests {
     private BookingReminderService bookingReminders;
 
     @MockitoBean
-    private ClientContentMediaService mediaService;
+    private ManagedMediaService mediaService;
 
     @BeforeEach
     void resetMocks() {

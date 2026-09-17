@@ -27,8 +27,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import pt.saltosnaspalhacadas.backend.media.ClientContentMediaService;
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
+import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
@@ -44,7 +44,7 @@ class AuthAndAdminIntegrationTests {
     @Autowired private AppUserRepository users;
     @Autowired private PasswordEncoder passwords;
     @Autowired private ManagedMediaRepository managedMedia;
-    @Autowired private ClientContentMediaService mediaService;
+    @Autowired private ManagedMediaService mediaService;
     @Autowired private PasswordResetTokenRepository passwordResetTokens;
 
     @BeforeEach
