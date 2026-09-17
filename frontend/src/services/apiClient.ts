@@ -32,10 +32,6 @@ export async function uploadUserMedia(file: File, token: string): Promise<{ id: 
   return uploadMultipart<{ id: string; url: string; contentType: string }>('/media', file, token)
 }
 
-export async function uploadClientContentMedia(file: File, token: string): Promise<{ id: string; url: string; contentType: string }> {
-  return uploadMultipart<{ id: string; url: string; contentType: string }>('/client-posts/media', file, token)
-}
-
 export function validateUploadFileSize(file: Pick<File, 'size' | 'type'>) {
   if (isImage(file) && file.size > maxImageUploadSize) {
     throw new Error('A imagem não pode exceder 10 MB.')

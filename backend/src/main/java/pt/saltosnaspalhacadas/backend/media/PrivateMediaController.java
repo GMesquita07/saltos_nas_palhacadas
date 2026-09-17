@@ -19,10 +19,10 @@ import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 @RequestMapping("/api/v1/private-media")
 public class PrivateMediaController {
 
-    private final ClientContentMediaService mediaService;
+    private final ManagedMediaService mediaService;
     private final AppUserRepository users;
 
-    public PrivateMediaController(ClientContentMediaService mediaService, AppUserRepository users) {
+    public PrivateMediaController(ManagedMediaService mediaService, AppUserRepository users) {
         this.mediaService = mediaService;
         this.users = users;
     }

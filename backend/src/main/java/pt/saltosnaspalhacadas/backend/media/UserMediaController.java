@@ -26,13 +26,13 @@ import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 @RequestMapping("/api/v1/media")
 public class UserMediaController {
 
-    private final ClientContentMediaService mediaService;
+    private final ManagedMediaService mediaService;
     private final AppUserRepository users;
     private final IpRateLimiter rateLimiter;
     private final int uploadRateLimitPerMinute;
 
     public UserMediaController(
-            ClientContentMediaService mediaService,
+            ManagedMediaService mediaService,
             AppUserRepository users,
             IpRateLimiter rateLimiter,
             @Value("${app.media.upload.rate-limit-per-minute:30}") int uploadRateLimitPerMinute) {

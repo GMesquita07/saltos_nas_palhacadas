@@ -9,7 +9,6 @@ import styles from './AccountPage.module.css'
 
 type AccountPageProps = {
   onBookingsClick: () => void
-  onClientContentClick: () => void
   onFavoritesClick: () => void
   onExit: () => void
 }
@@ -24,7 +23,7 @@ type AccountForm = {
   imageCrop: ImageCrop
 }
 
-export function AccountPage({ onBookingsClick, onClientContentClick, onFavoritesClick, onExit }: AccountPageProps) {
+export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: AccountPageProps) {
   const { changePassword, deleteAccount, exportAccountData, favorites, logout, session, updateAccount } = useAuth()
   const [form, setForm] = useState<AccountForm>(() => emptyForm(session))
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmation: '' })
@@ -188,7 +187,7 @@ export function AccountPage({ onBookingsClick, onClientContentClick, onFavorites
       setDataError('Confirma a tua palavra-passe para eliminar a conta.')
       return
     }
-    if (!window.confirm('Eliminar a conta de forma permanente? Esta ação remove os teus dados pessoais, favoritos, reviews e partilhas.')) {
+    if (!window.confirm('Eliminar a conta de forma permanente? Esta ação remove os teus dados pessoais, favoritos e reviews.')) {
       return
     }
 
@@ -248,10 +247,6 @@ export function AccountPage({ onBookingsClick, onClientContentClick, onFavorites
                   <button type="button" onClick={onBookingsClick}>
                     <span>Agendamentos</span>
                     <strong>Ver pedidos</strong>
-                  </button>
-                  <button type="button" onClick={onClientContentClick}>
-                    <span>Minhas partilhas</span>
-                    <strong>Gerir</strong>
                   </button>
                 </div>
               </section>

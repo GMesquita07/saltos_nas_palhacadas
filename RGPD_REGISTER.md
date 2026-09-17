@@ -21,7 +21,6 @@ Last verified: 2026-09-17.
 | Favoritos | IDs de itens favoritos | Guardar preferências | Contrato / interesse legítimo | Até remoção ou eliminação de conta |
 | Pedidos de booking | Nome, email, telefone, local, data, horas, evento, descrição, notas | Analisar pedido e gerir evento | Diligências pré-contratuais / contrato | Definir por estado/obrigações |
 | Reviews | Nome público, comentário, rating, user ID, moderação | Publicar feedback e moderar abuso | Consentimento / interesse legítimo | Até remoção/pedido aplicável |
-| Partilhas de clientes | Fotos, vídeos, local, data, legenda, user ID, consentimento | Publicar conteúdo aprovado | Consentimento/licença específica | Até remoção ou retirada de consentimento |
 | Avatar/media privada | Ficheiros e metadata | Personalização de conta e fluxo privado | Contrato / consentimento | Até substituição, cleanup ou eliminação |
 | Contactos e materiais | Conteúdo gerido por admin | Informação pública do serviço | Interesse legítimo | Enquanto atual |
 | Chat suporte | Mensagens e IP técnico em logs | Suporte e segurança | Interesse legítimo / consentimento se IA ativa | Curta, conforme provider |
@@ -32,11 +31,11 @@ Last verified: 2026-09-17.
 
 - Exportação de dados da conta em `AccountLifecycleService.exportFor`.
 - Eliminação/anomização de conta em `AccountLifecycleService.deleteAccount`.
-- Eliminação de favoritos, reviews e partilhas associadas na eliminação de conta.
+- Eliminação de favoritos e reviews associadas na eliminação de conta.
 - Anonimização de bookings para preservar histórico operacional sem manter identidade direta do cliente.
-- Media gerida do utilizador apagada via `ClientContentMediaService`/`MediaStorage`.
+- Media gerida do utilizador apagada via `ManagedMediaService`/`MediaStorage`.
 - Passwords com BCrypt; reset tokens com hash SHA-256.
-- Reviews e partilhas passam por moderação.
+- Reviews passam por moderação.
 
 ## Fornecedores
 
