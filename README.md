@@ -63,29 +63,76 @@ Pré-requisitos:
 - npm
 - Docker
 
-Configuração inicial:
+O ambiente local deve usar valores locais dedicados. Não uses o ficheiro genérico `.env` para desenvolvimento normal, porque ele pode conter configuração remota/staging.
 
 ```bash
-cp .env.example .env
+cp .env.local.example .env.local
 ```
 
-Define pelo menos `DB_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` e um `JWT_SECRET` Base64 forte. Para gerar um segredo local:
+`.env.local` é ignorado pelo Git e deve conter apenas valores de desenvolvimento local. Nunca copies segredos de produção/staging para este ficheiro, exceto num teste controlado e consciente. Para desenvolvimento normal, não uses a base de dados remota/produção.
+
+O `.env.local.example` inclui um `JWT_SECRET` Base64 apenas para desenvolvimento. Podes substituí-lo localmente com:
 
 ```bash
 openssl rand -base64 64
 ```
 
-Arrancar dependências e aplicações:
+Stack local esperado:
+
+```text
+Browser
+  -> Vite frontend :5173
+  -> Vite /api proxy
+  -> Spring Boot backend :8080
+  -> PostgreSQL Docker :5432
+```
+
+### Terminal 1 - PostgreSQL
 
 ```bash
-docker compose up -d
+docker compose --env-file .env.local up -d
+docker compose --env-file .env.local ps
 ```
+
+PostgreSQL fica disponível em `localhost:5432` com:
+
+- DB: `saltos_nas_palhacadas`
+- user: `saltos`
+- password: `saltos_dev`
+
+Logs, se precisares:
+
+```bash
+docker compose logs postgres
+```
+
+### Terminal 2 - Backend
 
 ```bash
 cd backend
-set -a && source ../.env && set +a
+set -a
+source ../.env.local
+set +a
 ./mvnw spring-boot:run
 ```
+
+Spring usa o profile `dev` por defeito. Não uses o profile de produção localmente.
+
+URLs esperados:
+
+- Backend: `http://localhost:8080`
+- API: `http://localhost:8080/api/v1`
+- Health: `http://localhost:8080/actuator/health`
+
+Validar health:
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+A resposta deve indicar `UP`.
+
+### Terminal 3 - Frontend
 
 ```bash
 cd frontend
@@ -93,11 +140,79 @@ npm ci
 npm run dev
 ```
 
-URLs locais:
+`npm ci` é normalmente necessário na primeira configuração ou depois de alterações no lockfile, não em todos os arranques.
 
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:8080/api/v1`
-- Health: `http://localhost:8080/actuator/health`
+Frontend: `http://localhost:5173`
+
+Não configures o frontend local para apontar para Cloud Run. Localmente, o frontend usa `/api/v1` e o Vite faz proxy de `/api` para `http://localhost:8080`.
+
+### Admin Local
+
+Credenciais do `.env.local.example` para desenvolvimento local apenas:
+
+- email: `admin@example.test`
+- password: `change-me-now`
+
+Estas credenciais são `LOCAL DEVELOPMENT ONLY` e não têm relação com produção. O bootstrap admin é criado na base de dados local quando aplicável.
+
+### Parar ou Reiniciar o Ambiente Local
+
+Parar o PostgreSQL local:
+
+```bash
+docker compose --env-file .env.local down
+```
+
+Apagar completamente os dados locais do PostgreSQL:
+
+```bash
+docker compose --env-file .env.local down -v
+```
+
+`-v` remove permanentemente o volume/dados locais do PostgreSQL. Isto não afeta produção.
+
+### Troubleshooting Local
+
+#### Backend falha com JDBC URL / PostgreSQL
+
+Confirma:
+
+```bash
+echo "$DB_URL"
+```
+
+Para desenvolvimento local normal deve ser:
+
+```text
+jdbc:postgresql://localhost:5432/saltos_nas_palhacadas
+```
+
+Se a shell contém variáveis antigas de staging/produção, abre uma shell nova ou volta a executar:
+
+```bash
+set -a
+source ../.env.local
+set +a
+```
+
+#### Porta 5432 ocupada
+
+```bash
+docker compose ps
+ss -ltnp | grep 5432
+```
+
+#### Backend health
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+#### Logs PostgreSQL
+
+```bash
+docker compose logs postgres
+```
 
 ## Validação Local
 

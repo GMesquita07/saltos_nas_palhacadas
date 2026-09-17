@@ -15,6 +15,39 @@ Last verified: 2026-09-17.
 | CodeQL | GitHub Actions | Java/Kotlin e JS/TS |
 | Dependabot | GitHub | npm, Maven e GitHub Actions |
 
+## Testes Automatizados Locais
+
+Backend:
+
+```bash
+cd backend
+./mvnw test
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Estes comandos não requerem serviços de produção.
+
+## Teste Manual de Integração Local
+
+Para testar a aplicação completa localmente, usa o stack documentado no README:
+
+```text
+PostgreSQL Docker :5432
+Spring Boot backend :8080
+Vite frontend :5173
+```
+
+Usa `.env.local` criado a partir de `.env.local.example`; não uses o `.env` genérico para desenvolvimento normal. Os defaults locais desativam serviços remotos opcionais como Turnstile, email transacional, suporte OpenAI e storage R2, usando PostgreSQL Docker e storage local.
+
 ## Execução desta Auditoria
 
 Executado em 2026-09-15:
