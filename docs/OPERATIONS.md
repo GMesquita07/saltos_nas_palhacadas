@@ -1,6 +1,6 @@
 # Operações
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Checks Diários
 
@@ -40,7 +40,7 @@ Ativos:
 | --- | --- | --- |
 | `saltos-r2-backup-daily` | 02:30 Europe/Lisbon | Cloud Run Job `saltos-r2-backup` |
 | `saltos-private-media-cleanup` | 03:30 Europe/Lisbon | `POST /internal/maintenance/private-media-cleanup` |
-| booking reminders | 09:00 Europe/Lisbon | `POST /internal/maintenance/booking-reminders` |
+| `saltos-booking-reminders` | 09:00 Europe/Lisbon | `POST /internal/maintenance/booking-reminders` |
 
 Verificações:
 

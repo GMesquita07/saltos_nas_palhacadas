@@ -1,17 +1,17 @@
 # Estado do Projeto
 
-Last verified: 2026-09-16, branch `feat/production-launch`, branch HEAD `25383c0`.
+Last verified: 2026-09-17.
 
 ## Resumo
 
-O projeto está em preparação final de lançamento. A stack principal de produção já foi migrada para Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt`, email transacional, schedulers de manutenção, restore Neon e backups R2 foram validados. O lançamento ainda não está concluído: faltam QA final, PRs, validações CI/CodeQL, switch de Pages para `main` e verificação pós-merge.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, os schedulers estão enabled, os backups R2 executaram com sucesso, CI/PostgreSQL CI/CodeQL passaram na release final `main` e o smoke test manual de produção passou.
 
 ## Estado por Área
 
 | Área | Estado | Produção? | Validado? | Próximo passo |
 | --- | --- | --- | --- | --- |
-| Frontend Cloudflare Pages | DONE | Sim, branch temporária | Sim | Após release, mudar production branch para `main` |
-| Backend Cloud Run | DONE | Sim | Sim | Monitorização pós-lançamento |
+| Frontend Cloudflare Pages | DONE | Sim, branch `main` | Sim | Monitorização pós-lançamento |
+| Backend Cloud Run | DONE | Sim | Sim | Health UP; monitorização pós-lançamento |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
 | Flyway V1-V19 | DONE | Sim | Sim | Manter migrations-only em produção |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |
@@ -29,39 +29,40 @@ O projeto está em preparação final de lançamento. A stack principal de produ
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
 | Redirect apex -> www | DONE | Sim | Sim | 301 preserva query strings |
 | Confirmação administrativa .PT | PENDING | Externo | Não | Aguardar confirmação do registrante/administrador |
-| CI GitHub Actions | DONE | Sim | Sim | Continuar PRs via `dev`/`main` |
-| CodeQL | DONE | Sim | Sim | Monitorizar alertas |
+| CI GitHub Actions | DONE | Sim | Sim | CI final da release `main` passou |
+| PostgreSQL CI | DONE | Sim | Sim | PostgreSQL CI final da release `main` passou |
+| CodeQL | DONE | Sim | Sim | CodeQL final da release `main` passou |
 | Dependabot | DONE | Sim | Sim | Rever PRs semanais |
 | Backups Neon/R2 | DONE | Sim | Sim | Fazer novos drills periódicos |
 | RGPD export/delete | DONE técnico | Sim | Sim em código | Revisão jurídica |
 | Privacy/Terms/Cookies | DONE técnico | Sim | Sim em código | Revisão jurídica e UX |
-| Search Console | POST-LAUNCH | Não | Não | Submeter após launch final |
+| Smoke final de produção | DONE | Sim | Sim | Manter checklist de regressão |
+| Search Console | POST-LAUNCH | Não | Não | Submeter/verificar |
 | SEO por perfil | POST-LAUNCH | Não | Não | Criar rotas reais por animador |
 
 ## Branches e Release
 
 | Branch | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | `675d8fa` | Produção final pretendida após PR final |
-| `dev` | `b16c9f4` | Integração antes de `main` |
-| `feat/production-launch` | `25383c0` | Branch de lançamento atual |
+| `main` | release final validada | Production branch do Cloudflare Pages |
+| `dev` | integrado | Branch de integração |
+| `feat/production-launch` | integrado | Branch de lançamento já promovida |
 
-Fluxo previsto:
+Fluxo concluído:
 
 ```text
 feat/production-launch
   -> PR para dev
   -> CI/CodeQL/revisão
   -> PR final para main
-  -> mudar Cloudflare Pages production branch para main
+  -> Cloudflare Pages production branch main
 ```
 
 Distinção importante:
 
 - código/imagem da aplicação atualmente em produção: baseado em `ee8d9c1`;
 - revisões posteriores do Cloud Run alteraram apenas configuração/secrets;
-- branch HEAD atual de `feat/production-launch`: `25383c0`;
-- Cloudflare Pages production branch ainda é `feat/production-launch`, não `main`.
+- Cloudflare Pages production branch agora é `main`.
 
 ## Produção Conhecida
 
@@ -69,6 +70,7 @@ Distinção importante:
 | --- | --- |
 | Cloudflare Pages project | `saltos-nas-palhacadas-prod` |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
+| Apex | `https://saltosnaspalhacadas.pt` redireciona 301 para `www` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
 | Cloud Run project | `saltos-prod-gmesquita` |
 | Região Cloud Run | `europe-west1` |
@@ -76,10 +78,11 @@ Distinção importante:
 | Imagem | `backend:ee8d9c1` |
 | Código de produção | baseado em `ee8d9c1`; revisões posteriores só config/secrets |
 | Tráfego | 100% |
+| Health | UP |
 | Recursos Cloud Run | 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero, startup CPU boost |
 | Neon branch | `production/default` |
 | R2 buckets | `saltos-prod-public`, `saltos-prod-private` |
 | R2 backup bucket | `saltos-prod-backup` |
-| Schedulers ativos | cleanup 03:30, booking reminders 09:00, R2 backup 02:30, `Europe/Lisbon` |
+| Schedulers enabled | `saltos-r2-backup-daily`, `saltos-private-media-cleanup`, `saltos-booking-reminders` |
 
 Sem segredos reais nesta documentação.

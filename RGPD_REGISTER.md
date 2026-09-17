@@ -2,7 +2,7 @@
 
 Documento de trabalho para inventariar tratamentos de dados pessoais. Deve ser revisto por profissional jurídico antes de produção pública com domínio final.
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Responsável
 
