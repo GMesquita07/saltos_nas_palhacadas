@@ -6,9 +6,10 @@
 
 .backButton {
   border: 1px solid var(--color-line);
+  min-height: 42px;
   padding: 10px 14px;
   margin-bottom: 44px;
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-ink);
   font-size: 13px;
   font-weight: 600;
@@ -33,10 +34,19 @@
   line-height: 1.65;
 }
 
+.intro::after {
+  display: block;
+  width: 40px;
+  height: 3px;
+  margin-top: 26px;
+  background: var(--brand-yellow);
+  content: '';
+}
+
 .items {
   display: grid;
   gap: 0;
-  margin-top: 42px;
+  margin-top: 34px;
 }
 
 .items article {

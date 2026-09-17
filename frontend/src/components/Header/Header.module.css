@@ -3,7 +3,7 @@
 .brandButton { flex: 0 0 auto; border: 0; padding: 0; background: none; }
 .inner nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 18px; }
 .inner nav button, .inner nav a { position: relative; display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 4px 0; color: rgb(250 249 246 / 76%); background: none; font-size: 13px; font-weight: 600; text-decoration: none; transition: color var(--ease); }
-.inner nav button::after, .inner nav a::after { position: absolute; right: 0; bottom: -6px; left: 0; height: 2px; background: var(--brand-yellow); content: ''; opacity: 0; transform: scaleX(.4); transition: opacity var(--ease), transform var(--ease); }
+.inner nav button::after, .inner nav a::after { position: absolute; right: 0; bottom: -6px; left: 0; height: 2px; background: var(--brand-yellow); content: ''; opacity: 0; transform: scaleX(.4); transform-origin: left center; transition: opacity var(--ease), transform var(--ease); }
 .inner nav button:hover, .inner nav a:hover { color: white; }
 .inner nav button:hover::after, .inner nav a:hover::after { opacity: 1; transform: scaleX(1); }
 .inner nav svg { width: 15px; height: 15px; flex: 0 0 auto; }
@@ -13,5 +13,7 @@
 .inner nav .accountButton { color: white; font-weight: 600; }
 .accountAvatar { width: 24px; aspect-ratio: 1; border: 1px solid rgb(250 249 246 / 55%); }
 .inner nav .logoutButton { color: #ff8a7f; }
+.inner nav .logoutButton::after { display: none; }
+.inner nav .isActive::after { opacity: 1; transform: scaleX(1); }
 @media (max-width: 760px) { .inner { width: min(100% - 32px, 1120px); min-height: 72px; align-items: flex-start; padding: 18px 0; } .inner nav { justify-content: flex-end; gap: 11px 16px; } }
 @media (max-width: 470px) { .inner { flex-direction: column; align-items: stretch; } .inner nav { justify-content: flex-start; } }

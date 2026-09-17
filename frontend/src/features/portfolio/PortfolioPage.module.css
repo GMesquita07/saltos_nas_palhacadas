@@ -34,13 +34,14 @@
   place-items: center;
   aspect-ratio: 1;
   color: #66635e;
-  font: 500 34px Georgia, serif;
+  font: 500 34px var(--font-serif);
 }
 
 .profileImageFrame {
   width: 100%;
   height: 100%;
   border: 1px solid rgb(35 34 32 / 10%);
+  box-shadow: var(--shadow-xs);
 }
 
 .heroCopy {
@@ -108,14 +109,15 @@
   margin-top: 22px;
   border: 1px solid var(--color-ink);
   padding: 10px 13px;
-  color: var(--color-ink);
-  background: transparent;
+  color: white;
+  background: var(--color-ink);
   font-size: 13px;
+  transition: background-color var(--ease), color var(--ease);
 }
 
 .bookingCta:hover {
-  color: white;
-  background: var(--color-ink);
+  color: var(--color-ink);
+  background: transparent;
 }
 
 .portfolioHeader {
@@ -141,12 +143,13 @@
   color: var(--color-muted);
   background: transparent;
   font-size: 12px;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease);
 }
 
 .filters button:hover,
 .filters .active {
-  border-color: var(--color-line);
-  color: var(--color-ink);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
   background: var(--color-surface);
 }
 
@@ -166,7 +169,7 @@
   padding-bottom: 10px;
   border-bottom: 1px solid var(--color-line);
   color: var(--color-ink);
-  font: 600 24px/1.2 Georgia, serif;
+  font: 600 24px/1.2 var(--font-serif);
 }
 
 .grid {
