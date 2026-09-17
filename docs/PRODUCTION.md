@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Arquitetura Real
 
@@ -24,7 +24,7 @@ Last verified: 2026-09-16.
 | Projeto | `saltos-nas-palhacadas-prod` |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
-| Production branch atual | `feat/production-launch` |
+| Production branch atual | `main` |
 | Root | `frontend` |
 | Build | `npm run build` |
 | Output | `dist` |
@@ -55,7 +55,7 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | Billing | request-based |
 | Health | `/actuator/health` |
 
-Recentes logs ERROR do Cloud Run foram verificados e estavam limpos. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
+O health endpoint de produção está UP. Recentes logs ERROR do Cloud Run foram verificados e estavam limpos durante a verificação final. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
 
 - `spring.jpa.hibernate.ddl-auto=validate`
 - `app.security.hsts.enabled=true` por default
@@ -161,7 +161,7 @@ Jobs ativos:
 | --- | --- | --- | --- | --- | --- |
 | `saltos-r2-backup-daily` | `europe-west1` | `30 2 * * *` | `Europe/Lisbon` | Cloud Run Job `saltos-r2-backup` | OAuth + Scheduler service account |
 | `saltos-private-media-cleanup` | `europe-west1` | `30 3 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/private-media-cleanup` | OIDC + Scheduler service account + `X-Maintenance-Key` |
-| booking reminders | `europe-west1` | `0 9 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/booking-reminders` | OIDC + Scheduler service account + `X-Maintenance-Key` |
+| `saltos-booking-reminders` | `europe-west1` | `0 9 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/booking-reminders` | OIDC + Scheduler service account + `X-Maintenance-Key` |
 
 Os três jobs foram executados manualmente com sucesso. O backup também foi acionado via Scheduler e criou/concluiu uma execução do Cloud Run Job. O cron interno da aplicação continua desativado em produção.
 
@@ -202,7 +202,7 @@ O contacto público `ola@saltosnaspalhacadas.pt` ainda precisa decisão de inbou
 | Registo | DONE |
 | `www` HTTPS | DONE |
 | Apex redirect | 301 para `https://www.saltosnaspalhacadas.pt`, preservando query strings |
-| Pages production branch | Ainda `feat/production-launch` |
+| Pages production branch | `main` |
 | Confirmação administrativa .PT | PENDING externo |
 | Canonical | `https://www.saltosnaspalhacadas.pt` |
 
@@ -228,11 +228,10 @@ Nunca executar ou documentar comandos que imprimam valores de secrets.
 
 Frontend:
 
-1. Fazer merge pelo fluxo `feat/production-launch -> dev -> main`.
-2. Confirmar CI/CodeQL.
-3. Cloudflare Pages deve construir `frontend` com `npm run build`.
-4. Após lançamento final, mudar production branch para `main`; ainda não documentar `main` como branch publicada.
-5. Rollback: reverter para deployment anterior em Cloudflare Pages.
+1. Estado atual: Cloudflare Pages production branch é `main`.
+2. A release final `main` passou CI/PostgreSQL CI/CodeQL.
+3. Cloudflare Pages constrói `frontend` com `npm run build`.
+4. Rollback: reverter para deployment anterior em Cloudflare Pages.
 
 Backend:
 
@@ -248,20 +247,22 @@ Migrations:
 - Alterações de schema devem ser migrations Flyway versionadas.
 - Depois do deploy, confirmar que o schema está no nível esperado.
 
-## Ainda Pendente para Release Final
+## Release Final
 
-- mobile QA;
-- links/navigation QA;
-- legal/privacy/cookie/contact-content QA quando aplicável;
-- E2E/smoke final mais amplo em produção;
-- consistência final da documentação;
-- PR `feat/production-launch` -> `dev`;
-- CI/CodeQL validation;
-- PR `dev` -> `main`;
-- mudar Cloudflare Pages production branch de `feat/production-launch` para `main`;
-- verificação final pós-merge;
-- Search Console e sitemap depois do launch;
-- confirmação administrativa .PT.
+Concluído:
+
+- CI, PostgreSQL CI e CodeQL passaram na release final `main`;
+- Cloudflare Pages production deployment vem de `main`;
+- produção manual smoke testing passou;
+- Turnstile funciona em produção;
+- R2 automated backup executions sucederam.
+
+Ainda pós-lançamento:
+
+- confirmação administrativa .PT externa;
+- Google Search Console e sitemap;
+- melhorias visuais/frontend futuras;
+- otimização futura de media/assets estáticos.
 
 ## Artifact Registry
 

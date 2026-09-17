@@ -2,7 +2,7 @@
 
 Runbook para recuperar o site **Saltos nas Palhaçadas** após falha de deploy, perda de dados, indisponibilidade de provider ou incidente de segurança.
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Componentes Críticos
 
@@ -22,10 +22,10 @@ Last verified: 2026-09-16.
 | Neon | VALIDATED | PITR/history observado de 6 horas; snapshot durável `pre-launch-2026-09-16`; restore drill em branch isolada validado. |
 | R2 runtime | VALIDATED | Buckets runtime sem lifecycle genérico nem bucket lock para permitir delete/move da aplicação. |
 | R2 backup | VALIDATED | Bucket `saltos-prod-backup`, snapshots independentes, `rclone check` 0 diferenças, restore de PNG validado. |
-| Secret Manager | PENDING PROCESS | Manter inventário de nomes e rotação; nunca exportar valores para docs. |
+| Secret Manager | ONGOING PROCESS | Manter inventário de nomes e rotação; nunca exportar valores para docs. |
 | Cloud Run | DONE técnico | Rollback por revisão anterior. |
 | Cloudflare Pages | DONE técnico | Rollback por deployment anterior. |
-| DNS Cloudflare | PENDING PROCESS | Exportar/registrar configuração sem secrets quando zona estiver Active. |
+| DNS Cloudflare | ACTIVE | `www` live com HTTPS; apex 301 para `www`; registar configuração sem secrets quando necessário. |
 
 ## Restore DB Neon
 

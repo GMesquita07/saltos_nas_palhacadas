@@ -12,26 +12,27 @@ Este repositório contém:
 
 ## Estado Atual
 
-Produção atual validada na branch `feat/production-launch`:
+Produção técnica final validada:
 
 | Área | Provider atual | Estado |
 | --- | --- | --- |
-| Frontend | Cloudflare Pages | `https://www.saltosnaspalhacadas.pt` live; production branch ainda `feat/production-launch` |
-| Backend | Google Cloud Run | Healthy; código de produção baseado em `ee8d9c1`; revisões posteriores só config/secrets |
+| Frontend | Cloudflare Pages | `https://www.saltosnaspalhacadas.pt` live; production branch `main` |
+| Backend | Google Cloud Run | Health endpoint UP; sem ERROR logs recentes na verificação final |
 | Base de dados | Neon PostgreSQL | Produção/default com Flyway até V19; snapshot/restore validado |
 | Media | Cloudflare R2 | Público/privado e backup bucket validados |
 | Jobs | Google Cloud Scheduler | R2 backup, cleanup privado e booking reminders validados |
 | Anti-bot | Cloudflare Turnstile | Implementado e validado |
 | Email | Brevo | SMTP real ativo e validado com DKIM/DMARC |
-| Domínio | Cloudflare DNS + Dominios.pt | `www` live com HTTPS; apex 301 para `www`; confirmação administrativa .PT pendente |
+| Domínio | Cloudflare DNS + Dominios.pt | `www` HTTP 200; apex 301 para `www`; confirmação administrativa .PT pendente |
+| Release | GitHub/Cloudflare/GCP | CI, PostgreSQL CI, CodeQL e smoke final passaram na release `main` |
 
-O fluxo de release previsto é:
+Fluxo de release técnico concluído:
 
 ```text
-feat/production-launch -> PR para dev -> PR final para main
+feat/production-launch -> dev -> main -> Cloudflare Pages production branch main
 ```
 
-Depois do merge final, o Cloudflare Pages deve passar a usar `main` como production branch. Até lá, não tratar `main` como branch publicada.
+Ainda ficam tarefas pós-lançamento como Search Console/sitemap, confirmação administrativa .PT externa e melhorias visuais/performance futuras.
 
 ## Stack
 

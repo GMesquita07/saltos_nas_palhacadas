@@ -1,6 +1,6 @@
 # Decisões Técnicas
 
-Last verified: 2026-09-16.
+Last verified: 2026-09-17.
 
 ## Cloudflare Pages para Frontend
 
@@ -10,7 +10,7 @@ Contexto: o frontend é uma SPA React/Vite estática.
 
 Razão: deploy simples, CDN global, TLS e `_headers` com CSP/HSTS.
 
-Consequências: a branch de produção ainda é `feat/production-launch` e deve passar para `main` depois do release final; SEO por perfil continua limitado enquanto não houver rotas reais.
+Consequências: a production branch do Cloudflare Pages é agora `main`; SEO por perfil continua limitado enquanto não houver rotas reais.
 
 ## Google Cloud Run para Backend
 
