@@ -48,7 +48,7 @@ export function MaterialsPage() {
       <header className={styles.header}>
         <p className="eyebrow">Eventos</p>
         <h1>Material disponível</h1>
-        <p>Equipamento disponível para preparar animações e momentos com o apoio certo.</p>
+        <p>Equipamento disponível para animações e eventos</p>
       </header>
 
       {isLoading ? (

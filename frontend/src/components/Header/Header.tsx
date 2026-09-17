@@ -9,6 +9,7 @@ export type AuthenticationMode = 'login' | 'register'
 
 type HeaderProps = {
   session: AuthSession | null
+  isBrandHidden?: boolean
   onAdminClick: () => void
   onProfilesClick: () => void
   onBookingClick: () => void
@@ -23,6 +24,7 @@ type HeaderProps = {
 
 export function Header({
   session,
+  isBrandHidden = false,
   onAdminClick,
   onProfilesClick,
   onBookingClick,
@@ -40,7 +42,7 @@ export function Header({
     <header className={styles.header}>
       <div className={styles.inner}>
         <button className={styles.brandButton} type="button" onClick={() => window.location.reload()} aria-label="Atualizar página inicial">
-          <BrandMark compact />
+          <BrandMark compact dockTarget isHidden={isBrandHidden} />
         </button>
         <nav aria-label="Navegação principal">
           <button type="button" onClick={onProfilesClick}><NavIcon name="profiles" />Perfis</button>
