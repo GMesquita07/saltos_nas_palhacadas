@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { decideBooking, getAdminBookings } from '../../../services/bookingService'
 import type { Booking, BookingDecisionStatus, BookingStatus } from '../../../types/booking'
+import { bookingEmptyMessage, bookingFilters, defaultBookingFilter, toBookingStatusFilter, type BookingFilter } from './bookingFilters'
 import styles from './BookingManagement.module.css'
 
 type BookingNotice = {
@@ -8,7 +9,6 @@ type BookingNotice = {
   text: string
 }
 
-type BookingFilter = BookingStatus | 'ALL'
 type BookingDecision = BookingDecisionStatus
 
 type AdminBooking = Booking
@@ -22,14 +22,6 @@ type DecisionDraft = {
   endTime: string
   agreedBudget: string
 }
-
-const filters: Array<{ value: BookingFilter; label: string }> = [
-  { value: 'PENDING', label: 'Pendentes' },
-  { value: 'ACCEPTED', label: 'Aceites' },
-  { value: 'DECLINED', label: 'Recusados' },
-  { value: 'CANCELLED', label: 'Cancelados' },
-  { value: 'ALL', label: 'Todos' },
-]
 
 const statusLabels: Record<BookingStatus, string> = {
   PENDING: 'Pendente',
@@ -57,7 +49,7 @@ export function BookingManagement({
   onNotice: (notice: BookingNotice) => void
 }) {
   const [bookings, setBookings] = useState<AdminBooking[]>([])
-  const [filter, setFilter] = useState<BookingFilter>('PENDING')
+  const [filter, setFilter] = useState<BookingFilter>(defaultBookingFilter)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [draft, setDraft] = useState<DecisionDraft | null>(null)
@@ -67,7 +59,7 @@ export function BookingManagement({
     setIsLoading(true)
 
     try {
-      const response = await getAdminBookings(token, filter === 'ALL' ? undefined : filter)
+      const response = await getAdminBookings(token, toBookingStatusFilter(filter))
       setBookings(response)
     } catch (error) {
       onNotice({
@@ -189,7 +181,7 @@ export function BookingManagement({
               }}
               value={filter}
             >
-              {filters.map((option) => (
+              {bookingFilters.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
@@ -204,9 +196,7 @@ export function BookingManagement({
         <p className={styles.feedback}>A carregar pedidos...</p>
       ) : bookings.length === 0 ? (
         <p className={styles.feedback}>
-          {filter === 'PENDING'
-            ? 'Não há pedidos pendentes neste momento.'
-            : 'Não existem agendamentos neste estado.'}
+          {bookingEmptyMessage(filter)}
         </p>
       ) : (
         <div className={styles.list}>

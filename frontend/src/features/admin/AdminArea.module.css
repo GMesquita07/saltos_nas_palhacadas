@@ -620,21 +620,6 @@ button:disabled {
   gap: 10px;
 }
 
-.reviewModeration label {
-  display: grid;
-  gap: 7px;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
-.reviewModeration select {
-  width: 100%;
-  border: 1px solid var(--color-line);
-  padding: 10px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
 .reviewModeration button {
   border: 1px solid var(--color-line);
   padding: 9px 11px;
@@ -648,25 +633,36 @@ button:disabled {
   color: #9b332c;
 }
 
-.publishedBadge,
-.hiddenBadge {
+.visibilityToggle {
   width: fit-content;
   border: 1px solid;
-  padding: 5px 8px;
+  padding: 7px 10px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.7px;
   text-transform: uppercase;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease);
 }
 
-.publishedBadge {
+.visibilityToggle:hover:not(:disabled) {
+  background: var(--color-paper);
+}
+
+.visibilityToggle:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.visibilityPublished {
   border-color: #78907d;
   color: #3a6848;
+  background: #e5f1e9;
 }
 
-.hiddenBadge {
+.visibilityHidden {
   border-color: #b85c55;
   color: #9b332c;
+  background: #f5e7e6;
 }
 
 @media (max-width: 900px) {
