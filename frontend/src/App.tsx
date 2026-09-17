@@ -220,6 +220,7 @@ function App() {
       />
       <div className={`${styles.application} ${splashPhase === 'playing' ? styles.isWaiting : ''}`}>
         <Header
+          activeView={view}
           isBrandHidden={splashPhase === 'docking'}
           session={isSessionReady ? session : null}
           onAccountClick={openAccount}

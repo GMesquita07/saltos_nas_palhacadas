@@ -7,7 +7,7 @@
   place-items: center;
 
   background: #000;
-  transition: background-color 240ms ease;
+  transition: background-color 320ms ease;
 }
 
 .docking {

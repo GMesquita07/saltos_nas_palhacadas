@@ -9,6 +9,7 @@ export type AuthenticationMode = 'login' | 'register'
 
 type HeaderProps = {
   session: AuthSession | null
+  activeView: string
   isBrandHidden?: boolean
   onAdminClick: () => void
   onProfilesClick: () => void
@@ -24,6 +25,7 @@ type HeaderProps = {
 
 export function Header({
   session,
+  activeView,
   isBrandHidden = false,
   onAdminClick,
   onProfilesClick,
@@ -37,6 +39,7 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   const accountAvatarUrl = useAuthenticatedMediaUrl(session?.profileImageUrl, session?.token)
+  const activeClass = (view: string) => activeView === view ? styles.isActive : ''
 
   return (
     <header className={styles.header}>
@@ -45,16 +48,16 @@ export function Header({
           <BrandMark compact dockTarget isHidden={isBrandHidden} />
         </button>
         <nav aria-label="Navegação principal">
-          <button type="button" onClick={onProfilesClick}><NavIcon name="profiles" />Perfis</button>
-          <button type="button" onClick={onBookingClick}><NavIcon name="booking" />Agendar</button>
-          <button type="button" onClick={onContactsClick}><NavIcon name="contacts" />Contactos</button>
-          <button type="button" onClick={onMaterialsClick}><NavIcon name="materials" />Materiais</button>
-          <button type="button" onClick={onClientContentClick}><NavIcon name="clientContent" />Partilhas</button>
-          {session && <button type="button" onClick={onFavoritesClick}><NavIcon name="favorites" />Favoritos</button>}
+          <button className={activeClass('profiles')} type="button" onClick={onProfilesClick}><NavIcon name="profiles" />Perfis</button>
+          <button className={activeClass('booking')} type="button" onClick={onBookingClick}><NavIcon name="booking" />Agendar</button>
+          <button className={activeClass('contacts')} type="button" onClick={onContactsClick}><NavIcon name="contacts" />Contactos</button>
+          <button className={activeClass('materials')} type="button" onClick={onMaterialsClick}><NavIcon name="materials" />Materiais</button>
+          <button className={activeClass('clientContent')} type="button" onClick={onClientContentClick}><NavIcon name="clientContent" />Partilhas</button>
+          {session && <button className={activeClass('favorites')} type="button" onClick={onFavoritesClick}><NavIcon name="favorites" />Favoritos</button>}
           {session?.role === 'ADMIN' && <button type="button" onClick={onAdminClick}><NavIcon name="admin" />Admin</button>}
           {session ? (
             <>
-              <button className={styles.accountButton} type="button" onClick={onAccountClick}>
+              <button className={`${styles.accountButton} ${activeClass('account')}`} type="button" onClick={onAccountClick}>
                 {session.profileImageUrl && accountAvatarUrl
                   ? <CroppedImage alt="Foto de perfil" className={styles.accountAvatar} position={session.profileImagePosition} src={accountAvatarUrl} zoom={session.profileImageZoom} />
                   : <NavIcon name="account" />}
