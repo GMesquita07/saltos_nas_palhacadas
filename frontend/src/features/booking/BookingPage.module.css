@@ -14,10 +14,9 @@
 .field em { color: var(--color-muted); font-size: 11px; font-style: normal; font-weight: 400; }
 .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--color-line); border-radius: 0; padding: 11px 12px; color: var(--color-ink); background: var(--color-paper); font: inherit; outline-offset: 2px; }
 .field textarea { resize: vertical; line-height: 1.45; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--color-ink); }
 .calendarEmpty { min-height: 290px; display: grid; place-items: center; padding: 30px; color: var(--color-muted); border: 1px dashed var(--color-line); text-align: center; line-height: 1.5; }
 .calendarHeader { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 12px; margin: 30px 0 14px; }
-.calendarHeader h3 { margin: 0; font: 600 20px/1.2 Georgia, 'Times New Roman', serif; text-align: center; }
+.calendarHeader h3 { margin: 0; font: 600 20px/1.2 var(--font-serif); text-align: center; }
 .monthButton { width: 36px; height: 36px; border: 1px solid var(--color-line); color: var(--color-ink); background: transparent; font-size: 18px; }
 .monthButton:hover:not(:disabled) { border-color: var(--color-ink); background: var(--color-paper); }
 .monthButton:disabled { cursor: default; opacity: .35; }
@@ -56,13 +55,13 @@
 .bookingCard { padding: 22px 24px; border: 1px solid var(--color-line); background: var(--color-surface); }
 .bookingTopline { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
 .bookingTopline p { margin: 0; color: var(--color-muted); font-size: 12px; }
-.bookingCard h3 { margin: 0 0 20px; font: 600 22px/1.25 Georgia, 'Times New Roman', serif; }
+.bookingCard h3 { margin: 0 0 20px; font: 600 22px/1.25 var(--font-serif); }
 .status { flex: 0 0 auto; padding: 5px 8px; font-size: 10px; font-weight: 650; letter-spacing: .4px; text-transform: uppercase; }
-.pending { color: #786321; background: #f7f0d8; }
-.accepted { color: #286644; background: #e5f1e9; }
-.declined { color: #964440; background: #f5e7e6; }
-.countered { color: #615391; background: #ece9f7; }
-.cancelled { color: #76665b; background: #eee8e2; }
+.pending { color: var(--status-pending-fg); background: var(--status-pending-bg); }
+.accepted { color: var(--status-positive-fg); background: var(--status-positive-bg); }
+.declined { color: var(--status-negative-fg); background: var(--status-negative-bg); }
+.countered { color: var(--status-info-fg); background: var(--status-info-bg); }
+.cancelled { color: var(--status-neutral-fg); background: var(--status-neutral-bg); }
 .timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0 0 22px; padding: 0; list-style: none; }
 .timeline li { position: relative; display: grid; gap: 8px; color: var(--color-muted); font-size: 11px; font-weight: 650; letter-spacing: .4px; text-transform: uppercase; }
 .timeline li::before { width: 10px; height: 10px; border: 1px solid var(--color-line); border-radius: 50%; background: var(--color-surface); content: ''; }

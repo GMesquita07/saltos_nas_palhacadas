@@ -5,13 +5,14 @@
   padding: 24px 20px 22px;
   color: var(--color-ink);
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
   text-align: left;
   transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
 
 .card:hover {
   border-color: var(--brand-green);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transform: translateY(-3px);
 }
 
@@ -25,6 +26,7 @@
   display: grid;
   place-items: center;
   min-height: 184px;
+  overflow: hidden;
 }
 
 .image {
@@ -32,6 +34,11 @@
   aspect-ratio: 1;
   border: 1px solid rgb(35 34 32 / 10%);
   font: 500 40px/1 var(--font-serif);
+  transition: transform var(--ease-slow);
+}
+
+.card:hover .image {
+  transform: scale(1.03);
 }
 
 .details {
@@ -57,12 +64,23 @@
   margin-top: 4px;
   color: var(--color-muted);
   font-size: 13px;
+  transition: color var(--ease);
+}
+
+.card:hover .details > span {
+  color: var(--color-ink);
 }
 
 .details b {
+  display: inline-block;
   margin-left: 5px;
   color: var(--color-ink);
   font-size: 16px;
+  transition: transform var(--ease);
+}
+
+.card:hover .details b {
+  transform: translateX(2px);
 }
 
 @media (max-width: 600px) {
