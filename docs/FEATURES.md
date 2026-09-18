@@ -6,8 +6,8 @@ Last verified: 2026-09-18.
 
 | Feature | Público/Cliente/Admin | Frontend principal | Backend | Persistência | Dependência externa | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| Perfis de artistas | Público/Admin | `ProfileSelector`, `PortfolioPage`, `AdminArea` | `ProfileController`, `AdminPortfolioController` | `profiles` | R2 para imagens | DONE |
-| Portfólio | Público/Admin | `PortfolioPage`, `PortfolioCard`, admin | `PortfolioController`, `AdminPortfolioController` | `portfolio_items` | R2/media pública | DONE |
+| Perfis de artistas | Público/Admin | `ProfileSelector`, `PortfolioPage`, `AdminArea` | `ProfileController`, `AdminPortfolioController` | `profiles` | Pages para media seed; R2 para uploads posteriores | DONE |
+| Portfólio | Público/Admin | `PortfolioPage`, `PortfolioCard`, admin | `PortfolioController`, `AdminPortfolioController` | `portfolio_items` | Pages para media seed; R2/media runtime | DONE |
 | Reviews | Público/Cliente/Admin | `ReviewsSection`, admin | `ReviewController`, `AdminReviewController` | `reviews` | Nenhuma | DONE |
 | Contactos | Público/Admin | `ContactPage`, admin | `ContactController`, `AdminContactController` | `contacts` | Nenhuma | DONE |
 | Materiais | Público/Admin | `MaterialsPage`, admin | `MaterialController`, `AdminMaterialController` | `materials` | R2/media pública | DONE |
@@ -45,6 +45,8 @@ Last verified: 2026-09-18.
 - Avatares atuais aceitam upload privado; a proposta futura é avaliar avatares predefinidos.
 - `profiles.notification_email` é informação operacional privada: só endpoints admin podem ler/escrever; endpoints públicos de perfis/portfólio não expõem este campo.
 - Notificações operacionais usam admins ativos da base de dados (`role=ADMIN`, `active=true`), não `ADMIN_EMAIL`; `ADMIN_EMAIL` continua bootstrap-only.
+
+- O conteúdo inicial dos três perfis usa assets estáticos em `frontend/public/content/profiles/`; a metadata permanece editável na BD e uploads posteriores continuam no fluxo R2 existente.
 
 ## Limitações Funcionais Conhecidas
 

@@ -68,6 +68,31 @@ sequenceDiagram
 
 Turnstile protege `login`, `register` e `forgot-password`; `reset-password` não usa Turnstile. O token não é guardado pelo backend.
 
+## Conteúdo Inicial Estático
+
+Os três perfis públicos iniciais continuam a ter metadata persistida em PostgreSQL
+(`profiles` e `portfolio_items`), permitindo edição normal pelo painel admin.
+
+A media inicial desses perfis é versionada em:
+
+`frontend/public/content/profiles/`
+
+e servida diretamente como assets estáticos pelo Cloudflare Pages.
+
+Isto evita usar R2 para o conteúdo inicial já conhecido, mantendo R2 para uploads
+posteriores feitos pelo admin e para media runtime.
+
+O seed de metadata está em:
+
+`ops/seed/default-content.sql`
+
+Este ficheiro é um seed manual idempotente, não uma migration Flyway.
+Não contém emails privados de notificações; esses valores são configurados
+posteriormente através do painel admin.
+
+Os endpoints públicos de perfis e portfolio usam cache HTTP pública curta
+(`max-age=60`) para reduzir leituras repetidas desnecessárias.
+
 ## Fluxo de Media
 
 ```mermaid
