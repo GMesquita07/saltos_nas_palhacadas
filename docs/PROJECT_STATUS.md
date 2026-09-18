@@ -1,6 +1,6 @@
 # Estado do Projeto
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-18.
 
 ## Resumo
 
@@ -13,7 +13,8 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Frontend Cloudflare Pages | DONE | Sim, branch `main` | Sim | Monitorização pós-lançamento |
 | Backend Cloud Run | DONE | Sim | Sim | Health UP; monitorização pós-lançamento |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
-| Flyway V1-V19 | DONE | Sim | Sim | Manter migrations-only em produção |
+| Flyway V1-V20 | DONE | Sim | Sim | Produção técnica atual antes da Feature 4 |
+| Flyway V21 profile notification email | IN PROGRESS | Não | Em testes na branch | `profiles.notification_email` privado; não production-complete |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |
 | R2 backup Cloud Run Job | DONE | Sim | Sim | Monitorizar Scheduler diário e retenção |
 | Uploads 10/30 MiB | DONE | Sim | Sim | Monitorizar erros 413/validação |
@@ -24,6 +25,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Booking reminder Scheduler | DONE | Sim | Sim | Monitorizar execução diária às 09:00 |
 | Brevo DNS/auth | DONE | Sim | Sim | Manter DKIM/DMARC saudáveis |
 | SMTP Brevo | DONE | Sim | Sim | Monitorizar entregabilidade |
+| Notificações admin/artista | IN PROGRESS | Não | Em testes na branch | Usa admins ativos da DB e email privado por perfil |
 | Password reset email real | DONE | Sim | Sim | Canonical URL aponta para `www` |
 | Domínio registado | DONE | Sim | Sim pelo setup | DNS/TLS já funcionais; confirmação administrativa .PT separada |
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
@@ -47,6 +49,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | `main` | release final validada | Production branch do Cloudflare Pages |
 | `dev` | integrado | Branch de integração |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
+| `feat/notifications-and-email` | em desenvolvimento | Feature 4: notificações email admin/artista |
 
 Fluxo concluído:
 
@@ -63,6 +66,7 @@ Distinção importante:
 - código/imagem da aplicação atualmente em produção: baseado em `ee8d9c1`;
 - revisões posteriores do Cloud Run alteraram apenas configuração/secrets;
 - Cloudflare Pages production branch agora é `main`.
+- produção conhecida antes desta feature está em Flyway V20; V21 é alteração desta branch e ainda não foi promovida.
 
 ## Produção Conhecida
 

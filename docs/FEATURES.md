@@ -1,6 +1,6 @@
 # Funcionalidades
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-18.
 
 ## Matriz
 
@@ -22,7 +22,8 @@ Last verified: 2026-09-17.
 | Disponibilidade | Público | `BookingPage` | `ProfileAvailabilityController` | `booking_requests` | Nenhuma | DONE |
 | Decisões/counter-proposals | Cliente/Admin | `BookingPage`, admin | `BookingController`, `AdminBookingController` | `booking_requests` | Brevo SMTP | DONE |
 | Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
-| Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED |
+| Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService`, `SiteNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED; Feature 4 IN PROGRESS nesta branch |
+| Notificações admin/artista | Admin/Backend | `AdminArea` | `SiteNotificationService`, `BookingNotificationService`, `AdminPortfolioController` | `profiles.notification_email`, `app_users` | Brevo SMTP | IN PROGRESS em `feat/notifications-and-email` |
 | Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `booking_requests.reminder_sent_at` | Scheduler + SMTP | DONE/VALIDATED |
 | Upload admin media | Admin | `AdminArea`, `MaterialManagement` | `MediaController`, `MediaStorage` | R2/local | R2 em prod | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |
@@ -42,6 +43,8 @@ Last verified: 2026-09-17.
 - O backend usa DTOs/records e validação Jakarta; propriedades JSON desconhecidas são rejeitadas globalmente.
 - Passwords usam BCrypt; tokens de reset são guardados como hash SHA-256.
 - Avatares atuais aceitam upload privado; a proposta futura é avaliar avatares predefinidos.
+- `profiles.notification_email` é informação operacional privada: só endpoints admin podem ler/escrever; endpoints públicos de perfis/portfólio não expõem este campo.
+- Notificações operacionais usam admins ativos da base de dados (`role=ADMIN`, `active=true`), não `ADMIN_EMAIL`; `ADMIN_EMAIL` continua bootstrap-only.
 
 ## Limitações Funcionais Conhecidas
 
@@ -49,3 +52,4 @@ Last verified: 2026-09-17.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
+- Produção antes da Feature 4 está em Flyway V20; a branch `feat/notifications-and-email` adiciona V21 para email privado de notificações por perfil.

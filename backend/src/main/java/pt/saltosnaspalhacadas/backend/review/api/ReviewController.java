@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Value;
 import pt.saltosnaspalhacadas.backend.config.ApiResponseLimits;
+import pt.saltosnaspalhacadas.backend.notification.SiteNotificationService;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
@@ -43,6 +44,7 @@ public class ReviewController {
     private final AppUserRepository users;
     private final IpRateLimiter rateLimiter;
     private final ApiResponseLimits responseLimits;
+    private final SiteNotificationService siteNotifications;
     private final int reviewRateLimitPerMinute;
 
     public ReviewController(
@@ -51,12 +53,14 @@ public class ReviewController {
             AppUserRepository users,
             IpRateLimiter rateLimiter,
             ApiResponseLimits responseLimits,
+            SiteNotificationService siteNotifications,
             @Value("${app.review.rate-limit-per-minute:6}") int reviewRateLimitPerMinute) {
         this.reviews = reviews;
         this.profiles = profiles;
         this.users = users;
         this.rateLimiter = rateLimiter;
         this.responseLimits = responseLimits;
+        this.siteNotifications = siteNotifications;
         this.reviewRateLimitPerMinute = reviewRateLimitPerMinute;
     }
 
@@ -96,7 +100,9 @@ public class ReviewController {
                 0,
                 false);
 
-        return ReviewResponse.from(reviews.save(review));
+        Review savedReview = reviews.save(review);
+        siteNotifications.notifyNewReview(savedReview);
+        return ReviewResponse.from(savedReview);
     }
 
     private void assertReviewAllowed(HttpServletRequest servletRequest) {

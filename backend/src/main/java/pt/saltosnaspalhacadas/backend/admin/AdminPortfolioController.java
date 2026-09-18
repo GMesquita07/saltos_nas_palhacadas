@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -16,6 +17,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,7 +34,6 @@ import pt.saltosnaspalhacadas.backend.portfolio.api.PortfolioItemResponse;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
-import pt.saltosnaspalhacadas.backend.profile.api.ProfileResponse;
 import pt.saltosnaspalhacadas.backend.security.PublicUrlValidator;
 
 @RestController
@@ -49,9 +50,17 @@ public class AdminPortfolioController {
         this.bookings = bookings;
     }
 
+    @GetMapping("/profiles")
+    List<AdminProfileResponse> findProfiles() {
+        return profiles.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc()
+                .stream()
+                .map(AdminProfileResponse::from)
+                .toList();
+    }
+
     @PostMapping("/profiles")
     @ResponseStatus(HttpStatus.CREATED)
-    ProfileResponse createProfile(@Valid @RequestBody CreateProfileRequest request) {
+    AdminProfileResponse createProfile(@Valid @RequestBody CreateProfileRequest request) {
         if (profiles.findBySlugAndActiveTrue(request.slug()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um perfil com este slug");
         }
@@ -65,13 +74,14 @@ public class AdminPortfolioController {
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()),
                 PublicUrlValidator.optional(request.featuredVideoUrl(), "Indica um URL de vídeo válido"),
-                nextProfileDisplayOrder());
+                nextProfileDisplayOrder(),
+                request.notificationEmail());
 
-        return ProfileResponse.from(profiles.save(profile));
+        return AdminProfileResponse.from(profiles.save(profile));
     }
 
     @PutMapping("/profiles/order")
-    List<ProfileResponse> reorderProfiles(@Valid @RequestBody ReorderProfilesRequest request) {
+    List<AdminProfileResponse> reorderProfiles(@Valid @RequestBody ReorderProfilesRequest request) {
         if (new HashSet<>(request.profileSlugs()).size() != request.profileSlugs().size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de perfis contém repetidos");
         }
@@ -95,12 +105,12 @@ public class AdminPortfolioController {
         return profiles.saveAll(currentProfiles)
                 .stream()
                 .sorted(java.util.Comparator.comparingInt(Profile::getDisplayOrder).thenComparing(Profile::getName).thenComparing(Profile::getId))
-                .map(ProfileResponse::from)
+                .map(AdminProfileResponse::from)
                 .toList();
     }
 
     @PutMapping("/profiles/{slug}")
-    ProfileResponse updateProfile(@PathVariable String slug, @Valid @RequestBody UpdateProfileRequest request) {
+    AdminProfileResponse updateProfile(@PathVariable String slug, @Valid @RequestBody UpdateProfileRequest request) {
         Profile profile = profiles.findBySlugAndActiveTrue(slug)
                 .orElseThrow(() -> new ProfileNotFoundException(slug));
 
@@ -111,9 +121,10 @@ public class AdminPortfolioController {
                 PublicUrlValidator.optional(request.profileImageUrl(), "Indica um URL de imagem válido"),
                 defaultImagePosition(request.profileImagePosition()),
                 defaultImageZoom(request.profileImageZoom()),
-                PublicUrlValidator.optional(request.featuredVideoUrl(), "Indica um URL de vídeo válido"));
+                PublicUrlValidator.optional(request.featuredVideoUrl(), "Indica um URL de vídeo válido"),
+                request.notificationEmail());
 
-        return ProfileResponse.from(profiles.save(profile));
+        return AdminProfileResponse.from(profiles.save(profile));
     }
 
     @PostMapping("/profiles/{slug}/portfolio")
@@ -221,7 +232,10 @@ public class AdminPortfolioController {
             @DecimalMax(value = "3.0", message = "O zoom máximo da imagem é 3")
             Double profileImageZoom,
             @Size(max = 2048, message = "O URL do vídeo de destaque é demasiado longo")
-            String featuredVideoUrl) {
+            String featuredVideoUrl,
+            @Email(message = "Indica um email de notificações válido")
+            @Size(max = 254, message = "O email de notificações pode ter no máximo 254 caracteres")
+            String notificationEmail) {
     }
 
     record ReorderProfilesRequest(
@@ -247,7 +261,10 @@ public class AdminPortfolioController {
             @DecimalMax(value = "3.0", message = "O zoom máximo da imagem é 3")
             Double profileImageZoom,
             @Size(max = 2048, message = "O URL do vídeo de destaque é demasiado longo")
-            String featuredVideoUrl) {
+            String featuredVideoUrl,
+            @Email(message = "Indica um email de notificações válido")
+            @Size(max = 254, message = "O email de notificações pode ter no máximo 254 caracteres")
+            String notificationEmail) {
     }
 
     record CreatePortfolioItemRequest(

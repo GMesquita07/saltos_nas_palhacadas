@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-18.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -38,6 +38,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | URLs reais por perfil | POST-LAUNCH | Ex.: `/animadores/kidg` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
+| Feature 4: notificações email admin/artista | IN PROGRESS | Branch `feat/notifications-and-email`; ainda não production-complete |
 | Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
 | Performance | POST-LAUNCH | Lighthouse/WebPageTest |
@@ -51,7 +52,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Deploy online do site | DONE técnico | Domínio oficial live; Pages production deployment vem de `main` |
 | SEO para DJ KidG / João Tomás | STILL TODO | Limitado pela SPA sem rotas públicas individuais |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
-| Email "O animador" -> "A equipa irá analisar" | STILL TODO | Rever wording/conteúdo apesar do SMTP real já estar ativo |
+| Email "O animador" -> "A equipa irá analisar" | IN PROGRESS | Atualizado na branch `feat/notifications-and-email`; validar antes de promover |
 | Área pessoal do cliente como botões | STILL TODO | Produto/UX |
 | Zona de notificações in-site | STILL TODO | Nova funcionalidade |
 | Formatação Privacy/Terms/Cookies | STILL TODO | Melhorar UX e pedir revisão jurídica |

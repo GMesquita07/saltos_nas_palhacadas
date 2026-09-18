@@ -212,7 +212,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
       setAvailabilitySlots((current) => booking.profileSlug === selectedProfileSlug
         ? [{ date: booking.eventDate, startTime: booking.startTime, endTime: booking.endTime, status: 'PENDING' }, ...current]
         : current)
-      setSubmitSuccess('O teu pedido foi enviado. Vais receber um email de confirmação e o animador vai analisar o pedido.')
+      setSubmitSuccess('O teu pedido foi enviado. Vais receber um email de confirmação e a equipa irá analisar o pedido.')
       formElement.reset()
       setSelectedEventType('')
       setSelectedDate('')
