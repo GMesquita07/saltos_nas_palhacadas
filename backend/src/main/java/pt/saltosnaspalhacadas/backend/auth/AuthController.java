@@ -36,6 +36,7 @@ import pt.saltosnaspalhacadas.backend.media.ManagedMediaPurpose;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaStatus;
 import pt.saltosnaspalhacadas.backend.media.MediaStorage;
 import pt.saltosnaspalhacadas.backend.notification.EmailService;
+import pt.saltosnaspalhacadas.backend.notification.SiteNotificationService;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.security.ClientIpAddress;
 import pt.saltosnaspalhacadas.backend.security.IpRateLimiter;
@@ -56,6 +57,7 @@ public class AuthController {
     private final ManagedMediaService mediaService;
     private final MediaStorage storage;
     private final EmailService emailService;
+    private final SiteNotificationService siteNotifications;
     private final AccountLifecycleService accountLifecycle;
     private final int authRateLimitPerMinute;
     private final int passwordResetTokenMinutes;
@@ -71,6 +73,7 @@ public class AuthController {
             ManagedMediaService mediaService,
             MediaStorage storage,
             EmailService emailService,
+            SiteNotificationService siteNotifications,
             AccountLifecycleService accountLifecycle,
             @Value("${app.auth.rate-limit-per-minute:12}") int authRateLimitPerMinute,
             @Value("${app.auth.password-reset-token-minutes:30}") int passwordResetTokenMinutes,
@@ -84,6 +87,7 @@ public class AuthController {
         this.mediaService = mediaService;
         this.storage = storage;
         this.emailService = emailService;
+        this.siteNotifications = siteNotifications;
         this.accountLifecycle = accountLifecycle;
         this.authRateLimitPerMinute = authRateLimitPerMinute;
         this.passwordResetTokenMinutes = Math.max(5, passwordResetTokenMinutes);
@@ -191,6 +195,7 @@ public class AuthController {
                 1.0,
                 passwords.encode(request.password()),
                 UserRole.CUSTOMER));
+        siteNotifications.notifyNewCustomerRegistration(user);
         return TokenResponse.from(user, jwt.createToken(user), profileImageUrl(user));
     }
 
