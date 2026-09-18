@@ -1,7 +1,10 @@
 package pt.saltosnaspalhacadas.backend.portfolio.api;
 
+import java.time.Duration;
 import java.util.List;
 
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +19,8 @@ import pt.saltosnaspalhacadas.backend.profile.ProfileService;
 @RestController
 @RequestMapping("/api/v1/profiles/{slug}/portfolio")
 public class PortfolioController {
+    private static final CacheControl PUBLIC_PORTFOLIO_CACHE = CacheControl.maxAge(Duration.ofSeconds(60)).cachePublic();
+
     private final ProfileService profileService;
     private final PortfolioService portfolioService;
     private final ApiResponseLimits responseLimits;
@@ -27,8 +32,10 @@ public class PortfolioController {
     }
 
     @GetMapping
-    List<PortfolioItemResponse> findPublishedItems(@PathVariable String slug, @RequestParam(required = false) MediaType type) {
+    ResponseEntity<List<PortfolioItemResponse>> findPublishedItems(@PathVariable String slug, @RequestParam(required = false) MediaType type) {
         var profile = profileService.findActiveProfile(slug);
-        return responseLimits.publicList(portfolioService.findPublishedItems(profile.getId(), type).stream().map(PortfolioItemResponse::from));
+        return ResponseEntity.ok()
+                .cacheControl(PUBLIC_PORTFOLIO_CACHE)
+                .body(responseLimits.publicList(portfolioService.findPublishedItems(profile.getId(), type).stream().map(PortfolioItemResponse::from)));
     }
 }

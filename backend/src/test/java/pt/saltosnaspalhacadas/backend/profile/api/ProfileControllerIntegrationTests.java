@@ -1,7 +1,9 @@
 package pt.saltosnaspalhacadas.backend.profile.api;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,8 +52,16 @@ class ProfileControllerIntegrationTests {
 
         mockMvc.perform(get("/api/v1/profiles"))
                 .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=60")))
+                .andExpect(header().string("Cache-Control", containsString("public")))
                 .andExpect(jsonPath("$[0].slug").value("joao-tomas"))
                 .andExpect(jsonPath("$[0].name").value("João Tomás"));
+
+        mockMvc.perform(get("/api/v1/profiles/joao-tomas"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=60")))
+                .andExpect(header().string("Cache-Control", containsString("public")))
+                .andExpect(jsonPath("$.slug").value("joao-tomas"));
     }
 
     @Test
@@ -63,6 +73,8 @@ class ProfileControllerIntegrationTests {
 
         mockMvc.perform(get("/api/v1/profiles/joao-tomas/portfolio").queryParam("type", "VIDEO"))
                 .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=60")))
+                .andExpect(header().string("Cache-Control", containsString("public")))
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("Vídeo público"))
                 .andExpect(jsonPath("$[0].type").value("VIDEO"));
@@ -96,5 +108,10 @@ class ProfileControllerIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].slug").value("perfil-b"))
                 .andExpect(jsonPath("$[1].slug").value("perfil-a"));
+
+        mockMvc.perform(get("/api/v1/admin/profiles")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-store")));
     }
 }
