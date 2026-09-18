@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
 
-  background: #000;
+  background: #050505;
   transition: background-color 320ms ease;
 }
 

@@ -1,6 +1,7 @@
 package pt.saltosnaspalhacadas.backend.profile;
 
 import java.time.Instant;
+import java.util.Locale;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,6 +42,9 @@ public class Profile {
     @Column(name = "featured_video_url", length = 2048)
     private String featuredVideoUrl;
 
+    @Column(name = "notification_email", length = 254)
+    private String notificationEmail;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
@@ -72,6 +76,10 @@ public class Profile {
     }
 
     public Profile(String slug, String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl, int displayOrder) {
+        this(slug, name, role, description, profileImageUrl, profileImagePosition, profileImageZoom, featuredVideoUrl, displayOrder, null);
+    }
+
+    public Profile(String slug, String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl, int displayOrder, String notificationEmail) {
         this.slug = slug;
         this.name = name;
         this.role = role;
@@ -81,6 +89,7 @@ public class Profile {
         this.profileImageZoom = normalizeZoom(profileImageZoom);
         this.featuredVideoUrl = featuredVideoUrl;
         this.displayOrder = displayOrder;
+        this.notificationEmail = normalizeNotificationEmail(notificationEmail);
     }
 
     @jakarta.persistence.PrePersist
@@ -103,6 +112,7 @@ public class Profile {
     public String getProfileImagePosition() { return profileImagePosition; }
     public double getProfileImageZoom() { return profileImageZoom; }
     public String getFeaturedVideoUrl() { return featuredVideoUrl; }
+    public String getNotificationEmail() { return notificationEmail; }
     public int getDisplayOrder() { return displayOrder; }
     public boolean isActive() { return active; }
     public void update(String name, String role, String description, String profileImageUrl, String profileImagePosition) {
@@ -112,15 +122,23 @@ public class Profile {
         update(name, role, description, profileImageUrl, profileImagePosition, 1.0, featuredVideoUrl);
     }
     public void update(String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl) {
+        update(name, role, description, profileImageUrl, profileImagePosition, profileImageZoom, featuredVideoUrl, notificationEmail);
+    }
+    public void update(String name, String role, String description, String profileImageUrl, String profileImagePosition, double profileImageZoom, String featuredVideoUrl, String notificationEmail) {
         this.name = name; this.role = role; this.description = description; this.profileImageUrl = profileImageUrl;
         this.profileImagePosition = profileImagePosition == null ? "50% 50%" : profileImagePosition;
         this.profileImageZoom = normalizeZoom(profileImageZoom);
         this.featuredVideoUrl = featuredVideoUrl;
+        this.notificationEmail = normalizeNotificationEmail(notificationEmail);
     }
     public void updateDisplayOrder(int displayOrder) { this.displayOrder = displayOrder; }
 
     private static double normalizeZoom(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) return 1.0;
         return Math.min(3.0, Math.max(1.0, value));
+    }
+
+    private static String normalizeNotificationEmail(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toLowerCase(Locale.ROOT);
     }
 }

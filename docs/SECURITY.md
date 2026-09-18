@@ -1,6 +1,6 @@
 # Segurança
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-18.
 
 ## Autenticação
 
@@ -106,6 +106,8 @@ Cloudflare força HTTPS no domínio oficial validado. O apex redireciona para `h
 - DB SSL obrigatório em produção quando `REQUIRE_DATABASE_SSL=true`.
 - `server.error.include-*` está configurado para não expor detalhes internos.
 - SMTP password, maintenance key, R2 credentials, Turnstile secret e credenciais de backup ficam no Google Secret Manager.
+- Email privado de notificações por artista (`profiles.notification_email`) é dado operacional: só endpoints admin o expõem, nunca endpoints públicos de perfis/portfólio nem exports de conta.
+- Notificações para administradores usam utilizadores ativos na DB com role `ADMIN`; a lista nunca é exposta publicamente.
 
 ## Startup Verifier
 

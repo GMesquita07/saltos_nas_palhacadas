@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-18.
 
 ## Arquitetura Real
 
@@ -72,7 +72,7 @@ O health endpoint de produção está UP. Recentes logs ERROR do Cloud Run foram
 | Database | `neondb` |
 | Região | AWS Frankfurt / `eu-central-1` |
 | SSL | Obrigatório |
-| Schema | Flyway até V19 |
+| Schema | Flyway até V20 antes da Feature 4 |
 | PITR/history observado no plano atual | 6 horas |
 | Snapshot manual durável | `pre-launch-2026-09-16` |
 
@@ -191,6 +191,15 @@ Validações E2E em produção:
 - booking cancellation email.
 
 O contacto público `ola@saltosnaspalhacadas.pt` ainda precisa decisão de inbound email; Brevo SMTP não é automaticamente mailbox inbound.
+
+Feature 4 em desenvolvimento na branch `feat/notifications-and-email` mantém Brevo SMTP e adiciona:
+
+- `V21__profile_notification_email.sql` com `profiles.notification_email VARCHAR(254)` nullable;
+- email privado por artista usado apenas para notificações operacionais;
+- notificações para todos os admins ativos da DB;
+- wording PT-PT atualizado em emails de booking.
+
+Esta feature ainda não está production-complete nem promovida a produção.
 
 ## Domínio
 

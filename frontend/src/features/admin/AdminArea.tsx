@@ -5,7 +5,6 @@ import { apiClient, uploadFile } from '../../services/apiClient'
 import { getAdminBookings } from '../../services/bookingService'
 import { getContacts, reorderContacts } from '../../services/contactService'
 import { getPortfolioItems } from '../../services/portfolioService'
-import { getProfiles } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
 import type { Contact, ContactType } from '../../types/contact'
@@ -32,9 +31,14 @@ type ProfileFormState = {
   slug: string
   role: string
   description: string
+  notificationEmail: string
   profileImageUrl: string
   imageCrop: ImageCrop
   featuredVideoUrl: string
+}
+
+type AdminManagedProfile = Profile & {
+  notificationEmail?: string | null
 }
 
 type ApiProfileResponse = {
@@ -47,6 +51,7 @@ type ApiProfileResponse = {
   profileImagePosition: string | null
   profileImageZoom: number | null
   featuredVideoUrl: string | null
+  notificationEmail: string | null
   displayOrder: number | null
 }
 
@@ -80,6 +85,7 @@ const emptyProfileForm = (): ProfileFormState => ({
   slug: '',
   role: '',
   description: '',
+  notificationEmail: '',
   profileImageUrl: '',
   imageCrop: { x: 50, y: 50, zoom: 1 },
   featuredVideoUrl: '',
@@ -101,10 +107,14 @@ const emptyContactForm = (): ContactFormState => ({
   value: '',
 })
 
+async function getAdminProfiles(token: string) {
+  return (await apiClient<ApiProfileResponse[]>('/admin/profiles', {}, token)).map(toProfile)
+}
+
 export function AdminArea({ onExit, token }: { onExit: () => void; token: string }) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [page, setPage] = useState<AdminPage>('dashboard')
-  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [profiles, setProfiles] = useState<AdminManagedProfile[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [adminBookings, setAdminBookings] = useState<Booking[]>([])
@@ -121,15 +131,17 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
   const savingReviewIdsRef = useRef<Set<string>>(new Set())
 
   const refreshProfiles = useCallback(async () => {
+    if (!token) return []
+
     try {
-      const items = await getProfiles()
+      const items = await getAdminProfiles(token)
       setProfiles(items)
       return items
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível carregar os perfis. Confirma se a API está ativa.' })
       return []
     }
-  }, [])
+  }, [token])
 
   const refreshContacts = useCallback(async () => {
     try {
@@ -193,7 +205,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     if (!token) return
     let isCurrent = true
 
-    void Promise.all([getProfiles(), getContacts(), getAdminReviews(token), getAdminBookings(token)])
+    void Promise.all([getAdminProfiles(token), getContacts(), getAdminReviews(token), getAdminBookings(token)])
       .then(([profileItems, contactItems, reviewItems, bookingItems]) => {
         if (!isCurrent) return
         setProfiles(profileItems)
@@ -253,13 +265,14 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     setProfileForm(emptyProfileForm())
   }
 
-  function startProfileEditing(profile: Profile) {
+  function startProfileEditing(profile: AdminManagedProfile) {
     setEditingProfileSlug(profile.slug)
     setProfileForm({
       name: profile.name,
       slug: profile.slug,
       role: profile.role,
       description: profile.description,
+      notificationEmail: profile.notificationEmail ?? '',
       profileImageUrl: profile.imageUrl ?? '',
       imageCrop: parseImageCrop(profile.imagePosition, profile.imageZoom),
       featuredVideoUrl: profile.featuredVideoUrl ?? '',
@@ -284,6 +297,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       name: profileForm.name.trim(),
       role: profileForm.role.trim(),
       description: profileForm.description.trim(),
+      notificationEmail: profileForm.notificationEmail.trim() || null,
       profileImageUrl: profileForm.profileImageUrl.trim() || null,
       profileImagePosition: formatImagePosition(profileForm.imageCrop),
       profileImageZoom: profileForm.imageCrop.zoom,
@@ -966,6 +980,18 @@ function ProfileManagement({
         </label>
 
         <label>
+          Email de notificações
+          <input
+            maxLength={254}
+            onChange={(event) => onChange((current) => ({ ...current, notificationEmail: event.target.value }))}
+            placeholder="artista@example.com"
+            type="email"
+            value={form.notificationEmail}
+          />
+          <small className={styles.fieldHint}>Privado. Usado apenas para notificações relacionadas com este artista e nunca apresentado no site público.</small>
+        </label>
+
+        <label>
           {isEditing ? 'Substituir imagem de perfil' : 'Enviar imagem de perfil'}
           <input accept="image/*" type="file" onChange={onUpload} />
         </label>
@@ -1040,10 +1066,10 @@ function ProfileOrderList({
   onEdit,
   onReorder,
 }: {
-  profiles: Profile[]
+  profiles: AdminManagedProfile[]
   isSaving: boolean
   onDelete: (profile: Profile) => Promise<void>
-  onEdit: (profile: Profile) => void
+  onEdit: (profile: AdminManagedProfile) => void
   onReorder: (profileSlugs: string[]) => Promise<void>
 }) {
   const [draggingSlug, setDraggingSlug] = useState<string | null>(null)
@@ -1560,7 +1586,7 @@ function ManagementList<T>({
   )
 }
 
-function toProfile(profile: ApiProfileResponse): Profile {
+function toProfile(profile: ApiProfileResponse): AdminManagedProfile {
   return {
     id: profile.slug,
     slug: profile.slug,
@@ -1571,11 +1597,12 @@ function toProfile(profile: ApiProfileResponse): Profile {
     imagePosition: profile.profileImagePosition ?? '50% 50%',
     imageZoom: profile.profileImageZoom ?? 1,
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
+    notificationEmail: profile.notificationEmail ?? '',
     displayOrder: profile.displayOrder ?? 0,
   }
 }
 
-function upsertProfile(profiles: Profile[], profile: Profile) {
+function upsertProfile(profiles: AdminManagedProfile[], profile: AdminManagedProfile) {
   const exists = profiles.some((item) => item.slug === profile.slug)
   const nextProfiles = exists
     ? profiles.map((item) => item.slug === profile.slug ? profile : item)
@@ -1588,10 +1615,13 @@ function sortProfiles(first: Profile, second: Profile) {
 }
 
 function validateProfile(form: ProfileFormState) {
+  const notificationEmail = form.notificationEmail.trim()
   if (form.name.trim().length < 2) return 'O nome do perfil tem de ter pelo menos 2 caracteres.'
   if (!slugPattern.test(form.slug.trim())) return 'O slug deve usar apenas letras minúsculas, números e hífenes, por exemplo: dj-joao-tomas.'
   if (form.role.trim().length < 2) return 'Indica uma função com pelo menos 2 caracteres.'
   if (form.description.trim().length < 10) return 'A descrição tem de ter pelo menos 10 caracteres.'
+  if (notificationEmail.length > 254) return 'O email de notificações é demasiado longo.'
+  if (notificationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) return 'Indica um email de notificações válido.'
   if (form.profileImageUrl.length > 2048) return 'A URL da imagem é demasiado longa.'
   if (form.featuredVideoUrl.length > 2048) return 'A URL do vídeo de destaque é demasiado longa.'
   return null
