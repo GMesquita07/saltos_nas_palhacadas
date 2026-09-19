@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.booking.BookingRepository;
+import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
@@ -61,7 +63,7 @@ public class AdminPortfolioController {
     @PostMapping("/profiles")
     @ResponseStatus(HttpStatus.CREATED)
     AdminProfileResponse createProfile(@Valid @RequestBody CreateProfileRequest request) {
-        if (profiles.findBySlugAndActiveTrue(request.slug()).isPresent()) {
+        if (profiles.existsBySlug(request.slug())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um perfil com este slug");
         }
 
@@ -182,12 +184,19 @@ public class AdminPortfolioController {
     void deleteProfile(@PathVariable String slug) {
         Profile profile = profiles.findBySlugAndActiveTrue(slug)
                 .orElseThrow(() -> new ProfileNotFoundException(slug));
-        if (bookings.existsByProfileId(profile.getId())) {
+        if (bookings.existsByProfileIdAndStatusIn(
+                profile.getId(),
+                Set.of(
+                        BookingStatus.PENDING,
+                        BookingStatus.ACCEPTED,
+                        BookingStatus.COUNTER_PROPOSED))) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Não é possível eliminar este perfil porque tem agendamentos associados. Resolve ou cancela os agendamentos primeiro.");
+                    "Não é possível eliminar este perfil porque tem agendamentos ativos. Resolve ou cancela os agendamentos primeiro.");
         }
-        profiles.delete(profile);
+
+        profile.deactivate();
+        profiles.save(profile);
     }
 
     private static String defaultImagePosition(String value) {

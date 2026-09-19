@@ -118,7 +118,7 @@ class BookingIntegrationTests {
             mockMvc.perform(delete("/api/v1/admin/profiles/{slug}", data.profile().getSlug())
                             .header("Authorization", bearer(admin())))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.detail").value("Não é possível eliminar este perfil porque tem agendamentos associados. Resolve ou cancela os agendamentos primeiro."));
+                    .andExpect(jsonPath("$.detail").value("Não é possível eliminar este perfil porque tem agendamentos ativos. Resolve ou cancela os agendamentos primeiro."));
         } finally {
             cleanup(data);
         }

@@ -38,7 +38,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByProfileIdAndEventDateAndStatus(Long profileId, LocalDate eventDate, BookingStatus status);
 
-    boolean existsByProfileId(Long profileId);
+    boolean existsByProfileIdAndStatusIn(
+            Long profileId,
+            java.util.Collection<BookingStatus> statuses);
 
     @Query("""
             select booking from Booking booking
