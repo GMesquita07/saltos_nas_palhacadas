@@ -13,6 +13,7 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     List<Profile> findAllByActiveTrueOrderByNameAsc();
     List<Profile> findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
     Optional<Profile> findBySlugAndActiveTrue(String slug);
+    boolean existsBySlug(String slug);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select profile from Profile profile where profile.id = :id and profile.active = true")
