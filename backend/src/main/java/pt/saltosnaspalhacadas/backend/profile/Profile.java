@@ -133,6 +133,10 @@ public class Profile {
     }
     public void updateDisplayOrder(int displayOrder) { this.displayOrder = displayOrder; }
 
+    public void deactivate() {
+        this.active = false;
+    }
+
     private static double normalizeZoom(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) return 1.0;
         return Math.min(3.0, Math.max(1.0, value));
