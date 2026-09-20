@@ -6,4 +6,5 @@ export type Contact = {
   type: ContactType
   value: string
   displayOrder: number
+  visible?: boolean
 }

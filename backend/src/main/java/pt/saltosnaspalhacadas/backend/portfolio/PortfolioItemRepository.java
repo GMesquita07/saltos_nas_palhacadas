@@ -8,5 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PortfolioItemRepository extends JpaRepository<PortfolioItem, Long> {
     List<PortfolioItem> findAllByProfileIdAndPublishedTrueOrderByEventDateDescIdDesc(Long profileId);
     List<PortfolioItem> findAllByProfileIdAndPublishedTrueAndMediaTypeOrderByEventDateDescIdDesc(Long profileId, MediaType mediaType);
+    List<PortfolioItem> findAllByProfileIdOrderByEventDateDescIdDesc(Long profileId);
     Optional<PortfolioItem> findByIdAndProfileSlug(Long id, String slug);
 }

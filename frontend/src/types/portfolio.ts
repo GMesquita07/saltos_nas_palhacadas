@@ -1,4 +1,5 @@
 export type PortfolioItemType = 'Foto' | 'Vídeo'
+export type MediaType = 'PHOTO' | 'VIDEO'
 
 export type PortfolioItem = {
   id: string
@@ -9,4 +10,9 @@ export type PortfolioItem = {
   eventDateIso: string
   mediaUrl: string
   thumbnailUrl?: string
+}
+
+export type AdminPortfolioItem = PortfolioItem & {
+  displayOrder: number
+  published: boolean
 }

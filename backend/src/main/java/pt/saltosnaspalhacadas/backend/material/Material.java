@@ -67,6 +67,11 @@ public class Material {
         return displayOrder;
     }
 
+    public void update(String name, String imageUrl) {
+        this.name = name;
+        this.imageUrl = imageUrl;
+    }
+
     public void updateDisplayOrder(int displayOrder) {
         this.displayOrder = displayOrder;
     }

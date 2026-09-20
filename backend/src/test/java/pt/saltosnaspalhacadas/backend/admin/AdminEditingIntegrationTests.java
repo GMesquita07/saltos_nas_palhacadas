@@ -131,6 +131,207 @@ class AdminEditingIntegrationTests {
     }
 
     @Test
+    void adminPortfolioListsHiddenItemsAndPublicPortfolioStaysChronological() throws Exception {
+        String slug = "portfolio-admin-" + UUID.randomUUID().toString().substring(0, 8);
+        Profile profile = profiles.save(new Profile(slug, "Portfolio Admin", "DJ", "Descrição do portfolio", null));
+        PortfolioItem oldest = items.save(new PortfolioItem(
+                profile,
+                pt.saltosnaspalhacadas.backend.portfolio.MediaType.PHOTO,
+                "Evento antigo",
+                "Lisboa",
+                LocalDate.of(2026, 4, 1),
+                "https://example.test/old.jpg",
+                null,
+                0,
+                true));
+        PortfolioItem sameDayFirst = items.save(new PortfolioItem(
+                profile,
+                pt.saltosnaspalhacadas.backend.portfolio.MediaType.PHOTO,
+                "Primeiro do mesmo dia",
+                "Porto",
+                LocalDate.of(2026, 5, 10),
+                "https://example.test/first.jpg",
+                null,
+                1,
+                true));
+        PortfolioItem sameDaySecond = items.save(new PortfolioItem(
+                profile,
+                pt.saltosnaspalhacadas.backend.portfolio.MediaType.VIDEO,
+                "Segundo do mesmo dia",
+                "Braga",
+                LocalDate.of(2026, 5, 10),
+                "https://example.test/second.mp4",
+                "https://example.test/second.jpg",
+                2,
+                true));
+        PortfolioItem hidden = items.save(new PortfolioItem(
+                profile,
+                pt.saltosnaspalhacadas.backend.portfolio.MediaType.PHOTO,
+                "Conteúdo oculto",
+                "Coimbra",
+                LocalDate.of(2026, 6, 1),
+                "https://example.test/hidden.jpg",
+                null,
+                3,
+                false));
+        AppUser customer = users.save(new AppUser(
+                "cliente-" + UUID.randomUUID().toString().substring(0, 8) + "@example.test",
+                passwords.encode("change-me-now"),
+                UserRole.CUSTOMER));
+        String adminToken = adminToken();
+        String customerToken = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(get("/api/v1/admin/profiles/{slug}/portfolio", slug)
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isForbidden());
+
+            mockMvc.perform(get("/api/v1/admin/profiles/{slug}/portfolio", slug)
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(4))
+                    .andExpect(jsonPath("$[0].id").value(hidden.getId()))
+                    .andExpect(jsonPath("$[0].published").value(false))
+                    .andExpect(jsonPath("$[1].id").value(sameDaySecond.getId()))
+                    .andExpect(jsonPath("$[2].id").value(sameDayFirst.getId()))
+                    .andExpect(jsonPath("$[3].id").value(oldest.getId()));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/portfolio", slug))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(3))
+                    .andExpect(jsonPath("$[0].id").value(sameDaySecond.getId()))
+                    .andExpect(jsonPath("$[1].id").value(sameDayFirst.getId()))
+                    .andExpect(jsonPath("$[2].id").value(oldest.getId()))
+                    .andExpect(jsonPath("$[0].published").doesNotExist());
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}/portfolio/{itemId}", slug, sameDaySecond.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"type":"VIDEO","title":"Segundo oculto","location":"Braga","eventDate":"2026-05-10","mediaUrl":"https://example.test/second.mp4","thumbnailUrl":"https://example.test/second.jpg","published":false}
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.published").value(false));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/portfolio", slug))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].id").value(sameDayFirst.getId()));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}/portfolio/{itemId}", slug, sameDaySecond.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"type":"VIDEO","title":"Segundo visível","location":"Braga","eventDate":"2026-05-10","mediaUrl":"https://example.test/second.mp4","thumbnailUrl":"https://example.test/second.jpg","published":true}
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.published").value(true));
+        } finally {
+            items.findById(hidden.getId()).ifPresent(items::delete);
+            items.findById(sameDaySecond.getId()).ifPresent(items::delete);
+            items.findById(sameDayFirst.getId()).ifPresent(items::delete);
+            items.findById(oldest.getId()).ifPresent(items::delete);
+            profiles.findById(profile.getId()).ifPresent(profiles::delete);
+            users.findById(customer.getId()).ifPresent(users::delete);
+        }
+    }
+
+    @Test
+    void adminCanCreateUpdateAndToggleContactVisibility() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Contact visible = contacts.save(new Contact("Email visível " + suffix, ContactType.EMAIL, "visible-" + suffix + "@example.test", 0));
+        Contact hidden = contacts.save(new Contact("Telefone oculto " + suffix, ContactType.PHONE, "+351 912 345 678", 1));
+        hidden.update(hidden.getLabel(), hidden.getType(), hidden.getValue(), false);
+        contacts.save(hidden);
+        AppUser customer = users.save(new AppUser(
+                "cliente-contactos-" + suffix + "@example.test",
+                passwords.encode("change-me-now"),
+                UserRole.CUSTOMER));
+        String adminToken = adminToken();
+        String customerToken = jwtService.createToken(customer);
+
+        try {
+            mockMvc.perform(get("/api/v1/admin/contacts")
+                            .header("Authorization", "Bearer " + customerToken))
+                    .andExpect(status().isForbidden());
+
+            mockMvc.perform(get("/api/v1/admin/contacts")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id == %d && @.visible == true)]".formatted(visible.getId())).isNotEmpty())
+                    .andExpect(jsonPath("$[?(@.id == %d && @.visible == false)]".formatted(hidden.getId())).isNotEmpty());
+
+            mockMvc.perform(get("/api/v1/contacts"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id == %d)]".formatted(hidden.getId())).isEmpty());
+
+            mockMvc.perform(put("/api/v1/admin/contacts/{id}", visible.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"label":"Email editado","type":"EMAIL","value":"edited@example.test"}
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.visible").value(true));
+
+            mockMvc.perform(put("/api/v1/admin/contacts/{id}", visible.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"label":"Email editado","type":"EMAIL","value":"edited@example.test","visible":false}
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.visible").value(false));
+
+            mockMvc.perform(put("/api/v1/admin/contacts/{id}", hidden.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"label":"Telefone público","type":"PHONE","value":"+351 912 345 678","visible":true}
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.visible").value(true));
+
+            String contactIds = java.util.stream.Stream.concat(
+                            java.util.stream.Stream.of(hidden.getId(), visible.getId()),
+                            contacts.findAllByOrderByDisplayOrderAscIdAsc()
+                                    .stream()
+                                    .map(Contact::getId)
+                                    .filter(id -> !id.equals(hidden.getId()) && !id.equals(visible.getId())))
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(","));
+
+            mockMvc.perform(put("/api/v1/admin/contacts/order")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"contactIds":[%s]}
+                                    """.formatted(contactIds)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(hidden.getId()))
+                    .andExpect(jsonPath("$[1].id").value(visible.getId()));
+
+            String createdContact = mockMvc.perform(post("/api/v1/admin/contacts")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"label":"Novo contacto","type":"EMAIL","value":"novo-%s@example.test"}
+                                    """.formatted(suffix)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.visible").value(true))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            Number createdId = com.jayway.jsonpath.JsonPath.read(createdContact, "$.id");
+            contacts.findById(createdId.longValue()).ifPresent(contacts::delete);
+        } finally {
+            contacts.findById(visible.getId()).ifPresent(contacts::delete);
+            contacts.findById(hidden.getId()).ifPresent(contacts::delete);
+            users.findById(customer.getId()).ifPresent(users::delete);
+        }
+    }
+
+    @Test
     void returnsFieldErrorsForAnInvalidSlugAndUsefulErrorsForInvalidContactValues() throws Exception {
         String token = adminToken();
 

@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient'
-import type { CreateMaterialInput, Material } from '../types/material'
+import type { CreateMaterialInput, Material, UpdateMaterialInput } from '../types/material'
 
 export function getMaterials() {
   return apiClient<Material[]>('/materials', { cache: 'no-store' })
@@ -12,6 +12,13 @@ export function getAdminMaterials(token: string) {
 export function createMaterial(input: CreateMaterialInput, token: string) {
   return apiClient<Material>('/admin/materials', {
     method: 'POST',
+    body: JSON.stringify(input),
+  }, token)
+}
+
+export function updateMaterial(id: number, input: UpdateMaterialInput, token: string) {
+  return apiClient<Material>('/admin/materials/' + id, {
+    method: 'PUT',
     body: JSON.stringify(input),
   }, token)
 }

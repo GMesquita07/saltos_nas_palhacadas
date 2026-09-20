@@ -60,6 +60,19 @@ public class AdminMaterialController {
         return MaterialResponse.from(materials.save(material));
     }
 
+    @PutMapping("/{id}")
+    MaterialResponse updateMaterial(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateMaterialRequest request) {
+        Material material = materials.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Material não encontrado"));
+
+        material.update(
+                request.name().trim(),
+                PublicUrlValidator.required(request.imageUrl(), "Indica um URL de fotografia válido"));
+        return MaterialResponse.from(materials.save(material));
+    }
+
     @PutMapping("/order")
     List<MaterialResponse> reorderMaterials(@Valid @RequestBody ReorderMaterialsRequest request) {
         if (new HashSet<>(request.materialIds()).size() != request.materialIds().size()) {
@@ -98,6 +111,15 @@ public class AdminMaterialController {
     }
 
     record CreateMaterialRequest(
+            @NotBlank(message = "O nome do material é obrigatório")
+            @Size(max = 140, message = "O nome do material pode ter no máximo 140 caracteres")
+            String name,
+            @NotBlank(message = "A fotografia do material é obrigatória")
+            @Size(max = 2048, message = "A URL da fotografia é demasiado longa")
+            String imageUrl) {
+    }
+
+    record UpdateMaterialRequest(
             @NotBlank(message = "O nome do material é obrigatório")
             @Size(max = 140, message = "O nome do material pode ter no máximo 140 caracteres")
             String name,

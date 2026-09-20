@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -26,7 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 import pt.saltosnaspalhacadas.backend.contact.Contact;
 import pt.saltosnaspalhacadas.backend.contact.ContactRepository;
 import pt.saltosnaspalhacadas.backend.contact.ContactType;
-import pt.saltosnaspalhacadas.backend.contact.api.ContactResponse;
 
 @RestController
 @RequestMapping("/api/v1/admin/contacts")
@@ -44,9 +44,17 @@ public class AdminContactController {
         this.contacts = contacts;
     }
 
+    @GetMapping
+    List<AdminContactResponse> listContacts() {
+        return contacts.findAllByOrderByDisplayOrderAscIdAsc()
+                .stream()
+                .map(AdminContactResponse::from)
+                .toList();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    ContactResponse createContact(@Valid @RequestBody CreateContactRequest request) {
+    AdminContactResponse createContact(@Valid @RequestBody CreateContactRequest request) {
         validateContactValue(request.type(), request.value());
         int displayOrder = contacts.findAllByOrderByDisplayOrderAscIdAsc()
                 .stream()
@@ -54,21 +62,28 @@ public class AdminContactController {
                 .max()
                 .orElse(-1) + 1;
         Contact contact = new Contact(request.label().trim(), request.type(), request.value().trim(), displayOrder);
-        return ContactResponse.from(contacts.save(contact));
+        if (request.visible() != null && !request.visible()) {
+            contact.update(contact.getLabel(), contact.getType(), contact.getValue(), false);
+        }
+        return AdminContactResponse.from(contacts.save(contact));
     }
 
     @PutMapping("/{id}")
-    ContactResponse updateContact(@PathVariable Long id, @Valid @RequestBody UpdateContactRequest request) {
+    AdminContactResponse updateContact(@PathVariable Long id, @Valid @RequestBody UpdateContactRequest request) {
         validateContactValue(request.type(), request.value());
         Contact contact = contacts.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contacto não encontrado"));
 
-        contact.update(request.label().trim(), request.type(), request.value().trim());
-        return ContactResponse.from(contacts.save(contact));
+        contact.update(
+                request.label().trim(),
+                request.type(),
+                request.value().trim(),
+                request.visible() == null ? contact.isVisible() : request.visible());
+        return AdminContactResponse.from(contacts.save(contact));
     }
 
     @PutMapping("/order")
-    List<ContactResponse> reorderContacts(@Valid @RequestBody ReorderContactsRequest request) {
+    List<AdminContactResponse> reorderContacts(@Valid @RequestBody ReorderContactsRequest request) {
         if (new HashSet<>(request.contactIds()).size() != request.contactIds().size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de contactos contém repetidos");
         }
@@ -88,7 +103,7 @@ public class AdminContactController {
         return contacts.saveAll(currentContacts)
                 .stream()
                 .sorted(java.util.Comparator.comparingInt(Contact::getDisplayOrder).thenComparing(Contact::getId))
-                .map(ContactResponse::from)
+                .map(AdminContactResponse::from)
                 .toList();
     }
 
@@ -155,7 +170,8 @@ public class AdminContactController {
             ContactType type,
             @NotBlank(message = "O contacto é obrigatório")
             @Size(max = 500, message = "O contacto pode ter no máximo 500 caracteres")
-            String value) {
+            String value,
+            Boolean visible) {
     }
 
     record UpdateContactRequest(
@@ -166,7 +182,8 @@ public class AdminContactController {
             ContactType type,
             @NotBlank(message = "O contacto é obrigatório")
             @Size(max = 500, message = "O contacto pode ter no máximo 500 caracteres")
-            String value) {
+            String value,
+            Boolean visible) {
     }
 
     record ReorderContactsRequest(
