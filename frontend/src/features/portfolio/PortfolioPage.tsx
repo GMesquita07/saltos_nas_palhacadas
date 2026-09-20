@@ -4,7 +4,10 @@ import { CroppedImage } from '../../components/CroppedImage'
 import type { Profile } from '../../types/profile'
 import type { PortfolioItem, PortfolioItemType } from '../../types/portfolio'
 import { PortfolioCard } from './PortfolioCard'
+import { MediaLightbox } from './MediaLightbox'
 import { ReviewsSection } from '../reviews/ReviewsSection'
+import { SocialIcon } from '../../components/SocialIcon/SocialIcon'
+import { isExternalSocialLink, socialLinkHref, socialLinkLabel, socialPlatformIcon } from '../profiles/socialLinks'
 import styles from './PortfolioPage.module.css'
 
 type Filter = 'Todos' | PortfolioItemType
@@ -13,25 +16,48 @@ type PortfolioPageProps = { profile: Profile; onBack: () => void; onBooking: () 
 export function PortfolioPage({ profile, onBack, onBooking, onLogin }: PortfolioPageProps) {
   const [filter, setFilter] = useState<Filter>('Todos')
   const [items, setItems] = useState<PortfolioItem[]>([])
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null)
   const [hasError, setHasError] = useState(false)
+
   const featuredVideo = profile.featuredVideoUrl ? resolveFeaturedVideo(profile.featuredVideoUrl) : null
   const imagePosition = profile.imagePosition ?? '50% 50%'
   const imageZoom = profile.imageZoom ?? 1
 
   useEffect(() => {
     let isCurrent = true
+
     getPortfolioItems(profile.slug)
-      .then((result) => { if (isCurrent) { setItems(result); setHasError(false) } })
-      .catch(() => { if (isCurrent) setHasError(true) })
-    return () => { isCurrent = false }
+      .then((result) => {
+        if (isCurrent) {
+          setItems(result)
+          setHasError(false)
+        }
+      })
+      .catch(() => {
+        if (isCurrent) setHasError(true)
+      })
+
+    return () => {
+      isCurrent = false
+    }
   }, [profile.slug])
 
-  const filteredItems = useMemo(() => items.filter((item) => filter === 'Todos' || item.type === filter), [filter, items])
-  const groupedItems = useMemo(() => groupPortfolioItems(filteredItems), [filteredItems])
+  const filteredItems = useMemo(
+    () => items.filter((item) => filter === 'Todos' || item.type === filter),
+    [filter, items],
+  )
+
+  const groupedItems = useMemo(
+    () => groupPortfolioItems(filteredItems),
+    [filteredItems],
+  )
 
   return (
     <section className={styles.page}>
-      <button className={styles.back} type="button" onClick={onBack}>← Todos os perfis</button>
+      <button className={styles.back} type="button" onClick={onBack}>
+        ← Todos os perfis
+      </button>
+
       <header className={`${styles.hero} ${featuredVideo ? styles.heroWithVideo : ''}`}>
         <div className={styles.profileImage}>
           <CroppedImage
@@ -43,71 +69,143 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
             zoom={imageZoom}
           />
         </div>
+
         <div className={styles.heroCopy}>
           <p className="eyebrow">{profile.role}</p>
           <h1>{profile.name}</h1>
           <p>{profile.description}</p>
-          <button className={styles.bookingCta} type="button" onClick={onBooking}>Agendar este artista →</button>
+
+          {profile.socialLinks.length > 0 && (
+            <div className={styles.socialLinks} aria-label="Links sociais do perfil">
+              {profile.socialLinks.map((link) => (
+                <a
+                  aria-label={socialLinkLabel(link)}
+                  className={styles.socialLink}
+                  href={socialLinkHref(link)}
+                  key={`${link.platform}-${link.url}`}
+                  rel={isExternalSocialLink(link) ? 'noopener noreferrer' : undefined}
+                  target={isExternalSocialLink(link) ? '_blank' : undefined}
+                  title={socialLinkLabel(link)}
+                >
+                  <span aria-hidden="true"><SocialIcon name={socialPlatformIcon(link.platform)} /></span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          <button className={styles.bookingCta} type="button" onClick={onBooking}>
+            Agendar este artista →
+          </button>
         </div>
+
         {featuredVideo && (
           <div className={styles.featuredVideo}>
             <div className={styles.videoLabel}>
               <span>Vídeo em destaque</span>
             </div>
+
             {featuredVideo.type === 'youtube'
               ? (
                 <iframe
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
+                  loading="lazy"
                   src={featuredVideo.url}
                   title={'Vídeo de destaque de ' + profile.name}
                 />
               )
               : (
-                <video autoPlay controls loop muted playsInline preload="metadata">
+                <video controls playsInline preload="metadata">
                   <source src={featuredVideo.url} />
                 </video>
               )}
           </div>
         )}
       </header>
+
       <div className={styles.portfolioHeader}>
         <div>
           <p className="eyebrow">Portfólio</p>
           <h2>Eventos recentes</h2>
         </div>
+
         <div className={styles.filters} aria-label="Filtrar conteúdo">
           {(['Todos', 'Vídeo', 'Foto'] as Filter[]).map((option) => (
-            <button className={filter === option ? styles.active : ''} key={option} type="button" onClick={() => setFilter(option)}>{option}</button>
+            <button
+              className={filter === option ? styles.active : ''}
+              key={option}
+              type="button"
+              onClick={() => setFilter(option)}
+            >
+              {option}
+            </button>
           ))}
         </div>
       </div>
+
       {hasError
-        ? <p className={styles.feedback}>Não foi possível carregar este portfólio.</p>
+        ? (
+          <p className={styles.feedback}>
+            Não foi possível carregar este portfólio.
+          </p>
+        )
         : filteredItems.length === 0
-          ? <p className={styles.feedback}>Ainda não existem conteúdos publicados neste perfil.</p>
+          ? (
+            <p className={styles.feedback}>
+              Ainda não existem conteúdos publicados neste perfil.
+            </p>
+          )
           : (
             <div className={styles.monthGroups}>
               {groupedItems.map((group) => (
                 <section className={styles.monthGroup} key={group.key}>
                   <h3>{group.label}</h3>
-                  <div className={styles.grid}>{group.items.map((item) => <PortfolioCard item={item} key={item.id} />)}</div>
+
+                  <div className={styles.grid}>
+                    {group.items.map((item) => (
+                      <PortfolioCard
+                        item={item}
+                        key={item.id}
+                        onOpen={setSelectedItem}
+                      />
+                    ))}
+                  </div>
                 </section>
               ))}
             </div>
           )}
+
       <ReviewsSection profile={profile} onLoginClick={onLogin} />
+
+      {selectedItem && (
+        <MediaLightbox
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </section>
   )
 }
 
 function groupPortfolioItems(items: PortfolioItem[]) {
-  const monthFormatter = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' })
-  const groups: { key: string; label: string; items: PortfolioItem[] }[] = []
+  const monthFormatter = new Intl.DateTimeFormat('pt-PT', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const groups: {
+    key: string
+    label: string
+    items: PortfolioItem[]
+  }[] = []
 
   items.forEach((item) => {
     const date = new Date(item.eventDateIso + 'T00:00:00')
-    const key = Number.isNaN(date.getTime()) ? item.eventDateIso : date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
+
+    const key = Number.isNaN(date.getTime())
+      ? item.eventDateIso
+      : date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
+
     const existing = groups.find((group) => group.key === key)
 
     if (existing) {
@@ -115,20 +213,35 @@ function groupPortfolioItems(items: PortfolioItem[]) {
       return
     }
 
-    const rawLabel = Number.isNaN(date.getTime()) ? item.eventDate : monthFormatter.format(date)
-    groups.push({ key, label: capitalize(rawLabel), items: [item] })
+    const rawLabel = Number.isNaN(date.getTime())
+      ? item.eventDate
+      : monthFormatter.format(date)
+
+    groups.push({
+      key,
+      label: capitalize(rawLabel),
+      items: [item],
+    })
   })
 
   return groups
 }
 
 function capitalize(value: string) {
-  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value
+  return value
+    ? value.charAt(0).toUpperCase() + value.slice(1)
+    : value
 }
 
-function resolveFeaturedVideo(url: string): { type: 'youtube' | 'video'; url: string } {
+function resolveFeaturedVideo(url: string): {
+  type: 'youtube' | 'video'
+  url: string
+} {
   const youtubeUrl = toYoutubeEmbedUrl(url)
-  return youtubeUrl ? { type: 'youtube', url: youtubeUrl } : { type: 'video', url }
+
+  return youtubeUrl
+    ? { type: 'youtube', url: youtubeUrl }
+    : { type: 'video', url }
 }
 
 function toYoutubeEmbedUrl(value: string) {
@@ -139,7 +252,11 @@ function toYoutubeEmbedUrl(value: string) {
 
     if (host === 'youtu.be') {
       videoId = url.pathname.split('/').filter(Boolean)[0] ?? ''
-    } else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+    } else if (
+      host === 'youtube.com'
+      || host === 'm.youtube.com'
+      || host === 'music.youtube.com'
+    ) {
       if (url.pathname.startsWith('/embed/')) {
         videoId = url.pathname.split('/').filter(Boolean)[1] ?? ''
       } else if (url.pathname.startsWith('/shorts/')) {
@@ -150,7 +267,8 @@ function toYoutubeEmbedUrl(value: string) {
     }
 
     if (!/^[a-zA-Z0-9_-]{6,}$/.test(videoId)) return null
-    return 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&mute=1&playsinline=1&rel=0'
+
+    return 'https://www.youtube.com/embed/' + videoId + '?playsinline=1&rel=0'
   } catch {
     return null
   }

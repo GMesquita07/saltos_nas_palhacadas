@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import type { PortfolioItem } from '../../types/portfolio'
 import styles from './PortfolioCard.module.css'
 
-export function PortfolioCard({ item }: { item: PortfolioItem }) {
+export function PortfolioCard({ item, onOpen }: { item: PortfolioItem; onOpen?: (item: PortfolioItem) => void }) {
   const { favorites, isSessionReady, session, toggleFavorite } = useAuth()
   const [isToggling, setIsToggling] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,9 +31,20 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
   return (
     <article className={styles.card}>
       <div className={styles.image}>
-        {item.type === 'Vídeo'
-          ? <video controls preload="metadata" poster={item.thumbnailUrl}><source src={item.mediaUrl} /></video>
-          : <img src={item.mediaUrl} alt={item.title} />}
+        {onOpen ? (
+          <button
+            className={styles.mediaButton}
+            type="button"
+            aria-label={`Abrir ${item.title}`}
+            onClick={() => onOpen(item)}
+          >
+            <PortfolioPreview item={item} />
+          </button>
+        ) : (
+          <div className={styles.mediaPreview}>
+            <PortfolioPreview item={item} />
+          </div>
+        )}
         <small>{item.type}</small>
         <button
           aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
@@ -53,4 +64,17 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
       </div>
     </article>
   )
+}
+
+function PortfolioPreview({ item }: { item: PortfolioItem }) {
+  return item.type === 'Vídeo'
+    ? (
+      <>
+        {item.thumbnailUrl
+          ? <img src={item.thumbnailUrl} alt="" />
+          : <video muted playsInline preload="metadata"><source src={item.mediaUrl} /></video>}
+        <span className={styles.playIndicator} aria-hidden="true">▶</span>
+      </>
+    )
+    : <img src={item.mediaUrl} alt={item.title} />
 }
