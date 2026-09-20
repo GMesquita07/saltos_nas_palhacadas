@@ -46,7 +46,9 @@ flowchart LR
 5. Endpoints privados usam JWT no header `Authorization`.
 6. Endpoints admin exigem role `ADMIN`.
 
-O frontend atual usa navegação por estado interno em `App.tsx`, não rotas públicas reais por perfil. O sitemap lista essencialmente a homepage; SEO por animador requer rotas futuras como `/animadores/kidg`.
+O frontend usa React Router com URLs reais como `/perfis/:slug`, `/agendar/:slug`, `/contactos`, `/materiais`, `/login`, `/reset-password`, `/conta`, `/favoritos` e `/admin/*`. Cloudflare Pages serve deep links através de `frontend/public/_redirects` com regras explícitas para as rotas conhecidas, sem catch-all genérico nem regras para `/api`.
+
+A sessão guardada em `sessionStorage` é restaurada imediatamente no cliente para evitar bloquear conteúdo público. A validação `/auth/me` corre em background; rotas privadas e admin mostram apenas loading local até a sessão ser validada.
 
 Produção pública atual: `https://www.saltosnaspalhacadas.pt`. O apex `saltosnaspalhacadas.pt` redireciona com 301 para `www` preservando query strings.
 
@@ -90,8 +92,8 @@ Este ficheiro é um seed manual idempotente, não uma migration Flyway.
 Não contém emails privados de notificações; esses valores são configurados
 posteriormente através do painel admin.
 
-Os endpoints públicos de perfis e portfolio usam cache HTTP pública curta
-(`max-age=60`) para reduzir leituras repetidas desnecessárias.
+Os endpoints públicos de perfis, portfolio e contactos usam cache HTTP pública curta
+(`max-age=60`) para reduzir leituras repetidas desnecessárias. O frontend também deduplica pedidos em voo e mantém cache em memória para perfis/contactos, invalidada por eventos admin como `profiles:changed` e `contacts:changed`.
 
 ## Fluxo de Media
 

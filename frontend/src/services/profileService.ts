@@ -1,10 +1,21 @@
 import { apiClient } from './apiClient'
+import { createPublicRequestCache } from './publicRequestCache'
 import type { Profile } from '../types/profile'
 
 type ApiProfile = { id: number; slug: string; name: string; role: string; description: string; profileImageUrl: string | null; profileImagePosition: string | null; profileImageZoom: number | null; featuredVideoUrl: string | null; displayOrder?: number | null }
 
-export async function getProfiles(): Promise<Profile[]> {
-  const profiles = await apiClient<ApiProfile[]>('/profiles')
+const profileRequestCache = createPublicRequestCache<Profile[]>(loadProfiles)
+
+export async function getProfiles(options: { force?: boolean } = {}): Promise<Profile[]> {
+  return profileRequestCache.get(options)
+}
+
+export function invalidateProfilesCache() {
+  profileRequestCache.invalidate()
+}
+
+async function loadProfiles(requestOptions: RequestInit = {}): Promise<Profile[]> {
+  const profiles = await apiClient<ApiProfile[]>('/profiles', requestOptions)
   return profiles.map((profile) => ({
     id: profile.slug,
     slug: profile.slug,

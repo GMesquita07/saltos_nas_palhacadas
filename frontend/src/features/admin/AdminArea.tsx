@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
+import type { AdminPage } from '../../navigation/routes'
 import { apiClient, uploadFile } from '../../services/apiClient'
 import { getAdminBookings } from '../../services/bookingService'
-import { getContacts, reorderContacts } from '../../services/contactService'
+import { getContacts, invalidateContactsCache, reorderContacts } from '../../services/contactService'
 import { getPortfolioItems } from '../../services/portfolioService'
+import { invalidateProfilesCache } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
 import type { Contact, ContactType } from '../../types/contact'
@@ -23,7 +25,6 @@ import {
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type AdminPage = 'dashboard' | 'profile' | 'content' | 'contacts' | 'materials' | 'reviews' | 'bookings'
 type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
@@ -111,9 +112,18 @@ async function getAdminProfiles(token: string) {
   return (await apiClient<ApiProfileResponse[]>('/admin/profiles', {}, token)).map(toProfile)
 }
 
-export function AdminArea({ onExit, token }: { onExit: () => void; token: string }) {
+export function AdminArea({
+  onExit,
+  onPageChange,
+  page,
+  token,
+}: {
+  onExit: () => void
+  onPageChange: (page: AdminPage) => void
+  page: AdminPage
+  token: string
+}) {
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [page, setPage] = useState<AdminPage>('dashboard')
   const [profiles, setProfiles] = useState<AdminManagedProfile[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
@@ -143,9 +153,9 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     }
   }, [token])
 
-  const refreshContacts = useCallback(async () => {
+  const refreshContacts = useCallback(async (force = false) => {
     try {
-      const items = await getContacts()
+      const items = await getContacts({ force })
       setContacts(items)
       return items
     } catch {
@@ -325,6 +335,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       if (savedProfile) {
         setProfiles((current) => upsertProfile(current, savedProfile))
       }
+      invalidateProfilesCache()
       const refreshedProfiles = await refreshProfiles()
       if (savedProfile) {
         setProfiles((current) => upsertProfile(refreshedProfiles.length ? refreshedProfiles : current, savedProfile))
@@ -465,7 +476,9 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         setNotice({ type: 'success', text: 'Contacto adicionado com sucesso.' })
       }
 
-      await refreshContacts()
+      invalidateContactsCache()
+      await refreshContacts(true)
+      window.dispatchEvent(new Event('contacts:changed'))
       cancelContactEditing()
     } catch (error) {
       setNotice({
@@ -483,6 +496,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     setIsSaving(true)
     try {
       await apiClient('/admin/profiles/' + encodeURIComponent(profile.slug), { method: 'DELETE' }, token)
+      invalidateProfilesCache()
       await refreshProfiles()
       window.dispatchEvent(new Event('profiles:changed'))
 
@@ -532,7 +546,9 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
     setIsSaving(true)
     try {
       await apiClient('/admin/contacts/' + contact.id, { method: 'DELETE' }, token)
-      await refreshContacts()
+      invalidateContactsCache()
+      await refreshContacts(true)
+      window.dispatchEvent(new Event('contacts:changed'))
 
       if (editingContactId === contact.id) cancelContactEditing()
       setNotice({ type: 'success', text: 'Contacto apagado com sucesso.' })
@@ -575,6 +591,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
         body: JSON.stringify({ profileSlugs }),
       }, token)
       setProfiles(orderedProfiles.map(toProfile))
+      invalidateProfilesCache()
       window.dispatchEvent(new Event('profiles:changed'))
       setNotice({ type: 'success', text: 'Ordem dos perfis atualizada.' })
     } catch (error) {
@@ -650,13 +667,13 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
       </div>
 
       <nav className={styles.tabs} aria-label="Secções de administração">
-        <Tab active={page === 'dashboard'} onClick={() => setPage('dashboard')}>Resumo</Tab>
-        <Tab active={page === 'profile'} onClick={() => setPage('profile')}>Novo perfil</Tab>
-        <Tab active={page === 'content'} onClick={() => setPage('content')}>Publicar conteúdo</Tab>
-        <Tab active={page === 'contacts'} onClick={() => setPage('contacts')}>Contactos</Tab>
-        <Tab active={page === 'materials'} onClick={() => setPage('materials')}>Materiais</Tab>
-        <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => setPage('reviews')}>Avaliações</Tab>
-        <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => setPage('bookings')}>Agendamentos</Tab>
+        <Tab active={page === 'dashboard'} onClick={() => onPageChange('dashboard')}>Resumo</Tab>
+        <Tab active={page === 'profile'} onClick={() => onPageChange('profile')}>Novo perfil</Tab>
+        <Tab active={page === 'content'} onClick={() => onPageChange('content')}>Publicar conteúdo</Tab>
+        <Tab active={page === 'contacts'} onClick={() => onPageChange('contacts')}>Contactos</Tab>
+        <Tab active={page === 'materials'} onClick={() => onPageChange('materials')}>Materiais</Tab>
+        <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => onPageChange('reviews')}>Avaliações</Tab>
+        <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => onPageChange('bookings')}>Agendamentos</Tab>
       </nav>
 
       {page === 'dashboard' && (
@@ -665,7 +682,7 @@ export function AdminArea({ onExit, token }: { onExit: () => void; token: string
           isLoading={isDashboardLoading}
           profiles={profiles}
           reviews={reviews}
-          onNavigate={setPage}
+          onNavigate={onPageChange}
           onRefresh={refreshDashboard}
         />
       )}

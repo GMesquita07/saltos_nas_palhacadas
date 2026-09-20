@@ -10,8 +10,8 @@ export function ContactPage() {
   useEffect(() => {
     let isCurrent = true
 
-    const loadContacts = () => {
-      void getContacts()
+    const loadContacts = (force = false) => {
+      void getContacts({ force })
         .then((items) => {
           if (!isCurrent) return
           setContacts(items)
@@ -23,10 +23,11 @@ export function ContactPage() {
     }
 
     loadContacts()
-    window.addEventListener('contacts:changed', loadContacts)
+    const handleContactsChanged = () => loadContacts(true)
+    window.addEventListener('contacts:changed', handleContactsChanged)
     return () => {
       isCurrent = false
-      window.removeEventListener('contacts:changed', loadContacts)
+      window.removeEventListener('contacts:changed', handleContactsChanged)
     }
   }, [])
 

@@ -6,9 +6,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -19,17 +22,20 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
+import pt.saltosnaspalhacadas.backend.notification.EmailService;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.UserRole;
@@ -46,6 +52,7 @@ class AuthAndAdminIntegrationTests {
     @Autowired private ManagedMediaRepository managedMedia;
     @Autowired private ManagedMediaService mediaService;
     @Autowired private PasswordResetTokenRepository passwordResetTokens;
+    @MockitoBean private EmailService emailService;
 
     @BeforeEach
     void ensureAdmin() {
@@ -180,6 +187,36 @@ class AuthAndAdminIntegrationTests {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"token\":\"%s\",\"newPassword\":\"outra-password\"}".formatted(rawToken)))
                     .andExpect(status().isBadRequest());
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void forgotPasswordEmailUsesResetPasswordRoute() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = users.save(new AppUser(
+                "forgot-" + suffix + "@example.test",
+                "forgot." + suffix,
+                "Cliente",
+                "Reset",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+
+        try {
+            mockMvc.perform(post("/api/v1/auth/forgot-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"forgot-%s@example.test\"}".formatted(suffix)))
+                    .andExpect(status().isNoContent());
+
+            ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+            verify(emailService).send(eq(customer.getEmail()), eq("Recuperar palavra-passe"), body.capture());
+            assertThat(body.getValue())
+                    .contains("/reset-password?resetToken=")
+                    .doesNotContain("/?resetToken=");
         } finally {
             passwordResetTokens.deleteAllByUserId(customer.getId());
             users.deleteById(customer.getId());
@@ -342,7 +379,10 @@ class AuthAndAdminIntegrationTests {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.label").value("Email geral"));
 
         mockMvc.perform(get("/api/v1/contacts"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$[0].value").value("ola@example.test"));
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=60")))
+                .andExpect(header().string("Cache-Control", containsString("public")))
+                .andExpect(jsonPath("$[0].value").value("ola@example.test"));
     }
 
     private UploadedAvatar uploadAvatar(String token, String filename, String contentType) throws Exception {

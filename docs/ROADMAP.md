@@ -32,10 +32,10 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Item | Estado | Nota |
 | --- | --- | --- |
 | Google Search Console | POST-LAUNCH | Submeter/verificar |
-| Submeter sitemap | POST-LAUNCH | Atualmente só homepage |
+| Submeter sitemap | POST-LAUNCH | Rever após rotas públicas por perfil |
 | Confirmar indexação | POST-LAUNCH | Especialmente marca e artistas |
-| SEO por animador | POST-LAUNCH | Exige rotas reais por perfil |
-| URLs reais por perfil | POST-LAUNCH | Ex.: `/animadores/kidg` |
+| SEO por animador | POST-LAUNCH | Rotas reais existem; falta avaliar sitemap, conteúdo e eventual pré-render |
+| URLs reais por perfil | DONE | `/perfis/:slug` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
 | Feature 4: notificações email admin/artista | IN PROGRESS | Branch `feat/notifications-and-email`; ainda não production-complete |
@@ -50,7 +50,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Item antigo | Estado | Decisão |
 | --- | --- | --- |
 | Deploy online do site | DONE técnico | Domínio oficial live; Pages production deployment vem de `main` |
-| SEO para DJ KidG / João Tomás | STILL TODO | Limitado pela SPA sem rotas públicas individuais |
+| SEO para DJ KidG / João Tomás | POST-LAUNCH | Rotas individuais existem; falta trabalho de sitemap/indexação e possível pré-render |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | IN PROGRESS | Atualizado na branch `feat/notifications-and-email`; validar antes de promover |
 | Área pessoal do cliente como botões | STILL TODO | Produto/UX |

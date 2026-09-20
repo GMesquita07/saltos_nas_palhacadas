@@ -8,7 +8,7 @@ Last verified: 2026-09-17.
 | --- | --- | --- |
 | Backend unit/integration | `cd backend && ./mvnw test` | Serviços, controllers, segurança, R2 mockado, Turnstile mockado, maintenance, validação |
 | Backend PostgreSQL CI | GitHub Actions com Postgres 17 | Compatibilidade real de JPA/Flyway com PostgreSQL |
-| Frontend tests | `cd frontend && npm test` | Testes Node do cliente API/Auth/Turnstile |
+| Frontend tests | `cd frontend && npm test` | Testes Node do cliente API/Auth/Turnstile e helpers de routing |
 | Frontend lint | `cd frontend && npm run lint` | ESLint |
 | Frontend build | `cd frontend && npm run build` | TypeScript + Vite |
 | Frontend audit | `cd frontend && npm audit --audit-level=moderate` | Vulnerabilidades npm moderadas ou superiores |
@@ -102,7 +102,7 @@ Validação final da release `main`:
 | Upload limits | Imagem 10 MiB, vídeo 30 MiB, MIME e magic bytes |
 | Auth | BCrypt, JWT, forgot/reset, account update/delete/export |
 | Bookings | Criar, decidir, contraproposta, cancelar, disponibilidade, reminders |
-| Frontend | Header Turnstile, validação central de upload, ações por modo auth |
+| Frontend | Header Turnstile, validação central de upload, helpers de routing, returnTo seguro, ações por modo auth |
 
 ## Matriz de Mudança
 
