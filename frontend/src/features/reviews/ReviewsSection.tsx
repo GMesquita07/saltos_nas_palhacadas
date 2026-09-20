@@ -18,7 +18,8 @@ type ReviewsSectionProps = {
 }
 
 export function ReviewsSection({ profile, onLoginClick }: ReviewsSectionProps) {
-  const { session } = useAuth()
+  const { isSessionReady, session: authenticatedSession } = useAuth()
+  const session = isSessionReady ? authenticatedSession : null
   const [reviews, setReviews] = useState<Review[]>([])
   const [form, setForm] = useState<ReviewFormState>(() => emptyReviewForm(session?.email))
   const [error, setError] = useState<string | null>(null)

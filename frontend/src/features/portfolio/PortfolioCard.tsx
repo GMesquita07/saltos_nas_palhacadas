@@ -4,12 +4,14 @@ import type { PortfolioItem } from '../../types/portfolio'
 import styles from './PortfolioCard.module.css'
 
 export function PortfolioCard({ item }: { item: PortfolioItem }) {
-  const { favorites, session, toggleFavorite } = useAuth()
+  const { favorites, isSessionReady, session, toggleFavorite } = useAuth()
   const [isToggling, setIsToggling] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const isFavorite = favorites.some((favorite) => favorite.portfolioItemId === item.id)
 
   async function handleFavorite() {
+    if (!isSessionReady) return
+
     if (!session) {
       setError('Inicia sessão para guardar esta publicação nos favoritos.')
       return
@@ -37,7 +39,7 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
           aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           aria-pressed={isFavorite}
           className={`${styles.favoriteButton} ${isFavorite ? styles.isFavorite : ''}`}
-          disabled={isToggling}
+          disabled={isToggling || !isSessionReady}
           type="button"
           onClick={() => { void handleFavorite() }}
         >

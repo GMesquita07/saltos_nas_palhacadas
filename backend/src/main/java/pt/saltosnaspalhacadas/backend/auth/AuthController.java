@@ -406,7 +406,7 @@ public class AuthController {
                 ? ServletUriComponentsBuilder.fromCurrentContextPath().toUriString()
                 : frontendPublicUrl;
         String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        return normalizedBaseUrl + "/?resetToken=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        return normalizedBaseUrl + "/reset-password?resetToken=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
     }
 
     private static String displayName(AppUser user) {

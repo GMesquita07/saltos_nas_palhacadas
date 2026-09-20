@@ -31,7 +31,8 @@ const dateFormatter = new Intl.DateTimeFormat('pt-PT', { day: 'numeric', month: 
 const monthFormatter = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' })
 
 export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }: BookingPageProps) {
-  const { session } = useAuth()
+  const { isSessionReady, session: authenticatedSession } = useAuth()
+  const session = isSessionReady ? authenticatedSession : null
   const [selectedProfileSlug, setSelectedProfileSlug] = useState(initialProfile?.slug ?? '')
   const [selectedDate, setSelectedDate] = useState('')
   const [visibleMonth, setVisibleMonth] = useState(() => firstDayOfMonth(new Date()))

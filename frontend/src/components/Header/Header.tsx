@@ -19,6 +19,7 @@ type HeaderProps = {
   onFavoritesClick: () => void
   onAccountClick: () => void
   onAuthenticationClick: (mode: AuthenticationMode) => void
+  onHomeClick: () => void
   onLogout: () => void
 }
 
@@ -34,6 +35,7 @@ export function Header({
   onFavoritesClick,
   onAccountClick,
   onAuthenticationClick,
+  onHomeClick,
   onLogout,
 }: HeaderProps) {
   const accountAvatarUrl = useAuthenticatedMediaUrl(session?.profileImageUrl, session?.token)
@@ -42,7 +44,7 @@ export function Header({
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <button className={styles.brandButton} type="button" onClick={() => window.location.reload()} aria-label="Atualizar página inicial">
+        <button className={styles.brandButton} type="button" onClick={onHomeClick} aria-label="Página inicial">
           <BrandMark compact dockTarget isHidden={isBrandHidden} />
         </button>
         <nav aria-label="Navegação principal">

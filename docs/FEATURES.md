@@ -33,7 +33,7 @@ Last verified: 2026-09-18.
 | Chat suporte | Público | `SupportChat` | `SupportChatController`, `SupportChatService` | Sem persistência própria confirmada | OpenAI opcional | DONE local; IA opcional |
 | Privacy/Terms/Cookies | Público | `LegalPage`, `Footer` | N/A | `localStorage` para consentimento | Nenhuma | DONE técnico |
 | FAQ | Público | `FAQPage` | N/A | N/A | Nenhuma | DONE |
-| SEO metadata | Público | `index.html`, `App.tsx` | N/A | N/A | Cloudflare Pages | Parcial por ser SPA sem rotas reais |
+| SEO metadata | Público | `index.html`, `App.tsx`, React Router | N/A | N/A | Cloudflare Pages | Parcial por ser SPA client-rendered; rotas reais existem |
 | Sitemap/robots/404 | Público | `public/` | N/A | N/A | Cloudflare Pages | DONE |
 | Turnstile | Público auth | `Turnstile`, `AuthPage` | `TurnstileService` | N/A | Cloudflare Siteverify | DONE/VALIDATED |
 
@@ -50,7 +50,7 @@ Last verified: 2026-09-18.
 
 ## Limitações Funcionais Conhecidas
 
-- O frontend é SPA sem rotas públicas por perfil, limitando SEO individual de artistas.
+- O frontend é uma SPA client-rendered; já existem rotas públicas por perfil, mas SEO individual continua limitado sem renderização estática/SSR ou páginas pré-renderizadas.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
