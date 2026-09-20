@@ -85,7 +85,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [])
 
   const refreshFavorites = useCallback(async () => {
-    if (!session) {
+    if (!session || !isSessionReady) {
       setFavorites([])
       return
     }
@@ -96,10 +96,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     } finally {
       setIsFavoritesLoading(false)
     }
-  }, [session])
+  }, [isSessionReady, session])
 
   useEffect(() => {
-    if (!session) return
+    if (!session || !isSessionReady) return
 
     let isCurrent = true
     void getFavorites(session.token)
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       isCurrent = false
     }
-  }, [session])
+  }, [isSessionReady, session])
 
   const login = useCallback(async (credentials: Credentials, turnstileToken?: string) => {
     const nextSession = await requestLogin(credentials, turnstileToken)

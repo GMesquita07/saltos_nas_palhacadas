@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
 import { CookieConsent } from './components/CookieConsent/CookieConsent'
@@ -6,6 +7,7 @@ import { SupportChat } from './components/SupportChat/SupportChat'
 import { AccountPage } from './features/auth/AccountPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
+import type { AuthMode } from './features/auth/authTypes'
 import { AdminArea } from './features/admin/AdminArea'
 import { BookingPage } from './features/booking/BookingPage'
 import { ContactPage } from './features/contacts/ContactPage'
@@ -16,192 +18,122 @@ import { MaterialsPage } from './features/materials/MaterialsPage'
 import { PortfolioPage } from './features/portfolio/PortfolioPage'
 import { ProfileSelector } from './features/profiles/ProfileSelector'
 import { SplashScreen } from './features/splash/SplashScreen'
+import {
+  adminPath,
+  authPath,
+  bookingPath,
+  legacyResetRedirect,
+  loginPath,
+  normalizeReturnTo,
+  profilePath,
+  type AdminPage,
+} from './navigation/routes'
 import { getProfiles } from './services/profileService'
 import type { AuthSession } from './types/auth'
 import type { Profile } from './types/profile'
 import styles from './App.module.css'
 
-type View = 'profiles' | 'contacts' | 'materials' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
+type NavigationView = 'profiles' | 'contacts' | 'materials' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
 type SplashPhase = 'playing' | 'docking' | 'done'
 
 function App() {
-  const initialPasswordResetToken = new URLSearchParams(window.location.search).get('resetToken') ?? ''
   const { isSessionReady, logout, session } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [splashPhase, setSplashPhase] = useState<SplashPhase>(() => prefersReducedMotion() ? 'done' : 'playing')
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
-  const [bookingProfile, setBookingProfile] = useState<Profile | null>(null)
-  const [shouldReturnToBooking, setShouldReturnToBooking] = useState(false)
-  const [view, setView] = useState<View>(() => initialPasswordResetToken ? 'auth' : 'profiles')
-  const [authMode, setAuthMode] = useState<AuthenticationMode>('login')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [profilesError, setProfilesError] = useState(false)
-  const [passwordResetToken, setPasswordResetToken] = useState(initialPasswordResetToken)
+  const [isProfilesLoading, setIsProfilesLoading] = useState(true)
 
-  const loadProfiles = useCallback(async () => {
+  const loadProfiles = useCallback(async (force = false) => {
     try {
-      const result = await getProfiles()
+      const result = await getProfiles({ force })
       setProfiles(result)
-      setSelectedProfile((current) => refreshProfileReference(current, result))
-      setBookingProfile((current) => refreshProfileReference(current, result))
       setProfilesError(false)
     } catch {
       setProfilesError(true)
+    } finally {
+      setIsProfilesLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (!passwordResetToken) return
+    queueMicrotask(() => {
+      void loadProfiles()
+    })
 
-    window.history.replaceState(null, '', window.location.pathname)
-  }, [passwordResetToken])
+    const handleProfilesChanged = () => {
+      setIsProfilesLoading(true)
+      void loadProfiles(true)
+    }
 
-  useEffect(() => {
-    let isCurrent = true
-
-    void getProfiles()
-      .then((result) => {
-        if (!isCurrent) return
-        setProfiles(result)
-        setSelectedProfile((current) => refreshProfileReference(current, result))
-        setBookingProfile((current) => refreshProfileReference(current, result))
-        setProfilesError(false)
-      })
-      .catch(() => {
-        if (isCurrent) setProfilesError(true)
-      })
-
-    window.addEventListener('profiles:changed', loadProfiles)
+    window.addEventListener('profiles:changed', handleProfilesChanged)
     return () => {
-      isCurrent = false
-      window.removeEventListener('profiles:changed', loadProfiles)
+      window.removeEventListener('profiles:changed', handleProfilesChanged)
     }
   }, [loadProfiles])
 
   useEffect(() => {
-    const metadata = pageMetadata(view, selectedProfile)
+    const target = legacyResetRedirect(location.pathname, location.search)
+    if (target) navigate(target, { replace: true })
+  }, [location.pathname, location.search, navigate])
+
+  const currentProfile = useMemo(() => {
+    const slug = profileSlugFromPath(location.pathname)
+    return slug ? profiles.find((profile) => profile.slug === slug) ?? null : null
+  }, [location.pathname, profiles])
+  const activeView = activeViewFromPath(location.pathname)
+
+  useEffect(() => {
+    const metadata = pageMetadata(activeView, currentProfile)
     document.title = metadata.title
     setMetaContent('description', metadata.description)
     setMetaContent('twitter:title', metadata.title)
     setMetaContent('twitter:description', metadata.description)
     setMetaProperty('og:title', metadata.title)
     setMetaProperty('og:description', metadata.description)
-  }, [selectedProfile, view])
+  }, [activeView, currentProfile])
 
-  function showProfiles() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('profiles')
-    void loadProfiles()
-  }
+  const goHome = useCallback(() => {
+    navigate('/')
+  }, [navigate])
 
-  function showContacts() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('contacts')
-  }
+  const handleAuthenticationClick = useCallback((mode: AuthenticationMode) => {
+    navigate(authPath(mode))
+  }, [navigate])
 
-  function showMaterials() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('materials')
-  }
+  const handleAuthModeChange = useCallback((mode: AuthMode, notice?: string) => {
+    navigate(authPath(mode), notice
+      ? { replace: mode === 'login', state: { authNotice: notice } }
+      : { replace: mode === 'login' })
+  }, [navigate])
 
-  function openBooking(profile: Profile | null = null) {
-    setSelectedProfile(null)
-    setBookingProfile(profile)
-    setShouldReturnToBooking(false)
-    setView('booking')
-  }
+  const handleAuthenticated = useCallback((nextSession: AuthSession) => {
+    const returnTo = normalizeReturnTo(new URLSearchParams(location.search).get('returnTo'))
+    navigate(returnTo ?? (nextSession.role === 'ADMIN' ? adminPath('dashboard') : '/'), { replace: true })
+  }, [location.search, navigate])
 
-  function openAuthentication(mode: AuthenticationMode) {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setPasswordResetToken('')
-    setAuthMode(mode)
-    setView('auth')
-  }
-
-  function requireBookingAuthentication() {
-    setAuthMode('login')
-    setShouldReturnToBooking(true)
-    setView('auth')
-  }
-
-  function openFavorites() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('favorites')
-  }
-
-  function openAccount() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('account')
-  }
-
-  function handleAuthenticated(nextSession: AuthSession) {
-    setSelectedProfile(null)
-    setPasswordResetToken('')
-    setView(shouldReturnToBooking ? 'booking' : nextSession.role === 'ADMIN' ? 'admin' : 'profiles')
-    setShouldReturnToBooking(false)
-  }
-
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     logout()
-    showProfiles()
-  }
+    navigate('/')
+  }, [logout, navigate])
 
-  function openAdmin() {
-    if (session?.role !== 'ADMIN') return
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('admin')
-  }
+  const requireLogin = useCallback(() => {
+    navigate(loginPath(location.pathname + location.search))
+  }, [location.pathname, location.search, navigate])
 
-  function openLegal(view: Extract<View, 'privacy' | 'terms' | 'cookies'>) {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView(view)
-  }
-
-  function openFAQ() {
-    setSelectedProfile(null)
-    setShouldReturnToBooking(false)
-    setView('faq')
-  }
-
-  function handleAuthBack() {
-    setPasswordResetToken('')
-    if (shouldReturnToBooking) {
-      openBooking(bookingProfile)
-      return
-    }
-    showProfiles()
-  }
-
-  function renderView() {
-    if (view === 'auth') {
-      return <AuthPage key={`${authMode}-${passwordResetToken ? 'reset' : 'auth'}`} initialMode={authMode} resetToken={passwordResetToken} onAuthenticated={handleAuthenticated} onBack={handleAuthBack} />
-    }
-
-    if (view === 'admin' && session?.role === 'ADMIN') {
-      return <AdminArea token={session.token} onExit={showProfiles} />
-    }
-
-    if (view === 'contacts') return <ContactPage />
-    if (view === 'materials') return <MaterialsPage />
-    if (view === 'privacy') return <LegalPage type="privacy" onBack={showProfiles} />
-    if (view === 'terms') return <LegalPage type="terms" onBack={showProfiles} />
-    if (view === 'cookies') return <LegalPage type="cookies" onBack={showProfiles} />
-    if (view === 'faq') return <FAQPage onBack={showProfiles} />
-    if (view === 'booking') return <BookingPage initialProfile={bookingProfile} onBack={showProfiles} onRequireLogin={requireBookingAuthentication} profiles={profiles} />
-    if (view === 'favorites' && session) return <FavoritesPage onBack={showProfiles} />
-    if (view === 'account' && session) return <AccountPage onBookingsClick={() => openBooking()} onExit={showProfiles} onFavoritesClick={openFavorites} />
-    if (selectedProfile) return <PortfolioPage profile={selectedProfile} onBack={showProfiles} onBooking={() => openBooking(selectedProfile)} onLogin={() => openAuthentication('login')} />
-    if (profilesError) return <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
-
-    return <ProfileSelector profiles={profiles} viewerName={session ? displaySessionName(session) : undefined} onProfileSelect={setSelectedProfile} />
-  }
+  const renderAdminRoute = useCallback((page: AdminPage) => (
+    <RequireAdmin isSessionReady={isSessionReady} session={session}>
+      {(adminSession) => (
+        <AdminArea
+          page={page}
+          token={adminSession.token}
+          onExit={goHome}
+          onPageChange={(nextPage) => navigate(adminPath(nextPage))}
+        />
+      )}
+    </RequireAdmin>
+  ), [goHome, isSessionReady, navigate, session])
 
   return (
     <>
@@ -212,29 +144,95 @@ function App() {
       />
       <div className={`${styles.application} ${splashPhase === 'playing' ? styles.isWaiting : ''}`}>
         <Header
-          activeView={view}
+          activeView={activeView}
           isBrandHidden={splashPhase === 'docking'}
           session={isSessionReady ? session : null}
-          onAccountClick={openAccount}
-          onAdminClick={openAdmin}
-          onAuthenticationClick={openAuthentication}
-          onBookingClick={() => openBooking()}
-          onContactsClick={showContacts}
-          onFavoritesClick={openFavorites}
-          onMaterialsClick={showMaterials}
+          onAccountClick={() => navigate('/conta')}
+          onAdminClick={() => { if (session?.role === 'ADMIN') navigate(adminPath('dashboard')) }}
+          onAuthenticationClick={handleAuthenticationClick}
+          onBookingClick={() => navigate(bookingPath())}
+          onContactsClick={() => navigate('/contactos')}
+          onFavoritesClick={() => navigate('/favoritos')}
+          onHomeClick={goHome}
           onLogout={handleLogout}
-          onProfilesClick={showProfiles}
+          onMaterialsClick={() => navigate('/materiais')}
+          onProfilesClick={goHome}
         />
         <main className={styles.main}>
-          {!isSessionReady ? <p className={styles.feedback}>A preparar a tua sessão...</p> : renderView()}
+          <Routes>
+            <Route
+              path="/"
+              element={profilesError
+                ? <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
+                : isProfilesLoading && profiles.length === 0
+                  ? <p className={styles.feedback}>A carregar perfis...</p>
+                : <ProfileSelector profiles={profiles} viewerName={session && isSessionReady ? displaySessionName(session) : undefined} onProfileSelect={(profile) => navigate(profilePath(profile.slug))} />}
+            />
+            <Route path="/perfis" element={<Navigate to="/" replace />} />
+            <Route
+              path="/perfis/:slug"
+              element={(
+                <ProfileRoute
+                  hasError={profilesError}
+                  isLoading={isProfilesLoading}
+                  profiles={profiles}
+                  onBack={goHome}
+                  onBooking={(profile) => navigate(bookingPath(profile.slug))}
+                  onLogin={requireLogin}
+                />
+              )}
+            />
+            <Route
+              path="/agendar"
+              element={<BookingRoute hasError={profilesError} isLoading={isProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
+            />
+            <Route
+              path="/agendar/:slug"
+              element={<BookingRoute hasError={profilesError} isLoading={isProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
+            />
+            <Route path="/contactos" element={<ContactPage />} />
+            <Route path="/materiais" element={<MaterialsPage />} />
+            <Route path="/faq" element={<FAQPage onBack={goHome} />} />
+            <Route path="/privacidade" element={<LegalPage type="privacy" onBack={goHome} />} />
+            <Route path="/termos" element={<LegalPage type="terms" onBack={goHome} />} />
+            <Route path="/cookies" element={<LegalPage type="cookies" onBack={goHome} />} />
+            <Route path="/login" element={<AuthRoute initialMode="login" onAuthenticated={handleAuthenticated} onBack={goHome} onModeChange={handleAuthModeChange} />} />
+            <Route path="/registo" element={<AuthRoute initialMode="register" onAuthenticated={handleAuthenticated} onBack={goHome} onModeChange={handleAuthModeChange} />} />
+            <Route path="/recuperar-password" element={<AuthRoute initialMode="forgot" onAuthenticated={handleAuthenticated} onBack={goHome} onModeChange={handleAuthModeChange} />} />
+            <Route path="/reset-password" element={<AuthRoute initialMode="reset" onAuthenticated={handleAuthenticated} onBack={goHome} onModeChange={handleAuthModeChange} />} />
+            <Route
+              path="/conta"
+              element={(
+                <RequireSession isSessionReady={isSessionReady} session={session}>
+                  {() => <AccountPage onBookingsClick={() => navigate(bookingPath())} onExit={goHome} onFavoritesClick={() => navigate('/favoritos')} />}
+                </RequireSession>
+              )}
+            />
+            <Route
+              path="/favoritos"
+              element={(
+                <RequireSession isSessionReady={isSessionReady} session={session}>
+                  {() => <FavoritesPage onBack={goHome} />}
+                </RequireSession>
+              )}
+            />
+            <Route path="/admin" element={renderAdminRoute('dashboard')} />
+            <Route path="/admin/perfis" element={renderAdminRoute('profile')} />
+            <Route path="/admin/publicacoes" element={renderAdminRoute('content')} />
+            <Route path="/admin/reservas" element={renderAdminRoute('bookings')} />
+            <Route path="/admin/avaliacoes" element={renderAdminRoute('reviews')} />
+            <Route path="/admin/contactos" element={renderAdminRoute('contacts')} />
+            <Route path="/admin/materiais" element={renderAdminRoute('materials')} />
+            <Route path="*" element={<NotFoundPage onHome={goHome} />} />
+          </Routes>
         </main>
         <Footer
-          onFAQClick={openFAQ}
-          onCookiesClick={() => openLegal('cookies')}
-          onPrivacyClick={() => openLegal('privacy')}
-          onTermsClick={() => openLegal('terms')}
+          onFAQClick={() => navigate('/faq')}
+          onCookiesClick={() => navigate('/cookies')}
+          onPrivacyClick={() => navigate('/privacidade')}
+          onTermsClick={() => navigate('/termos')}
         />
-        <CookieConsent onManage={() => openLegal('cookies')} />
+        <CookieConsent onManage={() => navigate('/cookies')} />
         {splashPhase === 'done' && <SupportChat />}
       </div>
     </>
@@ -243,9 +241,134 @@ function App() {
 
 export default App
 
-function refreshProfileReference(current: Profile | null, profiles: Profile[]) {
-  if (!current) return null
-  return profiles.find((profile) => profile.slug === current.slug) ?? current
+function ProfileRoute({
+  hasError,
+  isLoading,
+  onBack,
+  onBooking,
+  onLogin,
+  profiles,
+}: {
+  hasError: boolean
+  isLoading: boolean
+  onBack: () => void
+  onBooking: (profile: Profile) => void
+  onLogin: () => void
+  profiles: Profile[]
+}) {
+  const { slug = '' } = useParams()
+  const profile = profiles.find((item) => item.slug === slug) ?? null
+
+  if (hasError) return <p className={styles.feedback}>Não foi possível carregar este perfil.</p>
+  if (!profile && isLoading) return <p className={styles.feedback}>A carregar perfil...</p>
+  if (!profile) return <NotFoundPage onHome={onBack} title="Perfil não encontrado" />
+
+  return <PortfolioPage profile={profile} onBack={onBack} onBooking={() => onBooking(profile)} onLogin={onLogin} />
+}
+
+function BookingRoute({
+  hasError,
+  isLoading,
+  onBack,
+  onRequireLogin,
+  profiles,
+}: {
+  hasError: boolean
+  isLoading: boolean
+  onBack: () => void
+  onRequireLogin: () => void
+  profiles: Profile[]
+}) {
+  const { slug } = useParams()
+  const navigate = useNavigate()
+  const initialProfile = slug ? profiles.find((profile) => profile.slug === slug) ?? null : null
+  const handleBack = slug ? () => navigate(profilePath(slug)) : onBack
+
+  if (hasError) return <p className={styles.feedback}>Não foi possível carregar os perfis para agendamento.</p>
+  if (slug && !initialProfile && isLoading) return <p className={styles.feedback}>A carregar agendamento...</p>
+  if (slug && !initialProfile) return <NotFoundPage onHome={onBack} title="Perfil para agendamento não encontrado" />
+
+  return <BookingPage key={slug ?? 'all'} initialProfile={initialProfile} onBack={handleBack} onRequireLogin={onRequireLogin} profiles={profiles} />
+}
+
+function AuthRoute({
+  initialMode,
+  onAuthenticated,
+  onBack,
+  onModeChange,
+}: {
+  initialMode: AuthMode
+  onAuthenticated: (session: AuthSession) => void
+  onBack: () => void
+  onModeChange: (mode: AuthMode, notice?: string) => void
+}) {
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const resetToken = initialMode === 'reset' ? searchParams.get('resetToken') : null
+
+  return (
+    <AuthPage
+      key={`${initialMode}-${resetToken ?? ''}`}
+      initialMode={initialMode}
+      initialNotice={authNoticeFromState(location.state)}
+      resetToken={resetToken}
+      onAuthenticated={onAuthenticated}
+      onBack={onBack}
+      onModeChange={onModeChange}
+    />
+  )
+}
+
+function RequireSession({
+  children,
+  isSessionReady,
+  session,
+}: {
+  children: (session: AuthSession) => ReactNode
+  isSessionReady: boolean
+  session: AuthSession | null
+}) {
+  const location = useLocation()
+
+  if (!isSessionReady) return <p className={styles.feedback}>A validar sessão...</p>
+  if (!session) return <Navigate to={loginPath(location.pathname + location.search)} replace />
+
+  return children(session)
+}
+
+function authNoticeFromState(state: unknown) {
+  if (!state || typeof state !== 'object' || !('authNotice' in state)) return null
+
+  const notice = (state as { authNotice?: unknown }).authNotice
+  return typeof notice === 'string' ? notice : null
+}
+
+function RequireAdmin({
+  children,
+  isSessionReady,
+  session,
+}: {
+  children: (session: AuthSession) => ReactNode
+  isSessionReady: boolean
+  session: AuthSession | null
+}) {
+  const location = useLocation()
+
+  if (!isSessionReady) return <p className={styles.feedback}>A validar sessão...</p>
+  if (!session) return <Navigate to={loginPath(location.pathname + location.search)} replace />
+  if (session.role !== 'ADMIN') return <Navigate to="/" replace />
+
+  return children(session)
+}
+
+function NotFoundPage({ onHome, title = 'Página não encontrada' }: { onHome: () => void; title?: string }) {
+  return (
+    <section>
+      <h1>{title}</h1>
+      <p className={styles.feedback}>O endereço que procuras não existe ou deixou de estar disponível.</p>
+      <button type="button" onClick={onHome}>Voltar ao início</button>
+    </section>
+  )
 }
 
 function displaySessionName(session: AuthSession) {
@@ -257,7 +380,27 @@ function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function pageMetadata(view: View, profile: Profile | null) {
+function activeViewFromPath(pathname: string): NavigationView {
+  if (pathname.startsWith('/admin')) return 'admin'
+  if (pathname.startsWith('/agendar')) return 'booking'
+  if (pathname === '/contactos') return 'contacts'
+  if (pathname === '/materiais') return 'materials'
+  if (pathname === '/faq') return 'faq'
+  if (pathname === '/privacidade') return 'privacy'
+  if (pathname === '/termos') return 'terms'
+  if (pathname === '/cookies') return 'cookies'
+  if (pathname === '/favoritos') return 'favorites'
+  if (pathname === '/conta') return 'account'
+  if (['/login', '/registo', '/recuperar-password', '/reset-password'].includes(pathname)) return 'auth'
+  return 'profiles'
+}
+
+function profileSlugFromPath(pathname: string) {
+  const match = /^\/perfis\/([^/]+)$/.exec(pathname)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function pageMetadata(view: NavigationView, profile: Profile | null) {
   if (profile) {
     return {
       title: `${profile.name} | Saltos nas Palhaçadas`,
@@ -270,7 +413,7 @@ function pageMetadata(view: View, profile: Profile | null) {
     description: 'Perfis de artistas, portfólios, materiais disponíveis e pedidos de agendamento.',
   }
 
-  const metadata: Partial<Record<View, { title: string; description: string }>> = {
+  const metadata: Partial<Record<NavigationView, { title: string; description: string }>> = {
     account: { title: 'A minha conta | Saltos nas Palhaçadas', description: 'Dados pessoais, foto, segurança, favoritos e agendamentos da conta.' },
     admin: { title: 'Administração | Saltos nas Palhaçadas', description: 'Backoffice para gerir perfis, conteúdos, contactos, materiais, avaliações e agendamentos.' },
     auth: { title: 'Login e conta | Saltos nas Palhaçadas', description: 'Entrar, criar conta ou recuperar palavra-passe.' },

@@ -11,13 +11,15 @@ const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
 const isProduction = import.meta.env.PROD
 
 type AuthPageProps = {
-  initialMode: 'login' | 'register'
+  initialMode: AuthMode
+  initialNotice?: string | null
   resetToken?: string | null
   onAuthenticated: (session: AuthSession) => void
   onBack: () => void
+  onModeChange: (mode: AuthMode, notice?: string) => void
 }
 
-export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthenticated, onBack }: AuthPageProps) {
+export function AuthPage({ initialMode, initialNotice, resetToken: initialResetToken, onAuthenticated, onBack, onModeChange }: AuthPageProps) {
   const { login, register } = useAuth()
   const [mode, setMode] = useState<AuthMode>(initialResetToken ? 'reset' : initialMode)
   const [email, setEmail] = useState('')
@@ -29,7 +31,7 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [resetToken, setResetToken] = useState(initialResetToken ?? '')
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(initialNotice ?? null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const turnstileRef = useRef<TurnstileHandle | null>(null)
@@ -70,6 +72,7 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
     setPhone('')
     setPassword('')
     setPasswordConfirmation('')
+    onModeChange(nextMode)
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -137,7 +140,7 @@ export function AuthPage({ initialMode, resetToken: initialResetToken, onAuthent
         setPasswordConfirmation('')
         setResetToken('')
         setMode('login')
-        setNotice('Palavra-passe atualizada. Já podes entrar.')
+        onModeChange('login', 'Palavra-passe atualizada. Já podes entrar.')
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar a palavra-passe.')
       } finally {

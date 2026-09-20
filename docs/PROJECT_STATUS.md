@@ -40,7 +40,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Privacy/Terms/Cookies | DONE técnico | Sim | Sim em código | Revisão jurídica e UX |
 | Smoke final de produção | DONE | Sim | Sim | Manter checklist de regressão |
 | Search Console | POST-LAUNCH | Não | Não | Submeter/verificar |
-| SEO por perfil | POST-LAUNCH | Não | Não | Criar rotas reais por animador |
+| SEO por perfil | POST-LAUNCH | Parcial | Não | Rotas reais existem; falta Search Console/sitemap e eventual pré-render |
 
 ## Branches e Release
 

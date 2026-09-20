@@ -10,7 +10,7 @@ Contexto: o frontend é uma SPA React/Vite estática.
 
 Razão: deploy simples, CDN global, TLS e `_headers` com CSP/HSTS.
 
-Consequências: a production branch do Cloudflare Pages é agora `main`; SEO por perfil continua limitado enquanto não houver rotas reais.
+Consequências: a production branch do Cloudflare Pages é agora `main`; deep links SPA usam `_redirects` explícito para rotas conhecidas. SEO por perfil ainda pode exigir sitemap e eventual pré-render, apesar de já existirem URLs reais.
 
 ## Google Cloud Run para Backend
 
