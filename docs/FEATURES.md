@@ -1,16 +1,16 @@
 # Funcionalidades
 
-Last verified: 2026-09-18.
+Last verified: 2026-09-20.
 
 ## Matriz
 
 | Feature | Público/Cliente/Admin | Frontend principal | Backend | Persistência | Dependência externa | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
 | Perfis de artistas | Público/Admin | `ProfileSelector`, `PortfolioPage`, `AdminArea` | `ProfileController`, `AdminPortfolioController` | `profiles` | Pages para media seed; R2 para uploads posteriores | DONE |
-| Portfólio | Público/Admin | `PortfolioPage`, `PortfolioCard`, admin | `PortfolioController`, `AdminPortfolioController` | `portfolio_items` | Pages para media seed; R2/media runtime | DONE |
+| Portfólio | Público/Admin | `PortfolioPage`, `PortfolioCard`, admin content management | `PortfolioController`, `AdminPortfolioController` | `portfolio_items` | Pages para media seed; R2/media runtime | DONE |
 | Reviews | Público/Cliente/Admin | `ReviewsSection`, admin | `ReviewController`, `AdminReviewController` | `reviews` | Nenhuma | DONE |
-| Contactos | Público/Admin | `ContactPage`, admin | `ContactController`, `AdminContactController` | `contacts` | Nenhuma | DONE |
-| Materiais | Público/Admin | `MaterialsPage`, admin | `MaterialController`, `AdminMaterialController` | `materials` | R2/media pública | DONE |
+| Contactos | Público/Admin | `ContactPage`, admin content management | `ContactController`, `AdminContactController` | `contacts` | Nenhuma | DONE |
+| Materiais | Público/Admin | `MaterialsPage`, admin content management | `MaterialController`, `AdminMaterialController` | `materials` | R2/media pública | DONE |
 | Registo/login | Público | `AuthPage`, `AuthContext` | `AuthController`, `JwtService` | `app_users` | Turnstile | DONE |
 | Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | DONE/VALIDATED |
 | Conta do cliente | Cliente | `AccountPage` | `AuthController` | `app_users` | R2 para avatar | DONE |
@@ -45,8 +45,9 @@ Last verified: 2026-09-18.
 - Avatares atuais aceitam upload privado; a proposta futura é avaliar avatares predefinidos.
 - `profiles.notification_email` é informação operacional privada: só endpoints admin podem ler/escrever; endpoints públicos de perfis/portfólio não expõem este campo.
 - Notificações operacionais usam admins ativos da base de dados (`role=ADMIN`, `active=true`), não `ADMIN_EMAIL`; `ADMIN_EMAIL` continua bootstrap-only.
-
 - O conteúdo inicial dos três perfis usa assets estáticos em `frontend/public/content/profiles/`; a metadata permanece editável na BD e uploads posteriores continuam no fluxo R2 existente.
+- O admin content management V2 permite gerir portfolio publicado/oculto, editar materiais, ocultar/mostrar contactos e reorganiza o painel num backoffice responsivo sem alterar o comportamento público.
+- O portfolio público e admin permanece ordenado cronologicamente por `eventDate DESC`, com `id DESC` como fallback; `display_order` não é usado como ordenação canónica do portfolio.
 
 ## Limitações Funcionais Conhecidas
 
@@ -54,4 +55,5 @@ Last verified: 2026-09-18.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
-- Produção antes da Feature 4 está em Flyway V20; a branch `feat/notifications-and-email` adiciona V21 para email privado de notificações por perfil.
+- A base de dados está documentada até Flyway V22, incluindo `profiles.notification_email` e `profile_social_links`.
+- Uploads públicos feitos pelo admin ainda não têm ownership persistente em `media_objects`; limpeza automática de media pública órfã/R2 fica como follow-up para evitar apagar URLs reutilizados.

@@ -1,7 +1,8 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { uploadFile } from '../../../services/apiClient'
-import { createMaterial, deleteMaterial, getAdminMaterials, reorderMaterials } from '../../../services/materialService'
+import { createMaterial, deleteMaterial, getAdminMaterials, reorderMaterials, updateMaterial } from '../../../services/materialService'
 import type { Material } from '../../../types/material'
+import { materialToEditPayload } from './materialHelpers'
 import styles from './MaterialManagement.module.css'
 
 type MaterialManagementProps = {
@@ -22,6 +23,7 @@ const emptyForm = (): MaterialFormState => ({
 export function MaterialManagement({ token, onNotice }: MaterialManagementProps) {
   const [form, setForm] = useState<MaterialFormState>(emptyForm)
   const [materials, setMaterials] = useState<Material[]>([])
+  const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -83,19 +85,40 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
     setIsSaving(true)
     try {
-      const created = await createMaterial({
-        name: form.name.trim(),
-        imageUrl: form.imageUrl.trim(),
-      }, token)
-      setMaterials((current) => [...current, created].sort(sortMaterials))
-      setForm(emptyForm())
+      const payload = materialToEditPayload(form)
+      if (editingMaterialId !== null) {
+        const updated = await updateMaterial(editingMaterialId, payload, token)
+        setMaterials((current) => current.map((item) => item.id === updated.id ? updated : item).sort(sortMaterials))
+        onNotice({ type: 'success', text: 'Material atualizado.' })
+      } else {
+        const created = await createMaterial(payload, token)
+        setMaterials((current) => [...current, created].sort(sortMaterials))
+        onNotice({ type: 'success', text: 'Material adicionado à lista pública.' })
+      }
+      cancelEditing()
       window.dispatchEvent(new Event('materials:changed'))
-      onNotice({ type: 'success', text: 'Material adicionado à lista pública.' })
     } catch (error) {
-      onNotice({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível adicionar o material.' })
+      onNotice({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível guardar o material.' })
     } finally {
       setIsSaving(false)
     }
+  }
+
+  function startEditing(material: Material) {
+    setEditingMaterialId(material.id)
+    setForm({
+      name: material.name,
+      imageUrl: material.imageUrl,
+    })
+    onNotice({ type: 'success', text: 'A editar o material ' + material.name + '.' })
+    window.requestAnimationFrame(() => {
+      document.getElementById('material-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  function cancelEditing() {
+    setEditingMaterialId(null)
+    setForm(emptyForm())
   }
 
   async function removeMaterial(material: Material) {
@@ -132,11 +155,13 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
   return (
     <div className={styles.page}>
-      <form className={styles.form} onSubmit={(event) => { void submitMaterial(event) }}>
+      <form id="material-editor" className={styles.form} onSubmit={(event) => { void submitMaterial(event) }}>
         <div className={styles.heading}>
           <p className="eyebrow">Lista pública</p>
-          <h2>Novo material</h2>
-          <p>Adiciona equipamento que os clientes podem consultar antes de pedir orçamento.</p>
+          <h2>{editingMaterialId === null ? 'Novo material' : 'Editar material'}</h2>
+          <p>{editingMaterialId === null
+            ? 'Adiciona equipamento que os clientes podem consultar antes de pedir orçamento.'
+            : 'Atualiza o nome ou a fotografia sem alterar a posição na lista.'}</p>
         </div>
 
         <label>
@@ -177,9 +202,16 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
           </div>
         )}
 
-        <button disabled={isSaving || isUploading} type="submit">
-          {isUploading ? 'A carregar fotografia...' : isSaving ? 'A guardar...' : 'Adicionar material'}
-        </button>
+        <div className={styles.formActions}>
+          <button disabled={isSaving || isUploading} type="submit">
+            {isUploading ? 'A carregar fotografia...' : isSaving ? 'A guardar...' : editingMaterialId === null ? 'Adicionar material' : 'Atualizar material'}
+          </button>
+          {editingMaterialId !== null && (
+            <button disabled={isSaving || isUploading} type="button" onClick={cancelEditing}>
+              Cancelar edição
+            </button>
+          )}
+        </div>
       </form>
 
       <section className={styles.manage}>
@@ -193,6 +225,7 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
             isSaving={isSaving}
             materials={materials}
             onDelete={removeMaterial}
+            onEdit={startEditing}
             onReorder={reorderMaterialStack}
           />
         )}
@@ -205,11 +238,13 @@ function MaterialOrderList({
   isSaving,
   materials,
   onDelete,
+  onEdit,
   onReorder,
 }: {
   isSaving: boolean
   materials: Material[]
   onDelete: (material: Material) => Promise<void>
+  onEdit: (material: Material) => void
   onReorder: (materialIds: number[]) => Promise<void>
 }) {
   const [draggingId, setDraggingId] = useState<number | null>(null)
@@ -227,6 +262,16 @@ function MaterialOrderList({
     void onReorder(nextMaterials.map((material) => material.id))
   }
 
+  function moveMaterial(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= materials.length) return
+
+    const nextMaterials = [...materials]
+    const [material] = nextMaterials.splice(index, 1)
+    nextMaterials.splice(targetIndex, 0, material)
+    void onReorder(nextMaterials.map((item) => item.id))
+  }
+
   return (
     <div className={styles.list}>
       {materials.map((material, index) => (
@@ -242,7 +287,12 @@ function MaterialOrderList({
           <span className={styles.dragHandle} aria-hidden="true">☰</span>
           <img src={material.imageUrl} alt={material.name} />
           <strong>{index + 1}. {material.name}</strong>
-          <button disabled={isSaving} type="button" onClick={() => { void onDelete(material) }}>Apagar</button>
+          <div className={styles.rowActions}>
+            <button aria-label={`Subir ${material.name}`} disabled={isSaving || index === 0} type="button" onClick={() => moveMaterial(index, -1)}>↑</button>
+            <button aria-label={`Descer ${material.name}`} disabled={isSaving || index === materials.length - 1} type="button" onClick={() => moveMaterial(index, 1)}>↓</button>
+            <button disabled={isSaving} type="button" onClick={() => onEdit(material)}>Editar</button>
+            <button disabled={isSaving} type="button" onClick={() => { void onDelete(material) }}>Apagar</button>
+          </div>
         </article>
       ))}
     </div>

@@ -2,19 +2,42 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEv
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { SocialIcon } from '../../components/SocialIcon/SocialIcon'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
+import { MediaLightbox } from '../portfolio/MediaLightbox'
 import type { AdminPage } from '../../navigation/routes'
 import { apiClient, uploadFile } from '../../services/apiClient'
+import {
+  createAdminPortfolioItem,
+  deleteAdminPortfolioItem,
+  getAdminPortfolioItems,
+  updateAdminPortfolioItem,
+} from '../../services/adminContentService'
+import {
+  createAdminProfile,
+  deleteAdminProfile,
+  getAdminProfiles,
+  reorderAdminProfiles,
+  updateAdminProfile,
+  type AdminManagedProfile,
+} from '../../services/adminProfileService'
 import { getAdminBookings } from '../../services/bookingService'
-import { getContacts, invalidateContactsCache, reorderContacts } from '../../services/contactService'
-import { getPortfolioItems } from '../../services/portfolioService'
+import {
+  createContact,
+  deleteContact as deleteAdminContact,
+  getAdminContacts,
+  invalidateContactsCache,
+  reorderContacts,
+  updateContact,
+} from '../../services/contactService'
 import { invalidateProfilesCache } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
 import type { Contact, ContactType } from '../../types/contact'
-import type { PortfolioItem } from '../../types/portfolio'
+import type { AdminPortfolioItem, MediaType, PortfolioItem } from '../../types/portfolio'
 import type { Profile, ProfileSocialLink } from '../../types/profile'
 import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
+import { contactToInput, contactVisibilityLabel, nextContactVisible } from './contacts/contactHelpers'
+import { portfolioItemToSaveInput, portfolioPublicationLabel, togglePortfolioPublication } from './content/contentHelpers'
 import { MaterialManagement } from './materials/MaterialManagement'
 import {
   nextReviewPublished,
@@ -27,7 +50,6 @@ import { socialPlatformIcon, socialPlatformLabel, socialPlatformOptions, validat
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
-type MediaType = 'PHOTO' | 'VIDEO'
 
 type ProfileFormState = {
   name: string
@@ -47,33 +69,6 @@ type ProfileSocialLinkFormState = {
   url: string
 }
 
-type AdminManagedProfile = Profile & {
-  notificationEmail?: string | null
-}
-
-type ApiProfileResponse = {
-  id: number
-  slug: string
-  name: string
-  role: string
-  description: string
-  profileImageUrl: string | null
-  profileImagePosition: string | null
-  profileImageZoom: number | null
-  featuredVideoUrl: string | null
-  notificationEmail: string | null
-  displayOrder: number | null
-  socialLinks: ApiProfileSocialLinkResponse[] | null
-}
-
-type ApiProfileSocialLinkResponse = {
-  id: number
-  platform: string
-  label: string | null
-  url: string
-  displayOrder: number
-}
-
 type ContentFormState = {
   profileSlug: string
   title: string
@@ -82,18 +77,20 @@ type ContentFormState = {
   mediaUrl: string
   mediaType: MediaType | null
   thumbnailUrl: string
+  published: boolean
 }
 
 type ContactFormState = {
   label: string
   type: ContactType
   value: string
+  visible: boolean
 }
 
 type ContactField = {
   label: string
   placeholder: string
-  inputType: 'email' | 'tel' | 'text' | 'url'
+  inputType: 'email' | 'tel' | 'text'
   inputMode: 'email' | 'tel' | 'text' | 'url'
 }
 
@@ -119,17 +116,15 @@ const emptyContentForm = (profileSlug = ''): ContentFormState => ({
   mediaUrl: '',
   mediaType: null,
   thumbnailUrl: '',
+  published: true,
 })
 
 const emptyContactForm = (): ContactFormState => ({
   label: '',
   type: 'EMAIL',
   value: '',
+  visible: true,
 })
-
-async function getAdminProfiles(token: string) {
-  return (await apiClient<ApiProfileResponse[]>('/admin/profiles', {}, token)).map(toProfile)
-}
 
 export function AdminArea({
   onExit,
@@ -147,7 +142,7 @@ export function AdminArea({
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [adminBookings, setAdminBookings] = useState<Booking[]>([])
-  const [contentItems, setContentItems] = useState<PortfolioItem[]>([])
+  const [contentItems, setContentItems] = useState<AdminPortfolioItem[]>([])
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm)
@@ -155,7 +150,9 @@ export function AdminArea({
   const [editingContentId, setEditingContentId] = useState<string | null>(null)
   const [editingContactId, setEditingContactId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isContentLoading, setIsContentLoading] = useState(false)
   const [isDashboardLoading, setIsDashboardLoading] = useState(false)
+  const [selectedPreviewItem, setSelectedPreviewItem] = useState<PortfolioItem | null>(null)
   const [savingReviewIds, setSavingReviewIds] = useState<Set<string>>(() => new Set())
   const savingReviewIdsRef = useRef<Set<string>>(new Set())
 
@@ -172,16 +169,16 @@ export function AdminArea({
     }
   }, [token])
 
-  const refreshContacts = useCallback(async (force = false) => {
+  const refreshContacts = useCallback(async () => {
     try {
-      const items = await getContacts({ force })
+      const items = await getAdminContacts(token)
       setContacts(items)
       return items
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível carregar os contactos. Confirma se a API está ativa.' })
       return []
     }
-  }, [])
+  }, [token])
 
   const refreshReviews = useCallback(async () => {
     if (!token) return []
@@ -202,15 +199,18 @@ export function AdminArea({
       return []
     }
 
+    setIsContentLoading(true)
     try {
-      const items = await getPortfolioItems(slug)
+      const items = await getAdminPortfolioItems(slug, token)
       setContentItems(items)
       return items
     } catch {
       setNotice({ type: 'error', text: 'Não foi possível carregar os conteúdos deste perfil.' })
       return []
+    } finally {
+      setIsContentLoading(false)
     }
-  }, [])
+  }, [token])
 
   const refreshDashboard = useCallback(async () => {
     if (!token) return
@@ -234,7 +234,7 @@ export function AdminArea({
     if (!token) return
     let isCurrent = true
 
-    void Promise.all([getAdminProfiles(token), getContacts(), getAdminReviews(token), getAdminBookings(token)])
+    void Promise.all([getAdminProfiles(token), getAdminContacts(token), getAdminReviews(token), getAdminBookings(token)])
       .then(([profileItems, contactItems, reviewItems, bookingItems]) => {
         if (!isCurrent) return
         setProfiles(profileItems)
@@ -342,18 +342,10 @@ export function AdminArea({
     try {
       let savedProfile: Profile | null = null
       if (editingProfileSlug) {
-        const response = await apiClient<ApiProfileResponse>('/admin/profiles/' + encodeURIComponent(editingProfileSlug), {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        }, token)
-        savedProfile = toProfile(response)
+        savedProfile = await updateAdminProfile(editingProfileSlug, payload, token)
         setNotice({ type: 'success', text: 'Perfil atualizado com sucesso.' })
       } else {
-        const response = await apiClient<ApiProfileResponse>('/admin/profiles', {
-          method: 'POST',
-          body: JSON.stringify({ ...payload, slug: profileForm.slug.trim() }),
-        }, token)
-        savedProfile = toProfile(response)
+        savedProfile = await createAdminProfile({ ...payload, slug: profileForm.slug.trim() }, token)
         setNotice({ type: 'success', text: 'Perfil criado com sucesso.' })
       }
 
@@ -388,7 +380,7 @@ export function AdminArea({
     setContentForm(emptyContentForm(contentForm.profileSlug))
   }
 
-  function startContentEditing(item: PortfolioItem) {
+  function startContentEditing(item: AdminPortfolioItem) {
     setEditingContentId(item.id)
     setContentForm({
       profileSlug: contentForm.profileSlug,
@@ -398,6 +390,7 @@ export function AdminArea({
       mediaUrl: item.mediaUrl,
       mediaType: item.type === 'Vídeo' ? 'VIDEO' : 'PHOTO',
       thumbnailUrl: item.thumbnailUrl ?? '',
+      published: item.published,
     })
     setNotice({ type: 'success', text: 'A editar o conteúdo ' + item.title + '. Podes substituir o ficheiro ou alterar os restantes campos.' })
     scrollToEditor('content-editor')
@@ -416,31 +409,26 @@ export function AdminArea({
     setIsSaving(true)
 
     const payload = {
-      type: contentForm.mediaType,
+      type: contentForm.mediaType as MediaType,
       title: contentForm.title.trim(),
       location: contentForm.location.trim(),
       eventDate: contentForm.eventDate,
       mediaUrl: contentForm.mediaUrl,
       thumbnailUrl: contentForm.thumbnailUrl.trim() || null,
-      published: true,
+      published: contentForm.published,
     }
 
     try {
       if (editingContentId) {
-        await apiClient('/admin/profiles/' + encodeURIComponent(contentForm.profileSlug) + '/portfolio/' + encodeURIComponent(editingContentId), {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        }, token)
+        await updateAdminPortfolioItem(contentForm.profileSlug, editingContentId, payload, token)
         setNotice({ type: 'success', text: 'Conteúdo atualizado com sucesso.' })
       } else {
-        await apiClient('/admin/profiles/' + encodeURIComponent(contentForm.profileSlug) + '/portfolio', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        }, token)
-        setNotice({ type: 'success', text: 'Conteúdo publicado com sucesso.' })
+        await createAdminPortfolioItem(contentForm.profileSlug, payload, token)
+        setNotice({ type: 'success', text: contentForm.published ? 'Conteúdo publicado com sucesso.' : 'Conteúdo guardado como oculto.' })
       }
 
       await refreshContentItems(contentForm.profileSlug)
+      window.dispatchEvent(new Event('portfolio:changed'))
       cancelContentEditing()
     } catch (error) {
       setNotice({
@@ -463,6 +451,7 @@ export function AdminArea({
       label: contact.label,
       type: contact.type,
       value: contact.value,
+      visible: contact.visible ?? true,
     })
     setNotice({ type: 'success', text: 'A editar o contacto ' + contact.label + '. Altera os campos e seleciona Atualizar contacto.' })
     scrollToEditor('contact-editor')
@@ -484,25 +473,20 @@ export function AdminArea({
       label: contactForm.label.trim(),
       type: contactForm.type,
       value: contactForm.value.trim(),
+      visible: contactForm.visible,
     }
 
     try {
       if (editingContactId !== null) {
-        await apiClient('/admin/contacts/' + editingContactId, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        }, token)
+        await updateContact(editingContactId, payload, token)
         setNotice({ type: 'success', text: 'Contacto atualizado com sucesso.' })
       } else {
-        await apiClient('/admin/contacts', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        }, token)
+        await createContact(payload, token)
         setNotice({ type: 'success', text: 'Contacto adicionado com sucesso.' })
       }
 
       invalidateContactsCache()
-      await refreshContacts(true)
+      await refreshContacts()
       window.dispatchEvent(new Event('contacts:changed'))
       cancelContactEditing()
     } catch (error) {
@@ -520,7 +504,7 @@ export function AdminArea({
 
     setIsSaving(true)
     try {
-      await apiClient('/admin/profiles/' + encodeURIComponent(profile.slug), { method: 'DELETE' }, token)
+      await deleteAdminProfile(profile.slug, token)
       invalidateProfilesCache()
       await refreshProfiles()
       window.dispatchEvent(new Event('profiles:changed'))
@@ -548,10 +532,9 @@ export function AdminArea({
 
     setIsSaving(true)
     try {
-      await apiClient('/admin/profiles/' + encodeURIComponent(contentForm.profileSlug) + '/portfolio/' + encodeURIComponent(item.id), {
-        method: 'DELETE',
-      }, token)
+      await deleteAdminPortfolioItem(contentForm.profileSlug, item.id, token)
       await refreshContentItems(contentForm.profileSlug)
+      window.dispatchEvent(new Event('portfolio:changed'))
 
       if (editingContentId === item.id) cancelContentEditing()
       setNotice({ type: 'success', text: 'Conteúdo apagado com sucesso.' })
@@ -565,14 +548,36 @@ export function AdminArea({
     }
   }
 
+  async function toggleContentVisibility(item: AdminPortfolioItem) {
+    if (!token || !contentForm.profileSlug || isSaving) return
+
+    setIsSaving(true)
+    try {
+      await updateAdminPortfolioItem(contentForm.profileSlug, item.id, {
+        ...portfolioItemToSaveInput(item),
+        published: togglePortfolioPublication(item),
+      }, token)
+      await refreshContentItems(contentForm.profileSlug)
+      window.dispatchEvent(new Event('portfolio:changed'))
+      setNotice({ type: 'success', text: !item.published ? 'Conteúdo publicado.' : 'Conteúdo ocultado.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível alterar a visibilidade do conteúdo.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   async function deleteContact(contact: Contact) {
     if (!token || !window.confirm('Apagar este contacto?')) return
 
     setIsSaving(true)
     try {
-      await apiClient('/admin/contacts/' + contact.id, { method: 'DELETE' }, token)
+      await deleteAdminContact(contact.id, token)
       invalidateContactsCache()
-      await refreshContacts(true)
+      await refreshContacts()
       window.dispatchEvent(new Event('contacts:changed'))
 
       if (editingContactId === contact.id) cancelContactEditing()
@@ -581,6 +586,29 @@ export function AdminArea({
       setNotice({
         type: 'error',
         text: error instanceof Error ? error.message : 'Não foi possível apagar o contacto.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function toggleContactVisibility(contact: Contact) {
+    if (!token || isSaving) return
+
+    setIsSaving(true)
+    try {
+      const updated = await updateContact(contact.id, {
+        ...contactToInput(contact),
+        visible: nextContactVisible(contact),
+      }, token)
+      setContacts((current) => current.map((item) => item.id === contact.id ? updated : item))
+      invalidateContactsCache()
+      window.dispatchEvent(new Event('contacts:changed'))
+      setNotice({ type: 'success', text: updated.visible ? 'Contacto visível no site público.' : 'Contacto ocultado do site público.' })
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Não foi possível alterar a visibilidade do contacto.',
       })
     } finally {
       setIsSaving(false)
@@ -611,11 +639,8 @@ export function AdminArea({
     setIsSaving(true)
 
     try {
-      const orderedProfiles = await apiClient<ApiProfileResponse[]>('/admin/profiles/order', {
-        method: 'PUT',
-        body: JSON.stringify({ profileSlugs }),
-      }, token)
-      setProfiles(orderedProfiles.map(toProfile))
+      const orderedProfiles = await reorderAdminProfiles(profileSlugs, token)
+      setProfiles(orderedProfiles)
       invalidateProfilesCache()
       window.dispatchEvent(new Event('profiles:changed'))
       setNotice({ type: 'success', text: 'Ordem dos perfis atualizada.' })
@@ -678,119 +703,133 @@ export function AdminArea({
 
   return (
     <section className={styles.dashboard}>
-      <div className={styles.top}>
-        <div>
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarBrand}>
           <p className="eyebrow">Área reservada</p>
           <h1>Painel de administração</h1>
+        </div>
+        <nav className={styles.tabs} aria-label="Secções de administração">
+          <Tab active={page === 'dashboard'} onClick={() => onPageChange('dashboard')}>Resumo</Tab>
+          <Tab active={page === 'profile'} onClick={() => onPageChange('profile')}>Perfis</Tab>
+          <Tab active={page === 'content'} onClick={() => onPageChange('content')}>Conteúdo</Tab>
+          <Tab active={page === 'contacts'} onClick={() => onPageChange('contacts')}>Contactos</Tab>
+          <Tab active={page === 'materials'} onClick={() => onPageChange('materials')}>Materiais</Tab>
+          <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => onPageChange('reviews')}>Avaliações</Tab>
+          <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => onPageChange('bookings')}>Agendamentos</Tab>
+        </nav>
+        <button className={styles.exitButton} type="button" onClick={onExit}>Voltar ao site</button>
+      </aside>
+
+      <div className={styles.adminContent}>
+        <div className={styles.top}>
+          <div>
+            <p className="eyebrow">{adminPageEyebrow(page)}</p>
+            <h2>{adminPageTitle(page)}</h2>
+          </div>
           {notice && (
             <p className={[styles.notice, styles[notice.type]].join(' ')} role="status">
               {notice.text}
             </p>
           )}
         </div>
-        <button type="button" onClick={onExit}>Voltar ao site</button>
+
+        {page === 'dashboard' && (
+          <AdminDashboard
+            bookings={adminBookings}
+            isLoading={isDashboardLoading}
+            profiles={profiles}
+            reviews={reviews}
+            onNavigate={onPageChange}
+            onRefresh={refreshDashboard}
+          />
+        )}
+
+        {page === 'profile' && (
+          <ProfileManagement
+            form={profileForm}
+            isEditing={editingProfileSlug !== null}
+            isSaving={isSaving}
+            profiles={profiles}
+            onChange={setProfileForm}
+            onSubmit={submitProfile}
+            onCancel={cancelProfileEditing}
+            onEdit={startProfileEditing}
+            onDelete={deleteProfile}
+            onReorder={reorderProfileStack}
+            onUpload={(event) => upload(event, (url) => {
+              setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
+            })}
+            onFeaturedVideoUpload={(event) => upload(event, (url) => {
+              setProfileForm((current) => ({ ...current, featuredVideoUrl: url }))
+            })}
+          />
+        )}
+
+        {page === 'content' && (
+          <ContentManagement
+            form={contentForm}
+            isEditing={editingContentId !== null}
+            isLoading={isContentLoading}
+            isSaving={isSaving}
+            items={contentItems}
+            profiles={profiles}
+            onChange={setContentForm}
+            onSelectProfile={selectContentProfile}
+            onSubmit={submitContent}
+            onCancel={cancelContentEditing}
+            onEdit={startContentEditing}
+            onDelete={deleteContent}
+            onPreview={setSelectedPreviewItem}
+            onToggleVisibility={toggleContentVisibility}
+            onUpload={(event) => upload(event, (url, file) => {
+              setContentForm((current) => ({
+                ...current,
+                mediaUrl: url,
+                mediaType: file.type.startsWith('video/') ? 'VIDEO' : 'PHOTO',
+              }))
+            })}
+            onThumbnailUpload={(event) => upload(event, (url) => {
+              setContentForm((current) => ({ ...current, thumbnailUrl: url }))
+            }, { imagesOnly: true })}
+          />
+        )}
+
+        {page === 'contacts' && (
+          <ContactManagement
+            form={contactForm}
+            isEditing={editingContactId !== null}
+            isSaving={isSaving}
+            contacts={contacts}
+            onChange={setContactForm}
+            onSubmit={submitContact}
+            onCancel={cancelContactEditing}
+            onEdit={startContactEditing}
+            onDelete={deleteContact}
+            onReorder={reorderContactStack}
+            onToggleVisibility={toggleContactVisibility}
+          />
+        )}
+
+        {page === 'reviews' && (
+          <ReviewManagement
+            isSaving={isSaving}
+            savingReviewIds={savingReviewIds}
+            reviews={reviews}
+            onToggleVisibility={toggleReviewVisibility}
+            onDelete={deleteReview}
+          />
+        )}
+
+        {page === 'materials' && (
+          <MaterialManagement token={token} onNotice={setNotice} />
+        )}
+
+        {page === 'bookings' && (
+          <BookingManagement token={token} onNotice={setNotice} />
+        )}
       </div>
 
-      <nav className={styles.tabs} aria-label="Secções de administração">
-        <Tab active={page === 'dashboard'} onClick={() => onPageChange('dashboard')}>Resumo</Tab>
-        <Tab active={page === 'profile'} onClick={() => onPageChange('profile')}>Novo perfil</Tab>
-        <Tab active={page === 'content'} onClick={() => onPageChange('content')}>Publicar conteúdo</Tab>
-        <Tab active={page === 'contacts'} onClick={() => onPageChange('contacts')}>Contactos</Tab>
-        <Tab active={page === 'materials'} onClick={() => onPageChange('materials')}>Materiais</Tab>
-        <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => onPageChange('reviews')}>Avaliações</Tab>
-        <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => onPageChange('bookings')}>Agendamentos</Tab>
-      </nav>
-
-      {page === 'dashboard' && (
-        <AdminDashboard
-          bookings={adminBookings}
-          isLoading={isDashboardLoading}
-          profiles={profiles}
-          reviews={reviews}
-          onNavigate={onPageChange}
-          onRefresh={refreshDashboard}
-        />
-      )}
-
-      {page === 'profile' && (
-        <ProfileManagement
-          form={profileForm}
-          isEditing={editingProfileSlug !== null}
-          isSaving={isSaving}
-          profiles={profiles}
-          onChange={setProfileForm}
-          onSubmit={submitProfile}
-          onCancel={cancelProfileEditing}
-          onEdit={startProfileEditing}
-          onDelete={deleteProfile}
-          onReorder={reorderProfileStack}
-          onUpload={(event) => upload(event, (url) => {
-            setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
-          })}
-          onFeaturedVideoUpload={(event) => upload(event, (url) => {
-            setProfileForm((current) => ({ ...current, featuredVideoUrl: url }))
-          })}
-        />
-      )}
-
-      {page === 'content' && (
-        <ContentManagement
-          form={contentForm}
-          isEditing={editingContentId !== null}
-          isSaving={isSaving}
-          items={contentItems}
-          profiles={profiles}
-          onChange={setContentForm}
-          onSelectProfile={selectContentProfile}
-          onSubmit={submitContent}
-          onCancel={cancelContentEditing}
-          onEdit={startContentEditing}
-          onDelete={deleteContent}
-          onUpload={(event) => upload(event, (url, file) => {
-            setContentForm((current) => ({
-              ...current,
-              mediaUrl: url,
-              mediaType: file.type.startsWith('video/') ? 'VIDEO' : 'PHOTO',
-            }))
-          })}
-          onThumbnailUpload={(event) => upload(event, (url) => {
-            setContentForm((current) => ({ ...current, thumbnailUrl: url }))
-          }, { imagesOnly: true })}
-        />
-      )}
-
-      {page === 'contacts' && (
-        <ContactManagement
-          form={contactForm}
-          isEditing={editingContactId !== null}
-          isSaving={isSaving}
-          contacts={contacts}
-          onChange={setContactForm}
-          onSubmit={submitContact}
-          onCancel={cancelContactEditing}
-          onEdit={startContactEditing}
-          onDelete={deleteContact}
-          onReorder={reorderContactStack}
-        />
-      )}
-
-      {page === 'reviews' && (
-        <ReviewManagement
-          isSaving={isSaving}
-          savingReviewIds={savingReviewIds}
-          reviews={reviews}
-          onToggleVisibility={toggleReviewVisibility}
-          onDelete={deleteReview}
-        />
-      )}
-
-      {page === 'materials' && (
-        <MaterialManagement token={token} onNotice={setNotice} />
-      )}
-
-      {page === 'bookings' && (
-        <BookingManagement token={token} onNotice={setNotice} />
-      )}
+      {selectedPreviewItem && <MediaLightbox item={selectedPreviewItem} onClose={() => setSelectedPreviewItem(null)} />}
     </section>
   )
 }
@@ -930,6 +969,44 @@ function Tab({
   )
 }
 
+function StatusBadge({
+  children,
+  tone,
+}: {
+  children: ReactNode
+  tone: 'success' | 'warning' | 'neutral'
+}) {
+  return (
+    <span className={[styles.statusBadge, styles['statusBadge-' + tone]].join(' ')}>
+      {children}
+    </span>
+  )
+}
+
+function adminPageTitle(page: AdminPage) {
+  return {
+    dashboard: 'Resumo',
+    profile: 'Perfis',
+    content: 'Conteúdo',
+    contacts: 'Contactos',
+    materials: 'Materiais',
+    reviews: 'Avaliações',
+    bookings: 'Agendamentos',
+  }[page]
+}
+
+function adminPageEyebrow(page: AdminPage) {
+  return {
+    dashboard: 'Prioridades',
+    profile: 'Homepage e artistas',
+    content: 'Portfolio',
+    contacts: 'Canais públicos',
+    materials: 'Equipamento',
+    reviews: 'Moderação',
+    bookings: 'Pedidos e agenda',
+  }[page]
+}
+
 function ProfileManagement({
   form,
   isEditing,
@@ -968,6 +1045,8 @@ function ProfileManagement({
           isEditing={isEditing}
         />
 
+        <fieldset className={styles.formSection}>
+          <legend>Identidade</legend>
         <label>
           Nome
           <input
@@ -1020,7 +1099,10 @@ function ProfileManagement({
             value={form.description}
           />
         </label>
+        </fieldset>
 
+        <fieldset className={styles.formSection}>
+          <legend>Notificações</legend>
         <label>
           Email de notificações
           <input
@@ -1032,7 +1114,10 @@ function ProfileManagement({
           />
           <small className={styles.fieldHint}>Privado. Usado apenas para notificações relacionadas com este artista e nunca apresentado no site público.</small>
         </label>
+        </fieldset>
 
+        <fieldset className={styles.formSection}>
+          <legend>Imagem</legend>
         <label>
           {isEditing ? 'Substituir imagem de perfil' : 'Enviar imagem de perfil'}
           <input accept="image/*" type="file" onChange={onUpload} />
@@ -1059,7 +1144,10 @@ function ProfileManagement({
             onChange={(imageCrop) => onChange((current) => ({ ...current, imageCrop }))}
           />
         )}
+        </fieldset>
 
+        <fieldset className={styles.formSection}>
+          <legend>Vídeo em destaque</legend>
         <label>
           Carregar vídeo de destaque
           <input accept="video/*" type="file" onChange={onFeaturedVideoUpload} />
@@ -1080,6 +1168,7 @@ function ProfileManagement({
           />
           <small className={styles.fieldHint}>Aceita links do YouTube ou URLs diretas para vídeo. Também podes carregar um ficheiro pelo campo acima.</small>
         </label>
+        </fieldset>
 
         <SocialLinksEditor
           links={form.socialLinks}
@@ -1235,6 +1324,16 @@ function ProfileOrderList({
     void onReorder(nextProfiles.map((profile) => profile.slug))
   }
 
+  function moveProfile(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= profiles.length) return
+
+    const nextProfiles = [...profiles]
+    const [profile] = nextProfiles.splice(index, 1)
+    nextProfiles.splice(targetIndex, 0, profile)
+    void onReorder(nextProfiles.map((item) => item.slug))
+  }
+
   return (
     <section className={styles.manage}>
       <h2>Perfis na homepage</h2>
@@ -1258,6 +1357,8 @@ function ProfileOrderList({
                 <small>{profile.slug}</small>
               </span>
               <span className={styles.rowActions}>
+                <button aria-label={`Subir ${profile.name}`} disabled={isSaving || index === 0} type="button" onClick={() => moveProfile(index, -1)}>↑</button>
+                <button aria-label={`Descer ${profile.name}`} disabled={isSaving || index === profiles.length - 1} type="button" onClick={() => moveProfile(index, 1)}>↓</button>
                 <button disabled={isSaving} type="button" onClick={() => onEdit(profile)}>Editar</button>
                 <button disabled={isSaving} type="button" onClick={() => { void onDelete(profile) }}>Apagar</button>
               </span>
@@ -1272,6 +1373,7 @@ function ProfileOrderList({
 function ContentManagement({
   form,
   isEditing,
+  isLoading,
   isSaving,
   items,
   profiles,
@@ -1281,31 +1383,36 @@ function ContentManagement({
   onCancel,
   onEdit,
   onDelete,
+  onPreview,
+  onToggleVisibility,
   onUpload,
   onThumbnailUpload,
 }: {
   form: ContentFormState
   isEditing: boolean
+  isLoading: boolean
   isSaving: boolean
-  items: PortfolioItem[]
+  items: AdminPortfolioItem[]
   profiles: Profile[]
   onChange: (value: ContentFormState | ((current: ContentFormState) => ContentFormState)) => void
   onSelectProfile: (slug: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
   onCancel: () => void
-  onEdit: (item: PortfolioItem) => void
-  onDelete: (item: PortfolioItem) => Promise<void>
+  onEdit: (item: AdminPortfolioItem) => void
+  onDelete: (item: AdminPortfolioItem) => Promise<void>
+  onPreview: (item: PortfolioItem) => void
+  onToggleVisibility: (item: AdminPortfolioItem) => Promise<void>
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onThumbnailUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
   return (
     <div className={styles.page}>
-      <form id="content-editor" onSubmit={(event) => { void onSubmit(event) }}>
+      <form id="content-editor" className={styles.editorCard} onSubmit={(event) => { void onSubmit(event) }}>
         <FormHeading
-          title={isEditing ? 'Editar conteúdo' : 'Publicar conteúdo'}
+          title={isEditing ? 'Editar conteúdo' : 'Novo conteúdo'}
           description={isEditing
-            ? 'Os campos estão preenchidos com o conteúdo atual. Envia um novo ficheiro apenas se o quiseres substituir.'
-            : 'O tipo é reconhecido automaticamente a partir do ficheiro enviado.'}
+            ? 'Atualiza o conteúdo, o estado público ou os ficheiros associados.'
+            : 'Seleciona o perfil, carrega uma fotografia ou vídeo e decide se fica logo público.'}
           isEditing={isEditing}
         />
 
@@ -1325,27 +1432,29 @@ function ContentManagement({
           {isEditing && <small className={styles.fieldHint}>Para manter a associação correta, o conteúdo não pode mudar de perfil.</small>}
         </label>
 
-        <label>
-          Título
-          <input
-            maxLength={180}
-            minLength={2}
-            onChange={(event) => onChange((current) => ({ ...current, title: event.target.value }))}
-            required
-            value={form.title}
-          />
-        </label>
+        <div className={styles.formGrid}>
+          <label>
+            Título
+            <input
+              maxLength={180}
+              minLength={2}
+              onChange={(event) => onChange((current) => ({ ...current, title: event.target.value }))}
+              required
+              value={form.title}
+            />
+          </label>
 
-        <label>
-          Local
-          <input
-            maxLength={180}
-            minLength={2}
-            onChange={(event) => onChange((current) => ({ ...current, location: event.target.value }))}
-            required
-            value={form.location}
-          />
-        </label>
+          <label>
+            Local
+            <input
+              maxLength={180}
+              minLength={2}
+              onChange={(event) => onChange((current) => ({ ...current, location: event.target.value }))}
+              required
+              value={form.location}
+            />
+          </label>
+        </div>
 
         <label>
           Data do evento
@@ -1355,6 +1464,16 @@ function ContentManagement({
             type="date"
             value={form.eventDate}
           />
+          <small className={styles.fieldHint}>A listagem pública e admin usa sempre a data, do evento mais recente para o mais antigo.</small>
+        </label>
+
+        <label className={styles.checkboxLabel}>
+          <input
+            checked={form.published}
+            onChange={(event) => onChange((current) => ({ ...current, published: event.target.checked }))}
+            type="checkbox"
+          />
+          <span>{form.published ? 'Publicado no perfil público' : 'Guardar como oculto'}</span>
         </label>
 
         <label>
@@ -1401,25 +1520,62 @@ function ContentManagement({
         <FormActions
           isEditing={isEditing}
           isSaving={isSaving}
-          createLabel="Publicar conteúdo"
+          createLabel={form.published ? 'Publicar conteúdo' : 'Guardar oculto'}
           updateLabel="Atualizar conteúdo"
           onCancel={onCancel}
         />
       </form>
 
-      <ManagementList
-        empty={form.profileSlug
-          ? 'Este perfil ainda não tem conteúdos publicados.'
-          : 'Seleciona um perfil para gerir os seus conteúdos.'}
-        items={items}
-        title="Conteúdos publicados"
-        getDetail={(item) => item.type + ' · ' + item.eventDate}
-        getId={(item) => item.id}
-        getTitle={(item) => item.title}
-        isSaving={isSaving}
-        onDelete={onDelete}
-        onEdit={onEdit}
-      />
+      <section className={styles.manage}>
+        <div className={styles.sectionTitleRow}>
+          <div>
+            <h2>Conteúdo do perfil</h2>
+            <p>{form.profileSlug ? 'Ordenado automaticamente por data do evento.' : 'Seleciona um perfil para ver e gerir o portfolio.'}</p>
+          </div>
+          {form.profileSlug && <StatusBadge tone="neutral">{items.length} itens</StatusBadge>}
+        </div>
+
+        {isLoading ? (
+          <p className={styles.emptyState}>A carregar conteúdos...</p>
+        ) : !form.profileSlug ? (
+          <p className={styles.emptyState}>Seleciona um perfil para gerir o seu portfolio.</p>
+        ) : items.length === 0 ? (
+          <p className={styles.emptyState}>Este perfil ainda não tem conteúdos.</p>
+        ) : (
+          <div className={styles.contentList}>
+            {items.map((item) => (
+              <article className={styles.contentCard} key={item.id}>
+                <button
+                  className={styles.contentPreview}
+                  type="button"
+                  onClick={() => onPreview(item)}
+                >
+                  {item.thumbnailUrl || item.type === 'Foto' ? (
+                    <img src={item.thumbnailUrl ?? item.mediaUrl} alt="" />
+                  ) : (
+                    <span>Vídeo</span>
+                  )}
+                  {item.type === 'Vídeo' && <span className={styles.videoMarker}>▶</span>}
+                </button>
+                <div className={styles.contentMeta}>
+                  <StatusBadge tone={item.published ? 'success' : 'warning'}>
+                    {portfolioPublicationLabel(item.published)}
+                  </StatusBadge>
+                  <h3>{item.title}</h3>
+                  <p>{item.location} · {item.eventDate} · {item.type}</p>
+                </div>
+                <div className={styles.contentActions}>
+                  <button disabled={isSaving} type="button" onClick={() => onEdit(item)}>Editar</button>
+                  <button disabled={isSaving} type="button" onClick={() => { void onToggleVisibility(item) }}>
+                    {item.published ? 'Ocultar' : 'Publicar'}
+                  </button>
+                  <button className={styles.dangerButton} disabled={isSaving} type="button" onClick={() => { void onDelete(item) }}>Eliminar</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
@@ -1435,6 +1591,7 @@ function ContactManagement({
   onEdit,
   onDelete,
   onReorder,
+  onToggleVisibility,
 }: {
   form: ContactFormState
   isEditing: boolean
@@ -1446,12 +1603,13 @@ function ContactManagement({
   onEdit: (contact: Contact) => void
   onDelete: (contact: Contact) => Promise<void>
   onReorder: (contactIds: number[]) => Promise<void>
+  onToggleVisibility: (contact: Contact) => Promise<void>
 }) {
   const field = contactField(form.type)
 
   return (
     <div className={styles.page}>
-      <form id="contact-editor" onSubmit={(event) => { void onSubmit(event) }}>
+      <form id="contact-editor" className={styles.editorCard} onSubmit={(event) => { void onSubmit(event) }}>
         <FormHeading
           title={isEditing ? 'Editar contacto' : 'Novo contacto'}
           description={isEditing
@@ -1501,6 +1659,15 @@ function ContactManagement({
           />
         </label>
 
+        <label className={styles.checkboxLabel}>
+          <input
+            checked={form.visible}
+            onChange={(event) => onChange((current) => ({ ...current, visible: event.target.checked }))}
+            type="checkbox"
+          />
+          <span>{form.visible ? 'Visível na página pública' : 'Oculto da página pública'}</span>
+        </label>
+
         <FormActions
           isEditing={isEditing}
           isSaving={isSaving}
@@ -1516,6 +1683,7 @@ function ContactManagement({
         onDelete={onDelete}
         onEdit={onEdit}
         onReorder={onReorder}
+        onToggleVisibility={onToggleVisibility}
       />
     </div>
   )
@@ -1527,12 +1695,14 @@ function ContactOrderList({
   onDelete,
   onEdit,
   onReorder,
+  onToggleVisibility,
 }: {
   contacts: Contact[]
   isSaving: boolean
   onDelete: (contact: Contact) => Promise<void>
   onEdit: (contact: Contact) => void
   onReorder: (contactIds: number[]) => Promise<void>
+  onToggleVisibility: (contact: Contact) => Promise<void>
 }) {
   const [draggingId, setDraggingId] = useState<number | null>(null)
 
@@ -1549,11 +1719,26 @@ function ContactOrderList({
     void onReorder(nextContacts.map((contact) => contact.id))
   }
 
+  function moveContact(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= contacts.length) return
+
+    const nextContacts = [...contacts]
+    const [contact] = nextContacts.splice(index, 1)
+    nextContacts.splice(targetIndex, 0, contact)
+    void onReorder(nextContacts.map((item) => item.id))
+  }
+
   return (
     <section className={styles.manage}>
-      <h2>Contactos publicados</h2>
+      <div className={styles.sectionTitleRow}>
+        <div>
+          <h2>Contactos</h2>
+          <p>Arrasta para ordenar. Contactos ocultos ficam fora da página pública.</p>
+        </div>
+      </div>
       {contacts.length === 0 ? (
-        <p>Não existem contactos publicados.</p>
+        <p>Não existem contactos.</p>
       ) : (
         <div className={styles.contactStack}>
           {contacts.map((contact, index) => (
@@ -1571,8 +1756,16 @@ function ContactOrderList({
                 <strong>{index + 1}. {contact.label}</strong>
                 <small>{contactTypeLabel(contact.type)} · {contact.value}</small>
               </span>
+              <StatusBadge tone={contact.visible ?? true ? 'success' : 'warning'}>
+                {contactVisibilityLabel(contact.visible)}
+              </StatusBadge>
               <span className={styles.rowActions}>
+                <button aria-label={`Subir ${contact.label}`} disabled={isSaving || index === 0} type="button" onClick={() => moveContact(index, -1)}>↑</button>
+                <button aria-label={`Descer ${contact.label}`} disabled={isSaving || index === contacts.length - 1} type="button" onClick={() => moveContact(index, 1)}>↓</button>
                 <button disabled={isSaving} type="button" onClick={() => onEdit(contact)}>Editar</button>
+                <button disabled={isSaving} type="button" onClick={() => { void onToggleVisibility(contact) }}>
+                  {contact.visible ?? true ? 'Ocultar' : 'Mostrar'}
+                </button>
                 <button disabled={isSaving} type="button" onClick={() => { void onDelete(contact) }}>Apagar</button>
               </span>
             </div>
@@ -1690,77 +1883,6 @@ function FormActions({
   )
 }
 
-function ManagementList<T>({
-  title,
-  empty,
-  items,
-  getId,
-  getTitle,
-  getDetail,
-  isSaving,
-  onEdit,
-  onDelete,
-}: {
-  title: string
-  empty: string
-  items: T[]
-  getId: (item: T) => string | number
-  getTitle: (item: T) => string
-  getDetail: (item: T) => string
-  isSaving: boolean
-  onEdit: (item: T) => void
-  onDelete: (item: T) => Promise<void>
-}) {
-  return (
-    <section className={styles.manage}>
-      <h2>{title}</h2>
-      {items.length === 0 ? (
-        <p>{empty}</p>
-      ) : (
-        items.map((item) => (
-          <div className={styles.profileRow} key={getId(item)}>
-            <span>
-              <strong>{getTitle(item)}</strong>
-              <small>{getDetail(item)}</small>
-            </span>
-            <span className={styles.rowActions}>
-              <button disabled={isSaving} type="button" onClick={() => onEdit(item)}>Editar</button>
-              <button disabled={isSaving} type="button" onClick={() => { void onDelete(item) }}>Apagar</button>
-            </span>
-          </div>
-        ))
-      )}
-    </section>
-  )
-}
-
-function toProfile(profile: ApiProfileResponse): AdminManagedProfile {
-  return {
-    id: profile.slug,
-    slug: profile.slug,
-    name: profile.name,
-    role: profile.role,
-    description: profile.description,
-    imageUrl: profile.profileImageUrl ?? undefined,
-    imagePosition: profile.profileImagePosition ?? '50% 50%',
-    imageZoom: profile.profileImageZoom ?? 1,
-    featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
-    notificationEmail: profile.notificationEmail ?? '',
-    displayOrder: profile.displayOrder ?? 0,
-    socialLinks: mapSocialLinks(profile.socialLinks),
-  }
-}
-
-function mapSocialLinks(links: ApiProfileSocialLinkResponse[] | null | undefined): ProfileSocialLink[] {
-  return (links ?? []).map((link) => ({
-    id: link.id,
-    platform: link.platform,
-    label: link.label,
-    url: link.url,
-    displayOrder: link.displayOrder,
-  }))
-}
-
 function toProfileSocialLinkForm(link: ProfileSocialLink): ProfileSocialLinkFormState {
   return {
     platform: link.platform,
@@ -1829,8 +1951,8 @@ function validateContact(form: ContactFormState) {
     return 'Indica um utilizador de Instagram válido, por exemplo @saltosnaspalhacadas.'
   }
 
-  if (form.type === 'WEBSITE' && !isHttpUrl(value)) {
-    return 'Indica um URL válido que comece por http:// ou https://.'
+  if (form.type === 'WEBSITE' && !isWebsiteValue(value)) {
+    return 'Indica um website válido, com ou sem https://.'
   }
 
   return null
@@ -1863,10 +1985,14 @@ function stars(rating: number) {
   return Array.from({ length: 5 }, (_, index) => index < rating ? '★' : '☆').join('')
 }
 
-function isHttpUrl(value: string) {
+function isWebsiteValue(value: string) {
+  const candidate = value.toLowerCase().startsWith('http://') || value.toLowerCase().startsWith('https://')
+    ? value
+    : 'https://' + value
+
   try {
-    const url = new URL(value)
-    return url.protocol === 'http:' || url.protocol === 'https:'
+    const url = new URL(candidate)
+    return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname)
   } catch {
     return false
   }
@@ -1910,8 +2036,8 @@ function contactField(type: ContactType): ContactField {
     },
     WEBSITE: {
       label: 'URL do website',
-      placeholder: 'https://exemplo.pt',
-      inputType: 'url',
+      placeholder: 'saltosnaspalhacadas.pt',
+      inputType: 'text',
       inputMode: 'url',
     },
   } as const)[type]

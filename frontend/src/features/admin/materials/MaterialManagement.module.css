@@ -42,12 +42,25 @@
   outline-offset: 1px;
 }
 
-.form > button {
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.formActions button {
+  flex: 1 1 180px;
   border: 0;
   padding: 12px;
   background: var(--color-ink);
   color: white;
   font: inherit;
+}
+
+.formActions button + button {
+  border: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-ink);
 }
 
 .preview {
@@ -69,14 +82,27 @@
 }
 
 .preview button,
-.row button {
+.rowActions button {
   width: fit-content;
-  border: 1px solid #b85c55;
+  border: 1px solid var(--color-line);
   padding: 8px 10px;
   background: transparent;
-  color: #9b332c;
+  color: var(--color-ink);
   font: inherit;
   font-size: 12px;
+}
+
+.preview button,
+.rowActions button:last-child {
+  border-color: #b85c55;
+  color: #9b332c;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .list {
@@ -144,6 +170,10 @@ button:disabled {
   .preview,
   .row {
     grid-template-columns: 1fr;
+  }
+
+  .rowActions {
+    justify-content: flex-start;
   }
 
   .preview img,

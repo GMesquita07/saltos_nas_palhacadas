@@ -35,7 +35,6 @@ import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
-import pt.saltosnaspalhacadas.backend.portfolio.api.PortfolioItemResponse;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileNotFoundException;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
@@ -183,7 +182,7 @@ public class AdminPortfolioController {
 
     @PostMapping("/profiles/{slug}/portfolio")
     @ResponseStatus(HttpStatus.CREATED)
-    PortfolioItemResponse createPortfolioItem(
+    AdminPortfolioItemResponse createPortfolioItem(
             @PathVariable String slug,
             @Valid @RequestBody CreatePortfolioItemRequest request) {
         Profile profile = profiles.findBySlugAndActiveTrue(slug)
@@ -204,11 +203,23 @@ public class AdminPortfolioController {
                 0,
                 isPublishedByDefault(request.published()));
 
-        return PortfolioItemResponse.from(items.save(item));
+        return AdminPortfolioItemResponse.from(items.save(item));
+    }
+
+    @GetMapping("/profiles/{slug}/portfolio")
+    List<AdminPortfolioItemResponse> findPortfolioItems(
+            @PathVariable String slug) {
+        Profile profile = profiles.findBySlugAndActiveTrue(slug)
+                .orElseThrow(() -> new ProfileNotFoundException(slug));
+
+        return items.findAllByProfileIdOrderByEventDateDescIdDesc(profile.getId())
+                .stream()
+                .map(AdminPortfolioItemResponse::from)
+                .toList();
     }
 
     @PutMapping("/profiles/{slug}/portfolio/{itemId}")
-    PortfolioItemResponse updatePortfolioItem(
+    AdminPortfolioItemResponse updatePortfolioItem(
             @PathVariable String slug,
             @PathVariable Long itemId,
             @Valid @RequestBody UpdatePortfolioItemRequest request) {
@@ -233,7 +244,7 @@ public class AdminPortfolioController {
                         ? item.isPublished()
                         : request.published());
 
-        return PortfolioItemResponse.from(items.save(item));
+        return AdminPortfolioItemResponse.from(items.save(item));
     }
 
     @DeleteMapping("/profiles/{slug}/portfolio/{itemId}")
