@@ -4,18 +4,48 @@ import java.util.List;
 import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
+
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
 
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
+
     List<Profile> findAllByActiveTrueOrderByNameAsc();
+
     List<Profile> findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
+
     Optional<Profile> findBySlugAndActiveTrue(String slug);
+
     boolean existsBySlug(String slug);
 
+    @Query("""
+            select distinct profile
+            from Profile profile
+            left join fetch profile.socialLinks
+            where profile.active = true
+            order by profile.displayOrder asc, profile.name asc, profile.id asc
+            """)
+    List<Profile> findAllActiveWithSocialLinks();
+
+    @Query("""
+            select distinct profile
+            from Profile profile
+            left join fetch profile.socialLinks
+            where profile.slug = :slug
+              and profile.active = true
+            """)
+    Optional<Profile> findActiveBySlugWithSocialLinks(
+            @Param("slug") String slug);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select profile from Profile profile where profile.id = :id and profile.active = true")
-    Optional<Profile> findByIdAndActiveTrueForUpdate(@Param("id") Long id);
+    @Query("""
+            select profile
+            from Profile profile
+            where profile.id = :id
+              and profile.active = true
+            """)
+    Optional<Profile> findByIdAndActiveTrueForUpdate(
+            @Param("id") Long id);
 }

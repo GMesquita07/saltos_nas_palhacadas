@@ -415,6 +415,97 @@ button:disabled {
   font-size: 13px;
 }
 
+.socialLinksEditor {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  padding: 16px;
+  background: var(--color-surface);
+}
+
+.socialLinksEditor legend {
+  padding: 0 6px;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.socialLinkRows {
+  display: grid;
+  gap: 12px;
+}
+
+.socialLinkCard {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  padding: 14px;
+  background: #fff;
+}
+
+.socialLinkCardHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.socialLinkIcon {
+  display: grid;
+  width: 36px;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid rgb(35 34 32 / 12%);
+  border-radius: 50%;
+  color: var(--color-ink);
+  background: rgb(255 255 255 / 84%);
+  box-shadow: 0 6px 18px rgb(35 34 32 / 7%);
+}
+
+.socialLinkIcon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.socialLinkActions {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 1px;
+}
+
+.socialLinkActions button,
+.addInlineButton {
+  border: 1px solid var(--color-line);
+  padding: 8px 10px;
+  color: var(--color-ink);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+
+.socialLinkActions button:hover:not(:disabled),
+.addInlineButton:hover:not(:disabled) {
+  border-color: var(--color-ink);
+}
+
+.socialLinkActions button:last-child {
+  border-color: #b85c55;
+  color: #9b332c;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.emptyInline {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
 .thumbnailPreview {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
@@ -722,6 +813,19 @@ button:disabled {
 
   .contactRow .rowActions {
     grid-column: 2;
+  }
+
+  .socialLinkCardHeader {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .socialLinkIcon {
+    display: none;
+  }
+
+  .socialLinkActions {
+    padding-bottom: 0;
   }
 
   .thumbnailPreview {

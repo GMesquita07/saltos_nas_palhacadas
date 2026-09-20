@@ -27,6 +27,7 @@
   place-items: center;
   min-height: 184px;
   overflow: hidden;
+  contain: paint;
 }
 
 .image {
@@ -35,6 +36,7 @@
   border: 1px solid rgb(35 34 32 / 10%);
   font: 500 40px/1 var(--font-serif);
   transition: transform var(--ease-slow);
+  will-change: transform;
 }
 
 .card:hover .image {

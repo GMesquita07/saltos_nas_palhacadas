@@ -8,6 +8,7 @@ export const profiles: Profile[] = [
     name: 'João Tomás',
     role: 'DJ & Animador',
     description: 'Música, energia e uma pista cheia do início ao fim.',
+    socialLinks: [],
   },
   {
     id: 'kidg',
@@ -15,5 +16,6 @@ export const profiles: Profile[] = [
     name: 'DJ KidG',
     role: 'DJ & Produtor',
     description: 'Sets pensados à medida para momentos que ficam na memória.',
+    socialLinks: [],
   },
 ]

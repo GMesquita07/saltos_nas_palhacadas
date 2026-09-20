@@ -1,8 +1,9 @@
 import { apiClient } from './apiClient'
 import { createPublicRequestCache } from './publicRequestCache'
-import type { Profile } from '../types/profile'
+import type { Profile, ProfileSocialLink } from '../types/profile'
 
-type ApiProfile = { id: number; slug: string; name: string; role: string; description: string; profileImageUrl: string | null; profileImagePosition: string | null; profileImageZoom: number | null; featuredVideoUrl: string | null; displayOrder?: number | null }
+type ApiProfile = { id: number; slug: string; name: string; role: string; description: string; profileImageUrl: string | null; profileImagePosition: string | null; profileImageZoom: number | null; featuredVideoUrl: string | null; displayOrder?: number | null; socialLinks?: ApiProfileSocialLink[] | null }
+type ApiProfileSocialLink = { id: number; platform: string; label: string | null; url: string; displayOrder: number }
 
 const profileRequestCache = createPublicRequestCache<Profile[]>(loadProfiles)
 
@@ -27,5 +28,16 @@ async function loadProfiles(requestOptions: RequestInit = {}): Promise<Profile[]
     imageZoom: profile.profileImageZoom ?? 1,
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
     displayOrder: profile.displayOrder ?? 0,
+    socialLinks: mapSocialLinks(profile.socialLinks),
+  }))
+}
+
+function mapSocialLinks(links: ApiProfileSocialLink[] | null | undefined): ProfileSocialLink[] {
+  return (links ?? []).map((link) => ({
+    id: link.id,
+    platform: link.platform,
+    label: link.label,
+    url: link.url,
+    displayOrder: link.displayOrder,
   }))
 }

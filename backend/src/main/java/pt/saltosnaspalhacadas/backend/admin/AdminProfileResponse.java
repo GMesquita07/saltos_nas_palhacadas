@@ -1,6 +1,9 @@
 package pt.saltosnaspalhacadas.backend.admin;
 
+import java.util.List;
+
 import pt.saltosnaspalhacadas.backend.profile.Profile;
+import pt.saltosnaspalhacadas.backend.profile.api.ProfileSocialLinkResponse;
 
 public record AdminProfileResponse(
         Long id,
@@ -13,7 +16,8 @@ public record AdminProfileResponse(
         double profileImageZoom,
         String featuredVideoUrl,
         String notificationEmail,
-        int displayOrder) {
+        int displayOrder,
+        List<ProfileSocialLinkResponse> socialLinks) {
 
     public static AdminProfileResponse from(Profile profile) {
         return new AdminProfileResponse(
@@ -27,6 +31,10 @@ public record AdminProfileResponse(
                 profile.getProfileImageZoom(),
                 profile.getFeaturedVideoUrl(),
                 profile.getNotificationEmail(),
-                profile.getDisplayOrder());
+                profile.getDisplayOrder(),
+                profile.getActiveSocialLinks()
+                        .stream()
+                        .map(ProfileSocialLinkResponse::from)
+                        .toList());
     }
 }

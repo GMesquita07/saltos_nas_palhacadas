@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
+import { SocialIcon } from '../../components/SocialIcon/SocialIcon'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import type { AdminPage } from '../../navigation/routes'
 import { apiClient, uploadFile } from '../../services/apiClient'
@@ -11,7 +12,7 @@ import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
 import type { Contact, ContactType } from '../../types/contact'
 import type { PortfolioItem } from '../../types/portfolio'
-import type { Profile } from '../../types/profile'
+import type { Profile, ProfileSocialLink } from '../../types/profile'
 import type { Review } from '../../types/review'
 import { BookingManagement } from './booking/BookingManagement'
 import { MaterialManagement } from './materials/MaterialManagement'
@@ -22,6 +23,7 @@ import {
   reviewVisibilityNotice,
   updateReviewPublished,
 } from './reviewModeration'
+import { socialPlatformIcon, socialPlatformLabel, socialPlatformOptions, validateSocialLink } from '../profiles/socialLinks'
 import styles from './AdminArea.module.css'
 
 type Notice = { type: 'success' | 'error'; text: string }
@@ -36,6 +38,13 @@ type ProfileFormState = {
   profileImageUrl: string
   imageCrop: ImageCrop
   featuredVideoUrl: string
+  socialLinks: ProfileSocialLinkFormState[]
+}
+
+type ProfileSocialLinkFormState = {
+  platform: string
+  label: string
+  url: string
 }
 
 type AdminManagedProfile = Profile & {
@@ -54,6 +63,15 @@ type ApiProfileResponse = {
   featuredVideoUrl: string | null
   notificationEmail: string | null
   displayOrder: number | null
+  socialLinks: ApiProfileSocialLinkResponse[] | null
+}
+
+type ApiProfileSocialLinkResponse = {
+  id: number
+  platform: string
+  label: string | null
+  url: string
+  displayOrder: number
 }
 
 type ContentFormState = {
@@ -90,6 +108,7 @@ const emptyProfileForm = (): ProfileFormState => ({
   profileImageUrl: '',
   imageCrop: { x: 50, y: 50, zoom: 1 },
   featuredVideoUrl: '',
+  socialLinks: [],
 })
 
 const emptyContentForm = (profileSlug = ''): ContentFormState => ({
@@ -286,6 +305,7 @@ export function AdminArea({
       profileImageUrl: profile.imageUrl ?? '',
       imageCrop: parseImageCrop(profile.imagePosition, profile.imageZoom),
       featuredVideoUrl: profile.featuredVideoUrl ?? '',
+      socialLinks: profile.socialLinks.map(toProfileSocialLinkForm),
     })
     setNotice({ type: 'success', text: 'A editar o perfil ' + profile.name + '. Altera os campos e seleciona Atualizar perfil.' })
     scrollToEditor('profile-editor')
@@ -312,6 +332,11 @@ export function AdminArea({
       profileImagePosition: formatImagePosition(profileForm.imageCrop),
       profileImageZoom: profileForm.imageCrop.zoom,
       featuredVideoUrl: profileForm.featuredVideoUrl.trim() || null,
+      socialLinks: profileForm.socialLinks.map((link) => ({
+        platform: link.platform.trim(),
+        label: link.label.trim() || null,
+        url: link.url.trim(),
+      })),
     }
 
     try {
@@ -1056,6 +1081,11 @@ function ProfileManagement({
           <small className={styles.fieldHint}>Aceita links do YouTube ou URLs diretas para vídeo. Também podes carregar um ficheiro pelo campo acima.</small>
         </label>
 
+        <SocialLinksEditor
+          links={form.socialLinks}
+          onChange={(socialLinks) => onChange((current) => ({ ...current, socialLinks }))}
+        />
+
         <FormActions
           isEditing={isEditing}
           isSaving={isSaving}
@@ -1073,6 +1103,107 @@ function ProfileManagement({
         onReorder={onReorder}
       />
     </div>
+  )
+}
+
+function SocialLinksEditor({
+  links,
+  onChange,
+}: {
+  links: ProfileSocialLinkFormState[]
+  onChange: (links: ProfileSocialLinkFormState[]) => void
+}) {
+  function updateLink(index: number, patch: Partial<ProfileSocialLinkFormState>) {
+    onChange(links.map((link, currentIndex) => currentIndex === index ? { ...link, ...patch } : link))
+  }
+
+  function removeLink(index: number) {
+    onChange(links.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  function moveLink(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= links.length) return
+
+    const nextLinks = [...links]
+    const [link] = nextLinks.splice(index, 1)
+    nextLinks.splice(targetIndex, 0, link)
+    onChange(nextLinks)
+  }
+
+  return (
+    <fieldset className={styles.socialLinksEditor}>
+      <legend>Links sociais do perfil</legend>
+      <p className={styles.fieldHint}>Adiciona redes sociais, website ou email que queres mostrar neste perfil.</p>
+
+      {links.length === 0 ? (
+        <p className={styles.emptyInline}>Sem links sociais.</p>
+      ) : (
+        <div className={styles.socialLinkRows}>
+          {links.map((link, index) => {
+            const isKnownPlatform = socialPlatformOptions.some((platform) => platform === link.platform)
+            const isEmailPlatform = link.platform.trim().toUpperCase() === 'EMAIL'
+            return (
+              <div className={styles.socialLinkCard} key={index}>
+                <div className={styles.socialLinkCardHeader}>
+                  <span className={styles.socialLinkIcon} aria-hidden="true">
+                    <SocialIcon name={socialPlatformIcon(link.platform)} />
+                  </span>
+                  <label>
+                    Plataforma
+                    <select
+                      value={link.platform}
+                      onChange={(event) => updateLink(index, { platform: event.target.value })}
+                    >
+                      {!isKnownPlatform && (
+                        <option value={link.platform}>{socialPlatformLabel(link.platform)}</option>
+                      )}
+                      {socialPlatformOptions.map((platform) => (
+                        <option key={platform} value={platform}>{socialPlatformLabel(platform)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className={styles.socialLinkActions}>
+                    <button aria-label={`Subir ${socialPlatformLabel(link.platform)}`} disabled={index === 0} type="button" onClick={() => moveLink(index, -1)}>↑</button>
+                    <button aria-label={`Descer ${socialPlatformLabel(link.platform)}`} disabled={index === links.length - 1} type="button" onClick={() => moveLink(index, 1)}>↓</button>
+                    <button aria-label={`Remover ${socialPlatformLabel(link.platform)}`} type="button" onClick={() => removeLink(index)}>×</button>
+                  </div>
+                </div>
+                <label>
+                  {isEmailPlatform ? 'Email' : 'Link'}
+                  <input
+                    inputMode={isEmailPlatform ? 'email' : 'url'}
+                    maxLength={2048}
+                    onChange={(event) => updateLink(index, { url: event.target.value })}
+                    placeholder={isEmailPlatform ? 'artista@example.com' : 'https://...'}
+                    type={isEmailPlatform ? 'email' : 'url'}
+                    value={link.url}
+                  />
+                </label>
+                <label>
+                  Nome a mostrar (opcional)
+                  <input
+                    maxLength={80}
+                    onChange={(event) => updateLink(index, { label: event.target.value })}
+                    placeholder={socialPlatformLabel(link.platform)}
+                    value={link.label}
+                  />
+                </label>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <button
+        className={styles.addInlineButton}
+        disabled={links.length >= 12}
+        type="button"
+        onClick={() => onChange([...links, { platform: 'INSTAGRAM', label: '', url: '' }])}
+      >
+        Adicionar link social
+      </button>
+    </fieldset>
   )
 }
 
@@ -1616,6 +1747,25 @@ function toProfile(profile: ApiProfileResponse): AdminManagedProfile {
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
     notificationEmail: profile.notificationEmail ?? '',
     displayOrder: profile.displayOrder ?? 0,
+    socialLinks: mapSocialLinks(profile.socialLinks),
+  }
+}
+
+function mapSocialLinks(links: ApiProfileSocialLinkResponse[] | null | undefined): ProfileSocialLink[] {
+  return (links ?? []).map((link) => ({
+    id: link.id,
+    platform: link.platform,
+    label: link.label,
+    url: link.url,
+    displayOrder: link.displayOrder,
+  }))
+}
+
+function toProfileSocialLinkForm(link: ProfileSocialLink): ProfileSocialLinkFormState {
+  return {
+    platform: link.platform,
+    label: link.label ?? '',
+    url: link.url,
   }
 }
 
@@ -1641,6 +1791,13 @@ function validateProfile(form: ProfileFormState) {
   if (notificationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) return 'Indica um email de notificações válido.'
   if (form.profileImageUrl.length > 2048) return 'A URL da imagem é demasiado longa.'
   if (form.featuredVideoUrl.length > 2048) return 'A URL do vídeo de destaque é demasiado longa.'
+  if (form.socialLinks.length > 12) return 'Um perfil pode ter no máximo 12 links sociais.'
+  for (const [index, link] of form.socialLinks.entries()) {
+    if (link.label.length > 80) return `O rótulo do link social ${index + 1} é demasiado longo.`
+    if (link.url.length > 2048) return `O URL do link social ${index + 1} é demasiado longo.`
+    const socialLinkError = validateSocialLink(link.platform, link.url)
+    if (socialLinkError) return `Link social ${index + 1}: ${socialLinkError}`
+  }
   return null
 }
 

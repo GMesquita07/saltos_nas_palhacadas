@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { PortfolioCard } from '../portfolio/PortfolioCard'
+import { MediaLightbox } from '../portfolio/MediaLightbox'
 import { useAuth } from '../auth/AuthContext'
+import type { PortfolioItem } from '../../types/portfolio'
 import styles from './FavoritesPage.module.css'
 
 type FavoritesPageProps = {
@@ -8,6 +11,7 @@ type FavoritesPageProps = {
 
 export function FavoritesPage({ onBack }: FavoritesPageProps) {
   const { favorites, isFavoritesLoading } = useAuth()
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null)
 
   return (
     <section className={styles.page}>
@@ -26,11 +30,12 @@ export function FavoritesPage({ onBack }: FavoritesPageProps) {
           {favorites.map((favorite) => (
             <div key={favorite.portfolioItemId}>
               <p className={styles.profile}>Perfil · {favorite.profileSlug}</p>
-              <PortfolioCard item={favorite.item} />
+              <PortfolioCard item={favorite.item} onOpen={setSelectedItem} />
             </div>
           ))}
         </div>
       )}
+      {selectedItem && <MediaLightbox item={selectedItem} onClose={() => setSelectedItem(null)} />}
     </section>
   )
 }

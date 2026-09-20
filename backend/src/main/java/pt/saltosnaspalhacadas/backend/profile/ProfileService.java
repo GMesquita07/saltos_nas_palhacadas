@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class ProfileService {
+
     private final ProfileRepository profileRepository;
 
     public ProfileService(ProfileRepository profileRepository) {
@@ -15,11 +16,16 @@ public class ProfileService {
     }
 
     public List<Profile> findActiveProfiles() {
-        return profileRepository.findAllByActiveTrueOrderByDisplayOrderAscNameAscIdAsc();
+        return profileRepository.findAllActiveWithSocialLinks();
     }
 
     public Profile findActiveProfile(String slug) {
         return profileRepository.findBySlugAndActiveTrue(slug)
+                .orElseThrow(() -> new ProfileNotFoundException(slug));
+    }
+
+    public Profile findActiveProfileWithSocialLinks(String slug) {
+        return profileRepository.findActiveBySlugWithSocialLinks(slug)
                 .orElseThrow(() -> new ProfileNotFoundException(slug));
     }
 }

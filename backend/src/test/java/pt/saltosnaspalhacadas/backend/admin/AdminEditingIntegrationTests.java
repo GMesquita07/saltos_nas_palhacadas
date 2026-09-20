@@ -154,6 +154,168 @@ class AdminEditingIntegrationTests {
     }
 
     @Test
+    void adminCanCreateUpdateAndValidateProfileSocialLinks() throws Exception {
+        String slug = "social-admin-" + UUID.randomUUID().toString().substring(0, 8);
+        String token = adminToken();
+
+        try {
+            mockMvc.perform(post("/api/v1/admin/profiles")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "slug":"%s",
+                                      "name":"Perfil social",
+                                      "role":"DJ",
+                                      "description":"Perfil com links sociais",
+                                      "socialLinks":[
+                                        {"platform":"INSTAGRAM","label":"Instagram","url":"https://instagram.com/saltos"},
+                                        {"platform":"EMAIL","label":"Email","url":"artista@example.test"}
+                                      ]
+                                    }
+                                    """.formatted(slug)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.socialLinks.length()").value(2))
+                    .andExpect(jsonPath("$.socialLinks[0].platform").value("INSTAGRAM"))
+                    .andExpect(jsonPath("$.socialLinks[1].platform").value("EMAIL"))
+                    .andExpect(jsonPath("$.socialLinks[1].url").value("artista@example.test"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com links sociais atualizados",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50% 50%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[
+                                        {"platform":"YOUTUBE","label":"Canal","url":"https://youtube.com/@saltos"}
+                                      ]
+                                    }
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.socialLinks.length()").value(1))
+                    .andExpect(jsonPath("$.socialLinks[0].platform").value("YOUTUBE"))
+                    .andExpect(jsonPath("$.socialLinks[0].label").value("Canal"));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}", slug))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.socialLinks.length()").value(1))
+                    .andExpect(jsonPath("$.socialLinks[0].url").value("https://youtube.com/@saltos"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com link inválido",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50% 50%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[
+                                        {"platform":"WEBSITE","label":"Site","url":"javascript:alert(1)"}
+                                      ]
+                                    }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica um URL http/https válido para o link social"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com data URI inválido",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50% 50%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[
+                                        {"platform":"WEBSITE","label":"Site","url":"data:text/html,test"}
+                                      ]
+                                    }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica um URL http/https válido para o link social"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com link protocol-relative",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50% 50%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[
+                                        {"platform":"WEBSITE","label":"Site","url":"//evil.example/perfil"}
+                                      ]
+                                    }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica um URL http/https válido para o link social"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com email inválido",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50% 50%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[
+                                        {"platform":"EMAIL","label":"Email","url":"email-invalido"}
+                                      ]
+                                    }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica um email válido para o link social"));
+
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Perfil social atualizado",
+                                      "role":"DJ",
+                                      "description":"Perfil com links sociais a mais",
+                                      "profileImageUrl":null,
+                                      "profileImagePosition":"50%% 50%%",
+                                      "profileImageZoom":1,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null,
+                                      "socialLinks":[%s]
+                                    }
+                                    """.formatted(socialLinksJson(13))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.socialLinks").value("Um perfil pode ter no máximo 12 links sociais"));
+        } finally {
+            profiles.findBySlugAndActiveTrue(slug).ifPresent((profile) -> profiles.deleteById(profile.getId()));
+        }
+    }
+
+    @Test
     void usersSubmitReviewsAndAdminControlsVisibility() throws Exception {
         reviews.deleteAll();
         String slug = "avaliacoes-" + UUID.randomUUID().toString().substring(0, 8);
@@ -236,5 +398,13 @@ class AdminEditingIntegrationTests {
     private String adminToken() {
         AppUser admin = users.findByEmailAndActiveTrue(ADMIN_EMAIL).orElseThrow();
         return jwtService.createToken(admin);
+    }
+
+    private static String socialLinksJson(int count) {
+        return java.util.stream.IntStream.range(0, count)
+                .mapToObj(index -> """
+                        {"platform":"WEBSITE","label":"Link %d","url":"https://example.test/%d"}"""
+                        .formatted(index, index))
+                .collect(java.util.stream.Collectors.joining(","));
     }
 }
