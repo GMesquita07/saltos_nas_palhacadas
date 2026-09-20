@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
 import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
+import pt.saltosnaspalhacadas.backend.profile.ProfileSocialLink;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 import pt.saltosnaspalhacadas.backend.user.UserRole;
@@ -62,6 +64,25 @@ class ProfileControllerIntegrationTests {
                 .andExpect(header().string("Cache-Control", containsString("max-age=60")))
                 .andExpect(header().string("Cache-Control", containsString("public")))
                 .andExpect(jsonPath("$.slug").value("joao-tomas"));
+    }
+
+    @Test
+    void returnsOnlyActiveProfileSocialLinksInDisplayOrder() throws Exception {
+        Profile profile = new Profile("social-joao", "João Social", "DJ", "Descrição", null);
+        ProfileSocialLink inactive = new ProfileSocialLink("FACEBOOK", "Facebook", "https://facebook.com/saltos", 0);
+        inactive.deactivate();
+        profile.replaceSocialLinks(List.of(
+                inactive,
+                new ProfileSocialLink("YOUTUBE", "YouTube", "https://youtube.com/@saltos", 2),
+                new ProfileSocialLink("INSTAGRAM", "Instagram", "https://instagram.com/saltos", 1)));
+        profileRepository.save(profile);
+
+        mockMvc.perform(get("/api/v1/profiles/social-joao"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.socialLinks.length()").value(2))
+                .andExpect(jsonPath("$.socialLinks[0].platform").value("INSTAGRAM"))
+                .andExpect(jsonPath("$.socialLinks[0].url").value("https://instagram.com/saltos"))
+                .andExpect(jsonPath("$.socialLinks[1].platform").value("YOUTUBE"));
     }
 
     @Test

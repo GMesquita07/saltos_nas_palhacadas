@@ -1,3 +1,11 @@
+export type ProfileSocialLink = {
+  id?: number | string
+  platform: string
+  label?: string | null
+  url: string
+  displayOrder?: number
+}
+
 export type Profile = {
   id: string
   slug: string
@@ -9,4 +17,5 @@ export type Profile = {
   imageZoom?: number
   featuredVideoUrl?: string
   displayOrder?: number
+  socialLinks: ProfileSocialLink[]
 }
