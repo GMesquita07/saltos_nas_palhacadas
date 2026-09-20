@@ -9,3 +9,5 @@ export type CreateMaterialInput = {
   name: string
   imageUrl: string
 }
+
+export type UpdateMaterialInput = CreateMaterialInput

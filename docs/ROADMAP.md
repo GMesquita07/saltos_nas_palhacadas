@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-18.
+Last verified: 2026-09-20.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -38,8 +38,10 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | URLs reais por perfil | DONE | `/perfis/:slug` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
+| Admin content management V2 | DONE | Portfolio admin vê publicados/ocultos, materiais editáveis, contactos ocultáveis e painel redesenhado |
 | Feature 4: notificações email admin/artista | IN PROGRESS | Branch `feat/notifications-and-email`; ainda não production-complete |
 | Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
+| Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
 | Performance | POST-LAUNCH | Lighthouse/WebPageTest |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |

@@ -119,4 +119,42 @@ class MaterialIntegrationTests {
             materials.findById(second.getId()).ifPresent(materials::delete);
         }
     }
+
+    @Test
+    void adminCanUpdateMaterialWithoutChangingDisplayOrder() throws Exception {
+        AppUser admin = users.findByEmailAndActiveTrue("admin@example.test")
+                .orElseGet(() -> users.save(new AppUser("admin@example.test", passwords.encode("change-me-now"), UserRole.ADMIN)));
+        String adminToken = jwtService.createToken(admin);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Material material = materials.save(new Material("Material antigo " + suffix, "https://example.test/antigo.jpg", 42));
+
+        try {
+            mockMvc.perform(put("/api/v1/admin/materials/{id}", material.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"name":"Material atualizado %s","imageUrl":"https://example.test/novo.jpg"}
+                                    """.formatted(suffix)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Material atualizado " + suffix))
+                    .andExpect(jsonPath("$.imageUrl").value("https://example.test/novo.jpg"))
+                    .andExpect(jsonPath("$.displayOrder").value(42));
+
+            mockMvc.perform(get("/api/v1/materials"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id == %d && @.name == 'Material atualizado %s' && @.imageUrl == 'https://example.test/novo.jpg')]"
+                            .formatted(material.getId(), suffix)).isNotEmpty());
+
+            mockMvc.perform(put("/api/v1/admin/materials/{id}", material.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"name":"Material inseguro","imageUrl":"javascript:alert(1)"}
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Indica um URL de fotografia válido"));
+        } finally {
+            materials.findById(material.getId()).ifPresent(materials::delete);
+        }
+    }
 }

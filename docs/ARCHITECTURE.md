@@ -1,6 +1,6 @@
 # Arquitetura
 
-Last verified: 2026-09-18.
+Last verified: 2026-09-20.
 
 ## Visão Geral
 
@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- |
 | Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL, Flyway até V20 antes da Feature 4, PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL, Flyway até V22, PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
 | Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |
@@ -94,6 +94,19 @@ posteriormente através do painel admin.
 
 Os endpoints públicos de perfis, portfolio e contactos usam cache HTTP pública curta
 (`max-age=60`) para reduzir leituras repetidas desnecessárias. O frontend também deduplica pedidos em voo e mantém cache em memória para perfis/contactos, invalidada por eventos admin como `profiles:changed` e `contacts:changed`.
+
+## Admin Content Management
+
+O painel admin mantém as rotas `/admin/*`, mas organiza a gestão de conteúdo como backoffice dedicado:
+
+- Perfis: criação/edição, crop/zoom da imagem, vídeo de destaque, links sociais extensíveis, email privado de notificações e ordenação da homepage.
+- Portfolio: endpoint admin próprio para listar itens publicados e ocultos. A ordenação permanece cronológica por `eventDate DESC, id DESC`; não existe ordenação manual de portfolio.
+- Materiais: criação, edição de nome/fotografia, eliminação e ordenação pública.
+- Contactos: criação, edição, eliminação, ordenação, ocultar/mostrar; endpoints públicos continuam a devolver apenas contactos visíveis.
+
+Não foi necessária nova migration para esta ronda porque a schema existente já inclui `portfolio_items.published`, `contacts.visible`, `materials.display_order`, `profiles.active` e `profile_social_links`.
+
+Uploads públicos de admin podem ser reutilizados por várias entidades e não têm ownership próprio em `media_objects`; por isso, o sistema não faz cleanup automático de R2/public media ao editar ou apagar conteúdo. Essa limpeza fica como follow-up com tracking explícito de ownership/referências.
 
 ## Fluxo de Media
 
@@ -189,4 +202,5 @@ erDiagram
 | V18 | Migration Java: adiciona purpose de media, avatar gerido em `app_users` e ajusta FK owner. |
 | V19 | Cria tokens de reset de password e `deleted_at` em utilizadores. |
 | V20 | Remove a feature de partilhas de clientes, dropa `client_content_posts` e restringe `media_objects.purpose` a `PROFILE_AVATAR`. |
-| V21 | Branch `feat/notifications-and-email`: adiciona `profiles.notification_email` nullable, privada, `VARCHAR(254)`. |
+| V21 | Adiciona `profiles.notification_email` nullable, privada, `VARCHAR(254)`. |
+| V22 | Cria `profile_social_links` com `platform` extensível por string, links ativos e `display_order`. |
