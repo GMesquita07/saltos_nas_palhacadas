@@ -87,10 +87,10 @@ function PortfolioPreview({ item }: { item: PortfolioItem }) {
     ? (
       <>
         {item.thumbnailUrl
-          ? <img src={item.thumbnailUrl} alt="" />
-          : <video muted playsInline preload="metadata"><source src={item.mediaUrl} /></video>}
+          ? <img src={item.thumbnailUrl} alt="" decoding="async" loading="lazy" />
+          : <video muted playsInline preload="none"><source src={item.mediaUrl} /></video>}
         <span className={styles.playIndicator} aria-hidden="true">▶</span>
       </>
     )
-    : <img src={item.mediaUrl} alt={item.title} />
+    : <img src={item.mediaUrl} alt={item.title} decoding="async" loading="lazy" />
 }

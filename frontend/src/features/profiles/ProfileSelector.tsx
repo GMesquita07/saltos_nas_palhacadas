@@ -1,5 +1,6 @@
 import { ProfileCard } from './ProfileCard'
 import styles from './ProfileSelector.module.css'
+import { profileCardImagePolicy } from '../../performance/performanceConfig'
 import type { Profile } from '../../types/profile'
 
 type ProfileSelectorProps = {
@@ -20,7 +21,7 @@ export function ProfileSelector({ profiles, viewerName }: ProfileSelectorProps) 
         <p className={styles.empty}>Ainda não existem perfis publicados.</p>
       ) : (
         <div className={styles.cards}>
-          {profiles.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}
+          {profiles.map((profile, index) => <ProfileCard imageLoading={profileCardImagePolicy(index)} key={profile.id} profile={profile} />)}
         </div>
       )}
     </section>

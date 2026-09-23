@@ -109,6 +109,8 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
               alt={'Foto de perfil de ' + profile.name}
               className={styles.profileImageFrame}
               fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+              fetchPriority="high"
+              loading="eager"
               position={imagePosition}
               src={profile.imageUrl}
               zoom={imageZoom}

@@ -1,18 +1,21 @@
-import { useState } from 'react'
+import { useState, type ImgHTMLAttributes } from 'react'
 import { formatImagePosition, imageCropStyle, parseImageCrop } from './imageCrop'
 import styles from './CroppedImage.module.css'
 
 type CroppedImageProps = {
   alt?: string
+  decoding?: ImgHTMLAttributes<HTMLImageElement>['decoding']
   className?: string
   fallback?: string
+  fetchPriority?: 'auto' | 'high' | 'low'
+  loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
   position?: string
   shape?: 'circle' | 'square'
   src?: string
   zoom?: number
 }
 
-export function CroppedImage({ alt = '', className = '', fallback, position, shape = 'circle', src, zoom }: CroppedImageProps) {
+export function CroppedImage({ alt = '', className = '', decoding = 'async', fallback, fetchPriority, loading, position, shape = 'circle', src, zoom }: CroppedImageProps) {
   const crop = parseImageCrop(position, zoom)
   const imagePosition = formatImagePosition(crop)
   const [failedImageSrc, setFailedImageSrc] = useState<string | undefined>()
@@ -26,6 +29,9 @@ export function CroppedImage({ alt = '', className = '', fallback, position, sha
             key={src + imagePosition + crop.zoom}
             src={src}
             alt={alt}
+            decoding={decoding}
+            fetchPriority={fetchPriority}
+            loading={loading}
             style={imageCropStyle(imagePosition, crop.zoom)}
             onError={() => setFailedImageSrc(src)}
           />
