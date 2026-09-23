@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { SocialIcon } from '../../components/SocialIcon/SocialIcon'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { MediaLightbox } from '../portfolio/MediaLightbox'
 import type { AdminPage } from '../../navigation/routes'
@@ -60,6 +61,7 @@ type ProfileFormState = {
   profileImageUrl: string
   imageCrop: ImageCrop
   featuredVideoUrl: string
+  heroBackgroundImageUrl: string
   socialLinks: ProfileSocialLinkFormState[]
 }
 
@@ -105,6 +107,7 @@ const emptyProfileForm = (): ProfileFormState => ({
   profileImageUrl: '',
   imageCrop: { x: 50, y: 50, zoom: 1 },
   featuredVideoUrl: '',
+  heroBackgroundImageUrl: '',
   socialLinks: [],
 })
 
@@ -305,6 +308,7 @@ export function AdminArea({
       profileImageUrl: profile.imageUrl ?? '',
       imageCrop: parseImageCrop(profile.imagePosition, profile.imageZoom),
       featuredVideoUrl: profile.featuredVideoUrl ?? '',
+      heroBackgroundImageUrl: profile.heroBackgroundImageUrl ?? '',
       socialLinks: profile.socialLinks.map(toProfileSocialLinkForm),
     })
     setNotice({ type: 'success', text: 'A editar o perfil ' + profile.name + '. Altera os campos e seleciona Atualizar perfil.' })
@@ -332,6 +336,7 @@ export function AdminArea({
       profileImagePosition: formatImagePosition(profileForm.imageCrop),
       profileImageZoom: profileForm.imageCrop.zoom,
       featuredVideoUrl: profileForm.featuredVideoUrl.trim() || null,
+      heroBackgroundImageUrl: profileForm.heroBackgroundImageUrl.trim() || null,
       socialLinks: profileForm.socialLinks.map((link) => ({
         platform: link.platform.trim(),
         label: link.label.trim() || null,
@@ -706,7 +711,7 @@ export function AdminArea({
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
           <p className="eyebrow">Área reservada</p>
-          <h1>Painel de administração</h1>
+          <h1>Administração</h1>
         </div>
         <nav className={styles.tabs} aria-label="Secções de administração">
           <Tab active={page === 'dashboard'} onClick={() => onPageChange('dashboard')}>Resumo</Tab>
@@ -717,7 +722,10 @@ export function AdminArea({
           <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => onPageChange('reviews')}>Avaliações</Tab>
           <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => onPageChange('bookings')}>Agendamentos</Tab>
         </nav>
-        <button className={styles.exitButton} type="button" onClick={onExit}>Voltar ao site</button>
+        <button className={styles.exitButton} type="button" onClick={onExit}>
+          <NavIcon name="arrow-left" />
+          Voltar ao site
+        </button>
       </aside>
 
       <div className={styles.adminContent}>
@@ -759,6 +767,9 @@ export function AdminArea({
             onUpload={(event) => upload(event, (url) => {
               setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
             })}
+            onHeroBackgroundUpload={(event) => upload(event, (url) => {
+              setProfileForm((current) => ({ ...current, heroBackgroundImageUrl: url }))
+            }, { imagesOnly: true })}
             onFeaturedVideoUpload={(event) => upload(event, (url) => {
               setProfileForm((current) => ({ ...current, featuredVideoUrl: url }))
             })}
@@ -862,7 +873,7 @@ function AdminDashboard({
     <section className={styles.overview} aria-labelledby="admin-overview-heading">
       <div className={styles.formHeading}>
         <div>
-          <h2 id="admin-overview-heading">Resumo</h2>
+          <h2 id="admin-overview-heading">Visão geral</h2>
           <p className={styles.intro}>Prioridades do backoffice, próximos eventos e avaliações por moderar.</p>
         </div>
         <button className={styles.refreshButton} disabled={isLoading} type="button" onClick={() => { void onRefresh() }}>
@@ -1019,6 +1030,7 @@ function ProfileManagement({
   onDelete,
   onReorder,
   onUpload,
+  onHeroBackgroundUpload,
   onFeaturedVideoUpload,
 }: {
   form: ProfileFormState
@@ -1032,6 +1044,7 @@ function ProfileManagement({
   onDelete: (profile: Profile) => Promise<void>
   onReorder: (profileSlugs: string[]) => Promise<void>
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+  onHeroBackgroundUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onFeaturedVideoUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
   return (
@@ -1118,9 +1131,18 @@ function ProfileManagement({
 
         <fieldset className={styles.formSection}>
           <legend>Imagem</legend>
-        <label>
-          {isEditing ? 'Substituir imagem de perfil' : 'Enviar imagem de perfil'}
-          <input accept="image/*" type="file" onChange={onUpload} />
+        <label className={styles.fileUploadField}>
+          <span>{isEditing ? 'Substituir imagem de perfil' : 'Imagem de perfil'}</span>
+          <span className={styles.fileUploadButton}>
+            <span aria-hidden="true">＋</span>
+            {isEditing ? 'Substituir fotografia' : 'Adicionar fotografia'}
+            <input
+              accept="image/*"
+              aria-label={isEditing ? 'Substituir imagem de perfil' : 'Adicionar imagem de perfil'}
+              type="file"
+              onChange={onUpload}
+            />
+          </span>
         </label>
 
         <label>
@@ -1147,10 +1169,60 @@ function ProfileManagement({
         </fieldset>
 
         <fieldset className={styles.formSection}>
+          <legend>Background do perfil</legend>
+          <label className={styles.fileUploadField}>
+            <span>Imagem de fundo do topo do perfil</span>
+            <span className={styles.fileUploadButton}>
+              <span aria-hidden="true">＋</span>
+              {form.heroBackgroundImageUrl ? 'Substituir background' : 'Adicionar background'}
+              <input
+                accept="image/*"
+                aria-label={form.heroBackgroundImageUrl ? 'Substituir background do perfil' : 'Adicionar background do perfil'}
+                type="file"
+                onChange={onHeroBackgroundUpload}
+              />
+            </span>
+          </label>
+
+          <label>
+            URL do background
+            <input
+              maxLength={2048}
+              onChange={(event) => onChange((current) => ({ ...current, heroBackgroundImageUrl: event.target.value }))}
+              placeholder="https://..."
+              type="url"
+              value={form.heroBackgroundImageUrl}
+            />
+          </label>
+
+          {form.heroBackgroundImageUrl && (
+            <div className={styles.thumbnailPreview}>
+              <img src={form.heroBackgroundImageUrl} alt="Pré-visualização do background do perfil" />
+              <button type="button" onClick={() => onChange((current) => ({ ...current, heroBackgroundImageUrl: '' }))}>
+                Remover background
+              </button>
+            </div>
+          )}
+
+          <small className={styles.fieldHint}>
+            Aparece apenas no topo do perfil. Sem imagem definida, o site usa automaticamente uma fotografia do portfólio como fallback.
+          </small>
+        </fieldset>
+
+        <fieldset className={styles.formSection}>
           <legend>Vídeo em destaque</legend>
-        <label>
-          Carregar vídeo de destaque
-          <input accept="video/*" type="file" onChange={onFeaturedVideoUpload} />
+        <label className={styles.fileUploadField}>
+          <span>Vídeo em destaque</span>
+          <span className={styles.fileUploadButton}>
+            <span aria-hidden="true">＋</span>
+            Adicionar vídeo
+            <input
+              accept="video/*"
+              aria-label="Adicionar vídeo de destaque"
+              type="file"
+              onChange={onFeaturedVideoUpload}
+            />
+          </span>
         </label>
 
         {form.featuredVideoUrl && (
@@ -1476,9 +1548,18 @@ function ContentManagement({
           <span>{form.published ? 'Publicado no perfil público' : 'Guardar como oculto'}</span>
         </label>
 
-        <label>
-          {isEditing ? 'Substituir foto ou vídeo' : 'Enviar foto ou vídeo'}
-          <input accept="image/*,video/*" type="file" onChange={onUpload} />
+        <label className={styles.fileUploadField}>
+          <span>{isEditing ? 'Substituir conteúdo' : 'Ficheiro do conteúdo'}</span>
+          <span className={styles.fileUploadButton}>
+            <span aria-hidden="true">＋</span>
+            {isEditing ? 'Substituir foto ou vídeo' : 'Adicionar foto ou vídeo'}
+            <input
+              accept="image/*,video/*"
+              aria-label={isEditing ? 'Substituir foto ou vídeo' : 'Adicionar foto ou vídeo'}
+              type="file"
+              onChange={onUpload}
+            />
+          </span>
         </label>
 
         {form.mediaUrl && (
@@ -1499,9 +1580,18 @@ function ContentManagement({
           />
         </label>
 
-        <label>
-          Carregar miniatura do dispositivo
-          <input accept="image/*" type="file" onChange={onThumbnailUpload} />
+        <label className={styles.fileUploadField}>
+          <span>Miniatura do conteúdo</span>
+          <span className={styles.fileUploadButton}>
+            <span aria-hidden="true">＋</span>
+            Adicionar miniatura
+            <input
+              accept="image/*"
+              aria-label="Adicionar miniatura do conteúdo"
+              type="file"
+              onChange={onThumbnailUpload}
+            />
+          </span>
           <small className={styles.fieldHint}>Usada como capa dos vídeos e como imagem de pré-visualização do conteúdo.</small>
         </label>
 
@@ -1793,7 +1883,6 @@ function ReviewManagement({
     <section className={styles.singlePage}>
       <div className={styles.formHeading}>
         <div>
-          <h2>Avaliações</h2>
           <p className={styles.intro}>As avaliações são submetidas pelos utilizadores nos perfis dos artistas. Aqui escolhes quais aparecem publicamente; a ordem é sempre da mais recente para a mais antiga.</p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 .page {
-  width: min(960px, calc(100% - 48px));
+  width: min(980px, calc(100% - 48px));
   padding: 65px 0 95px;
   margin: auto;
 }
@@ -9,15 +9,18 @@
   padding: 0;
   color: var(--color-muted);
   background: none;
-  font-size: 13px;
+  font-size: .84rem;
+  font-weight: 720;
+  transition: color var(--ease), transform var(--ease);
 }
 
 .back:hover {
   color: var(--color-ink);
+  transform: translateX(-2px);
 }
 
 .content {
-  width: min(100%, 720px);
+  width: min(100%, 760px);
   margin: 56px auto;
 }
 
@@ -36,6 +39,7 @@
 .accountHeader p {
   margin: 0;
   color: var(--color-muted);
+  font-weight: 680;
 }
 
 .avatar {
@@ -43,8 +47,8 @@
   aspect-ratio: 1;
   border: 1px solid var(--color-line);
   color: var(--color-ink);
-  box-shadow: var(--shadow-xs);
-  font: 600 32px/1 var(--font-serif);
+  box-shadow: var(--shadow-sm);
+  font: 680 2rem/1 var(--font-display);
 }
 
 .summary,
@@ -55,7 +59,7 @@
 
 .accountSections {
   display: grid;
-  gap: 28px;
+  gap: 24px;
   margin-top: 30px;
   padding-top: 28px;
   border-top: 1px solid var(--color-line);
@@ -64,17 +68,22 @@
 .sectionBlock {
   display: grid;
   gap: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .sectionBlock h2 {
   margin: 0;
-  font-size: clamp(24px, 3vw, 31px);
+  font-size: 1.55rem;
 }
 
 .sectionBlock p {
   margin: 0;
   color: var(--color-muted);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .quickLinks {
@@ -88,49 +97,71 @@
   gap: 8px;
   min-height: 94px;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   padding: 14px;
   color: var(--color-ink);
-  background: var(--color-surface);
+  background: white;
   text-align: left;
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
 
 .quickLinks button:hover {
-  border-color: var(--color-ink);
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
 }
 
 .quickLinks span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .78rem;
+  font-weight: 680;
 }
 
 .quickLinks strong {
   align-self: end;
-  font: 600 18px/1.2 var(--font-serif);
+  font: 680 1.12rem/1.2 var(--font-display);
 }
 
 .details {
   display: grid;
   gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   margin: 0;
-  border-top: 1px solid var(--color-line);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .details div {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 20px;
-  padding: 15px 0;
+  padding: 15px 18px;
   border-bottom: 1px solid var(--color-line);
+}
+
+.details div:last-child {
+  border-bottom: 0;
 }
 
 .details dt {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .76rem;
+  font-weight: 780;
 }
 
 .details dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.profileForm {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .profileForm label,
@@ -139,7 +170,8 @@
   display: grid;
   gap: 7px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .profileForm input,
@@ -147,19 +179,20 @@
 .deleteForm input {
   width: 100%;
   border: 1px solid var(--color-line);
-  padding: 11px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
   color: var(--color-ink);
-  background: var(--color-surface);
+  background: var(--color-surface-strong);
 }
 
 .profileForm input[readonly] {
   color: var(--color-muted);
-  background: #efede8;
+  background: var(--surface-soft);
 }
 
 .profileForm small {
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: .74rem;
   line-height: 1.45;
 }
 
@@ -180,7 +213,7 @@
 
 .avatarEditor .avatar {
   width: 96px;
-  font-size: 28px;
+  font-size: 1.7rem;
 }
 
 .nameFields {
@@ -200,59 +233,68 @@
   grid-template-columns: 1fr 1fr;
 }
 
-.actions button {
-  border: 0;
-  padding: 12px;
-  color: white;
-  background: var(--color-ink);
-}
-
+.actions button,
 .securityForm button,
 .secondaryButton,
 .dangerButton {
-  border: 0;
-  padding: 12px;
+  border: 1px solid var(--brand-navy);
+  border-radius: var(--radius-pill);
+  padding: 12px 14px;
   color: white;
-  background: var(--color-ink);
+  background: var(--brand-navy);
+  font-weight: 760;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease), transform var(--ease);
+}
+
+.actions button:hover:not(:disabled),
+.securityForm button:hover:not(:disabled) {
+  color: var(--brand-navy);
+  background: var(--brand-blue);
+  transform: translateY(-1px);
 }
 
 .actions button:disabled,
 .securityForm button:disabled,
 .secondaryButton:disabled,
 .dangerButton:disabled {
-  cursor: not-allowed;
   opacity: 0.65;
 }
 
-.actions button:nth-child(2) {
-  border: 1px solid var(--color-line);
+.actions button:nth-child(2),
+.secondaryButton {
+  border-color: var(--color-line);
   color: var(--color-ink);
+  background: white;
+}
+
+.actions button:nth-child(2):hover:not(:disabled),
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+  transform: translateY(-1px);
+}
+
+.actions .logout,
+.dangerButton {
+  border-color: #ba625b;
+  color: var(--color-accent-danger);
   background: transparent;
 }
 
-.actions .logout {
-  border: 1px solid #b85c55;
-  color: #9b332c;
-  background: transparent;
+.actions .logout:hover:not(:disabled),
+.dangerButton:hover:not(:disabled) {
+  color: white;
+  background: var(--color-accent-danger);
 }
 
 .secondaryButton {
   width: fit-content;
-  border: 1px solid var(--color-line);
-  color: var(--color-ink);
-  background: transparent;
 }
 
 .deleteForm {
   margin-top: 6px;
   padding-top: 18px;
   border-top: 1px solid var(--color-line);
-}
-
-.dangerButton {
-  border: 1px solid #b85c55;
-  color: #9b332c;
-  background: transparent;
 }
 
 .error,
@@ -262,16 +304,16 @@
 }
 
 .error {
-  color: #9b332c;
+  color: var(--color-accent-danger);
 }
 
 .success {
-  color: #3a6848;
+  color: var(--color-accent-success);
 }
 
 @media (max-width: 650px) {
   .page {
-    width: min(100% - 32px, 960px);
+    width: min(100% - 32px, 980px);
     padding-top: 40px;
   }
 
@@ -292,4 +334,658 @@
   .avatar {
     width: 94px;
   }
+
+  .profileForm,
+  .sectionBlock {
+    padding: 20px;
+  }
+}
+
+.page {
+  width: min(1040px, calc(100% - 48px));
+  color: var(--site-dark-text);
+}
+
+.back {
+  color: rgb(247 247 243 / 62%);
+}
+
+.back:hover {
+  color: white;
+}
+
+.content {
+  width: min(100%, 780px);
+  border: 1px solid var(--site-dark-line);
+  background:
+    radial-gradient(circle at 88% 0%, rgb(22 139 208 / 8%), transparent 18rem),
+    var(--site-dark-panel);
+  box-shadow: var(--site-dark-shadow);
+}
+
+.accountHeader h1,
+.sectionBlock h2,
+.details dd {
+  color: white;
+}
+
+.accountHeader p,
+.sectionBlock p,
+.details dt,
+.profileForm label,
+.securityForm label,
+.deleteForm label,
+.profileForm small {
+  color: var(--site-dark-muted);
+}
+
+.avatar {
+  border-color: var(--site-dark-line);
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.accountSections,
+.details,
+.details div,
+.avatarEditor,
+.deleteForm {
+  border-color: var(--site-dark-line);
+}
+
+.quickLinks button {
+  border-color: var(--site-dark-line);
+  border-radius: 12px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.quickLinks button:hover {
+  border-color: rgb(134 207 245 / 38%);
+}
+
+.quickLinks span {
+  color: var(--site-dark-muted);
+}
+
+.profileForm input,
+.securityForm input,
+.deleteForm input {
+  border-color: var(--site-dark-line);
+  border-radius: 10px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.profileForm input[readonly] {
+  color: rgb(247 247 243 / 42%);
+  background: #0a0e12;
+}
+
+.actions button,
+.securityForm button {
+  border-radius: 10px;
+  background: var(--brand-blue);
+}
+
+.actions button:nth-child(2),
+.secondaryButton {
+  border-color: var(--site-dark-line);
+  color: white;
+  background: transparent;
+}
+
+.content {
+  width: min(100%, 820px);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 18px;
+  padding: 28px;
+  color: #f7f7f3;
+  background:
+    radial-gradient(circle at 90% 0%, rgb(22 139 208 / 8%), transparent 20rem),
+    #0d1115;
+  box-shadow: 0 26px 70px rgb(0 0 0 / 28%);
+}
+
+.accountHeader h1,
+.sectionBlock h2,
+.details dd,
+.quickLinks strong {
+  color: white !important;
+}
+
+.accountHeader p,
+.sectionBlock p,
+.details dt,
+.quickLinks span,
+.profileForm label,
+.securityForm label,
+.deleteForm label,
+.profileForm small {
+  color: rgb(247 247 243 / 52%) !important;
+}
+
+.summary,
+.profileForm,
+.sectionBlock {
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 14px;
+  padding: 18px;
+  color: #f7f7f3;
+  background: #0a0e12 !important;
+}
+
+.accountSections {
+  gap: 18px;
+  border-top-color: rgb(255 255 255 / 9%);
+}
+
+.details,
+.details div,
+.avatarEditor,
+.deleteForm {
+  border-color: rgb(255 255 255 / 9%) !important;
+}
+
+.avatar {
+  border-color: rgb(255 255 255 / 12%) !important;
+  color: white !important;
+  background: #11161b !important;
+}
+
+.quickLinks button {
+  border-color: rgb(255 255 255 / 10%) !important;
+  border-radius: 11px;
+  color: white !important;
+  background: #11161b !important;
+}
+
+.quickLinks button:hover {
+  border-color: rgb(134 207 245 / 38%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+.profileForm input,
+.securityForm input,
+.deleteForm input {
+  border-color: rgb(255 255 255 / 10%) !important;
+  border-radius: 9px;
+  color: white !important;
+  background: #11161b !important;
+}
+
+.profileForm input[readonly] {
+  color: rgb(247 247 243 / 38%) !important;
+  background: #090c0f !important;
+}
+
+.actions button,
+.securityForm button {
+  border-radius: 9px;
+}
+
+.actions button:hover:not(:disabled),
+.securityForm button:hover:not(:disabled) {
+  color: white !important;
+  filter: brightness(1.08);
+}
+
+.actions button:nth-child(2),
+.secondaryButton {
+  border-color: rgb(255 255 255 / 12%) !important;
+  color: white !important;
+  background: transparent !important;
+}
+
+.actions button:nth-child(2):hover,
+.secondaryButton:hover {
+  border-color: rgb(134 207 245 / 38%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+:global(html[data-theme='light']) .content,
+:global(html[data-theme='light']) .summary,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock {
+  border-color: #dfddd7 !important;
+  color: #252421 !important;
+  background: white !important;
+}
+
+:global(html[data-theme='light']) .accountHeader h1,
+:global(html[data-theme='light']) .sectionBlock h2,
+:global(html[data-theme='light']) .details dd,
+:global(html[data-theme='light']) .quickLinks strong {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .accountHeader p,
+:global(html[data-theme='light']) .sectionBlock p,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .quickLinks span {
+  color: #66615c !important;
+}
+
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .content,
+:global(html[data-theme='light']) .summary,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock { color: #171a1d !important; background: transparent !important; }
+:global(html[data-theme='light']) .accountHeader p,
+:global(html[data-theme='light']) .sectionBlock p,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .quickLinks span,
+:global(html[data-theme='light']) .profileForm label,
+:global(html[data-theme='light']) .securityForm label,
+:global(html[data-theme='light']) .deleteForm label,
+:global(html[data-theme='light']) .profileForm small { color: #626970 !important; }
+:global(html[data-theme='light']) .quickLinks button {
+  background: #ffffff !important;
+  box-shadow: 0 10px 26px rgb(26 33 39 / 6%);
+}
+:global(html[data-theme='light']) .quickLinks button:hover { border-color: #168bd0 !important; background: #f8fcff !important; }
+:global(html[data-theme='light']) .profileForm input,
+:global(html[data-theme='light']) .securityForm input,
+:global(html[data-theme='light']) .deleteForm input {
+  border-color: #d9dee3 !important;
+  color: #1b2025 !important;
+  background: #ffffff !important;
+}
+:global(html[data-theme='light']) .profileForm input[readonly] { color: #737980 !important; background: #eef1f4 !important; }
+:global(html[data-theme='light']) .avatar { border-color: #d6dce1 !important; background: #ffffff !important; }
+
+:global(html[data-theme='light']) .actions button,
+:global(html[data-theme='light']) .securityForm button,
+:global(html[data-theme='light']) .secondaryButton,
+:global(html[data-theme='light']) .dangerButton {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .actions .logout:hover:not(:disabled),
+:global(html[data-theme='light']) .dangerButton:hover:not(:disabled) {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .back {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .back:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .accountHeader h1,
+:global(html[data-theme='light']) .sectionBlock h2,
+:global(html[data-theme='light']) .details dd {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .profileForm input[readonly] {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .actions button:nth-child(2),
+:global(html[data-theme='light']) .secondaryButton {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.content {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .accountHeader h1,
+:global(html[data-theme='light']) .sectionBlock h2,
+:global(html[data-theme='light']) .details dd,
+:global(html[data-theme='light']) .quickLinks strong {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .accountHeader p,
+:global(html[data-theme='light']) .sectionBlock p,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .quickLinks span,
+:global(html[data-theme='light']) .profileForm label,
+:global(html[data-theme='light']) .securityForm label,
+:global(html[data-theme='light']) .deleteForm label,
+:global(html[data-theme='light']) .profileForm small {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .summary,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .accountSections {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .details,
+:global(html[data-theme='light']) .details div,
+:global(html[data-theme='light']) .avatarEditor,
+:global(html[data-theme='light']) .deleteForm {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .avatar {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .quickLinks button {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .quickLinks button:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .profileForm input,
+:global(html[data-theme='light']) .securityForm input,
+:global(html[data-theme='light']) .deleteForm input {
+  background-color: #ffffff !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .actions button:hover:not(:disabled),
+:global(html[data-theme='light']) .securityForm button:hover:not(:disabled) {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .actions button:nth-child(2):hover,
+:global(html[data-theme='light']) .secondaryButton:hover {
+  color: #171a1d !important;
+}
+
+.avatarUpload {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.avatarUploadLabel {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.uploadButton {
+  display: inline-flex !important;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--brand-blue);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: #ffffff !important;
+  background: var(--brand-blue);
+  cursor: pointer;
+  font-size: 13px !important;
+  font-weight: 700;
+  transition: border-color var(--ease), background var(--ease), transform var(--ease);
+}
+
+.uploadButton:hover,
+.uploadButton:focus-within {
+  border-color: #1175ae;
+  color: #ffffff !important;
+  background: #1175ae !important;
+  transform: translateY(-1px);
+}
+
+.fileInput {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+.avatarUpload small {
+  color: var(--color-muted) !important;
+  line-height: 1.45;
+}
+
+.actions button:not(.logout),
+.securityForm button {
+  border-color: var(--brand-blue) !important;
+  color: #ffffff !important;
+  background: var(--brand-blue) !important;
+}
+
+.actions button:not(.logout):hover:not(:disabled),
+.securityForm button:hover:not(:disabled) {
+  border-color: #1175ae !important;
+  color: #ffffff !important;
+  background: #1175ae !important;
+}
+
+.quickLinks button:hover,
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--brand-blue) !important;
+  color: var(--brand-blue) !important;
+  background: rgb(22 139 208 / 9%) !important;
+}
+
+:global(html[data-theme='dark']) .content,
+:global(html[data-theme='dark']) .details,
+:global(html[data-theme='dark']) .sectionBlock,
+:global(html[data-theme='dark']) .profileForm {
+  color: #f6f7f8 !important;
+}
+
+:global(html[data-theme='dark']) .profileForm input,
+:global(html[data-theme='dark']) .securityForm input,
+:global(html[data-theme='dark']) .deleteForm input {
+  border-color: #2b353d !important;
+  color: #f6f7f8 !important;
+  background: #11191f !important;
+}
+
+:global(html[data-theme='light']) .page {
+  color: #171a1d !important;
+  background: #f5f7f9 !important;
+  box-shadow: 0 0 0 100vmax #f5f7f9;
+  clip-path: inset(0 -100vmax);
+}
+
+:global(html[data-theme='light']) .content,
+:global(html[data-theme='light']) .summary,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .details,
+:global(html[data-theme='light']) .quickLinks button,
+:global(html[data-theme='light']) .sectionBlock {
+  border-color: #dce2e7 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+}
+
+:global(html[data-theme='light']) .profileForm input,
+:global(html[data-theme='light']) .securityForm input,
+:global(html[data-theme='light']) .deleteForm input {
+  border-color: #d7dde2 !important;
+  color: #171a1d !important;
+  background: #f9fafb !important;
+}
+
+.page,
+.content,
+.summary,
+.profileForm,
+.sectionBlock,
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .content,
+:global(html[data-theme='light']) .summary,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock,
+:global(html[data-theme='dark']) .page,
+:global(html[data-theme='dark']) .content,
+:global(html[data-theme='dark']) .summary,
+:global(html[data-theme='dark']) .profileForm,
+:global(html[data-theme='dark']) .sectionBlock {
+  color: var(--text-primary) !important;
+}
+
+.profileForm,
+.sectionBlock,
+.details,
+.quickLinks button,
+:global(html[data-theme='light']) .profileForm,
+:global(html[data-theme='light']) .sectionBlock,
+:global(html[data-theme='light']) .details,
+:global(html[data-theme='light']) .quickLinks button,
+:global(html[data-theme='dark']) .profileForm,
+:global(html[data-theme='dark']) .sectionBlock,
+:global(html[data-theme='dark']) .details,
+:global(html[data-theme='dark']) .quickLinks button {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+}
+
+.accountHeader p,
+.sectionBlock p,
+.details dt,
+.quickLinks span,
+.profileForm label,
+.securityForm label,
+.deleteForm label,
+.profileForm small,
+.back,
+:global(html[data-theme='light']) .accountHeader p,
+:global(html[data-theme='light']) .sectionBlock p,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .quickLinks span,
+:global(html[data-theme='light']) .profileForm label,
+:global(html[data-theme='light']) .securityForm label,
+:global(html[data-theme='light']) .deleteForm label,
+:global(html[data-theme='light']) .profileForm small,
+:global(html[data-theme='light']) .back,
+:global(html[data-theme='dark']) .accountHeader p,
+:global(html[data-theme='dark']) .sectionBlock p,
+:global(html[data-theme='dark']) .details dt,
+:global(html[data-theme='dark']) .quickLinks span,
+:global(html[data-theme='dark']) .profileForm label,
+:global(html[data-theme='dark']) .securityForm label,
+:global(html[data-theme='dark']) .deleteForm label,
+:global(html[data-theme='dark']) .profileForm small,
+:global(html[data-theme='dark']) .back {
+  color: var(--text-muted) !important;
+}
+
+.accountHeader h1,
+.sectionBlock h2,
+.details dd,
+.quickLinks strong,
+:global(html[data-theme='light']) .accountHeader h1,
+:global(html[data-theme='light']) .sectionBlock h2,
+:global(html[data-theme='light']) .details dd,
+:global(html[data-theme='light']) .quickLinks strong,
+:global(html[data-theme='dark']) .accountHeader h1,
+:global(html[data-theme='dark']) .sectionBlock h2,
+:global(html[data-theme='dark']) .details dd,
+:global(html[data-theme='dark']) .quickLinks strong {
+  color: var(--text-primary) !important;
+}
+
+.profileForm input,
+.securityForm input,
+.deleteForm input,
+:global(html[data-theme='light']) .profileForm input,
+:global(html[data-theme='light']) .securityForm input,
+:global(html[data-theme='light']) .deleteForm input,
+:global(html[data-theme='dark']) .profileForm input,
+:global(html[data-theme='dark']) .securityForm input,
+:global(html[data-theme='dark']) .deleteForm input {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.actions button,
+.securityForm button,
+:global(html[data-theme='light']) .actions button,
+:global(html[data-theme='light']) .securityForm button,
+:global(html[data-theme='dark']) .actions button,
+:global(html[data-theme='dark']) .securityForm button {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.actions button:hover:not(:disabled),
+.securityForm button:hover:not(:disabled) {
+  border-color: var(--interactive-hover) !important;
+  color: #ffffff !important;
+  background: var(--interactive-hover) !important;
+}
+
+.actions button:nth-child(2),
+.secondaryButton,
+:global(html[data-theme='light']) .actions button:nth-child(2),
+:global(html[data-theme='light']) .secondaryButton,
+:global(html[data-theme='dark']) .actions button:nth-child(2),
+:global(html[data-theme='dark']) .secondaryButton {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.actions .logout,
+.dangerButton,
+:global(html[data-theme='light']) .actions .logout,
+:global(html[data-theme='light']) .dangerButton,
+:global(html[data-theme='dark']) .actions .logout,
+:global(html[data-theme='dark']) .dangerButton {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+:global(html[data-theme='light']) .details {
+  border-color: #cfd8e1 !important;
+  background: #ffffff !important;
+}
+
+:global(html[data-theme='light']) .details div {
+  border-bottom-color: #d8e0e8 !important;
+}
+
+:global(html[data-theme='light']) .details div:nth-child(even) {
+  background: #fbfcfd !important;
+}
+
+.back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.back svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--ease);
+}
+
+.back:hover svg {
+  transform: translateX(-2px);
 }

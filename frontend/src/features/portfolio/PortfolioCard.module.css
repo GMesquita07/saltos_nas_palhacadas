@@ -1,15 +1,135 @@
-.card { overflow: hidden; border: 1px solid var(--color-line); background: var(--color-surface); box-shadow: var(--shadow-xs); transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease); }
-.card:hover { border-color: var(--brand-yellow); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.image { position: relative; display: grid; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; color: #77746e; background: #e6e3dd; font-size: 23px; }
-.image small { position: absolute; top: 12px; left: 12px; padding: 5px 7px; color: var(--color-ink); background: rgb(250 249 246 / 85%); font-size: 10px; pointer-events:none; }
-.playIndicator { position: absolute; inset: 50% auto auto 50%; display: grid; width: 48px; place-items: center; aspect-ratio: 1; border: 1px solid rgb(255 255 255 / 70%); border-radius: 50%; color: white; background: rgb(0 0 0 / 52%); font-size: 18px; line-height: 1; transform: translate(-50%, -50%); pointer-events: none; }
-.favoriteButton { position: absolute; z-index: 2; top: 9px; right: 9px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgb(37 36 33 / 16%); border-radius: 50%; color: var(--color-ink); background: rgb(250 249 246 / 92%); font-size: 21px; line-height: 1; }
-.favoriteButton:hover { transform: scale(1.06); }
-.favoriteButton.isFavorite { border-color: #9b332c; color: #9b332c; }
-.details { padding: 17px; }
-.details p { margin: 0 0 7px; color: var(--color-muted); font-size: 11px; }
-.details h3 { margin: 0; font: 600 20px/1.2 var(--font-serif); }
-.details .favoriteError { margin: 11px 0 0; color: #9b332c; font-size: 11px; line-height: 1.45; }
+.card {
+  border: 1px solid rgb(255 255 255 / 11%);
+  background: #11151a;
+  box-shadow: 0 16px 36px rgb(0 0 0 / 18%);
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+
+.card:hover {
+  border-color: rgb(134 207 245 / 36%);
+  box-shadow: 0 22px 48px rgb(0 0 0 / 28%);
+  transform: translateY(-4px);
+}
+
+.image {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  color: rgb(247 247 243 / 55%);
+  background: linear-gradient(145deg, #172029, #0f1317);
+  font-size: 23px;
+}
+
+.image::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 36%;
+  background: linear-gradient(180deg, transparent, rgb(0 0 0 / 34%));
+  content: '';
+  pointer-events: none;
+}
+
+.image small {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  border-radius: var(--radius-pill);
+  padding: 5px 8px;
+  color: #101214;
+  background: rgb(255 255 255 / 91%);
+  font-size: .62rem;
+  font-weight: 820;
+  pointer-events: none;
+}
+
+.playIndicator {
+  position: absolute;
+  z-index: 3;
+  inset: 50% auto auto 50%;
+  display: grid;
+  width: 54px;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 255 255 / 82%);
+  border-radius: 50%;
+  color: white;
+  background: rgb(0 3 4 / 62%);
+  font-size: 18px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.favoriteButton {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 50%;
+  background: rgb(7 9 11 / 72%);
+  font-size: 20px;
+}
+
+.favoriteButton:hover {
+  border-color: rgb(239 109 104 / 70%);
+  color: #ef6d68;
+  transform: scale(1.06);
+}
+
+.favoriteButton.isFavorite {
+  border-color: rgb(216 74 68 / 72%);
+  color: #ef6d68;
+  background: rgb(216 74 68 / 14%);
+}
+
+.details {
+  min-height: 132px;
+  padding: 17px 18px 19px;
+  color: white;
+  background: linear-gradient(180deg, #151a20 0%, #11151a 100%);
+}
+
+.eventDate,
+.location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.eventDate {
+  margin: 0 0 9px;
+  color: #8dcff2;
+  font-size: .74rem;
+  font-weight: 700;
+}
+
+.details h3 {
+  margin: 0 0 10px;
+  color: white;
+  font: 720 1.15rem/1.25 var(--font-display);
+}
+
+.location {
+  margin: 0;
+  color: rgb(247 247 243 / 57%);
+  font-size: .76rem;
+}
+
+.details .favoriteError {
+  margin: 11px 0 0;
+  color: #f2a39e;
+  font-size: .72rem;
+}
+
 .mediaButton,
 .mediaPreview {
   display: block;
@@ -17,17 +137,11 @@
   height: 100%;
   border: 0;
   padding: 0;
-  color: inherit;
   background: transparent;
 }
 
-.mediaButton {
-  cursor: zoom-in;
-}
-
-.mediaPreview {
-  position: relative;
-}
+.mediaButton { cursor: zoom-in; }
+.mediaPreview { position: relative; }
 
 .mediaButton img,
 .mediaButton video,
@@ -44,5 +158,313 @@
 .card:hover .mediaButton video,
 .card:hover .mediaPreview img,
 .card:hover .mediaPreview video {
-  transform: scale(1.025);
+  transform: scale(1.035);
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 15px;
+  color: #f7f7f3;
+  background: #0d1115;
+  box-shadow: 0 16px 38px rgb(0 0 0 / 18%);
+}
+
+.card:hover {
+  border-color: rgb(134 207 245 / 34%);
+  color: white;
+  background: #10161b;
+  box-shadow: 0 24px 52px rgb(0 0 0 / 28%);
+}
+
+.image {
+  color: rgb(247 247 243 / 58%);
+  background: #090c0f;
+}
+
+.image small {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 999px;
+  color: white;
+  background: rgb(7 9 11 / 78%);
+}
+
+.favoriteButton {
+  border-color: rgb(255 255 255 / 16%);
+  color: white;
+  background: rgb(7 9 11 / 78%);
+}
+
+.favoriteButton.isFavorite {
+  border-color: rgb(228 76 70 / 55%);
+  color: #ff6b65;
+  background: rgb(91 23 22 / 58%);
+}
+
+.details {
+  padding: 15px 16px 17px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.details h3 {
+  margin-top: 10px;
+  color: white !important;
+  font: 740 18px/1.25 var(--font-display, inherit);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  color: rgb(247 247 243 / 54%);
+  font-size: 11px;
+}
+
+.metaLocation,
+.metaDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.metaLocation svg,
+.metaDate svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: none;
+  stroke: #86cff5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.card:hover .metaRow,
+.card:hover .details h3 {
+  color: white !important;
+}
+
+.metaDate,
+.metaLocation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: rgb(247 247 243 / 54%) !important;
+  font-size: 11px;
+}
+
+.metaDate svg,
+.metaLocation svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: none;
+  stroke: #86cff5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.details h3 + .metaLocation {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.card:hover .details,
+.card:hover .details h3,
+.card:hover .metaDate,
+.card:hover .metaLocation {
+  color: white !important;
+  background-color: #10161b !important;
+}
+
+:global(html[data-theme='light']) .card,
+:global(html[data-theme='light']) .details {
+  border-color: #dfddd7 !important;
+  color: #252421 !important;
+  background: white !important;
+}
+
+:global(html[data-theme='light']) .details h3 {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .metaDate,
+:global(html[data-theme='light']) .metaLocation {
+  color: #67635e !important;
+}
+
+:global(html[data-theme='light']) .card,
+:global(html[data-theme='light']) .details {
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+}
+:global(html[data-theme='light']) .metaDate,
+:global(html[data-theme='light']) .metaLocation,
+:global(html[data-theme='light']) .details p { color: #626970 !important; }
+:global(html[data-theme='light']) .card:hover .details,
+:global(html[data-theme='light']) .card:hover .details h3,
+:global(html[data-theme='light']) .card:hover .metaDate,
+:global(html[data-theme='light']) .card:hover .metaLocation {
+  background: #fbfdff !important;
+}
+
+:global(html[data-theme='light']) .card {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .favoriteButton {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .details {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .details h3 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .location {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.card {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .card:hover {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .metaRow {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .card:hover .metaRow,
+:global(html[data-theme='light']) .card:hover .details h3 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.metaDate,
+:global(html[data-theme='light']) .metaLocation {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .card:hover .details,
+:global(html[data-theme='light']) .card:hover .details h3,
+:global(html[data-theme='light']) .card:hover .metaDate,
+:global(html[data-theme='light']) .card:hover .metaLocation {
+  background-color: #ffffff !important;
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+}
+
+.card:hover {
+  border-color: var(--brand-blue) !important;
+}
+
+:global(html[data-theme='light']) .favoriteButton,
+:global(html[data-theme='light']) .favoriteButton:hover,
+:global(html[data-theme='light']) .favoriteButton:focus-visible {
+  border-color: rgb(202 62 54 / 45%) !important;
+  color: #d1443d !important;
+  background: #fff5f4 !important;
+}
+
+:global(html[data-theme='light']) .favoriteButton.isFavorite {
+  border-color: #d1443d !important;
+  color: #d1443d !important;
+  background: #ffe9e7 !important;
+}
+
+:global(html[data-theme='dark']) .favoriteButton,
+:global(html[data-theme='dark']) .favoriteButton:hover,
+:global(html[data-theme='dark']) .favoriteButton:focus-visible {
+  border-color: rgb(255 102 94 / 48%) !important;
+  color: #ff6f68 !important;
+  background: rgb(84 21 20 / 72%) !important;
+}
+
+.card,
+:global(html[data-theme='light']) .card,
+:global(html[data-theme='dark']) .card {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+.card:hover,
+:global(html[data-theme='light']) .card:hover,
+:global(html[data-theme='dark']) .card:hover {
+  border-color: var(--interactive) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.details,
+.card:hover .details,
+:global(html[data-theme='light']) .details,
+:global(html[data-theme='dark']) .details {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+.details h3,
+.card:hover .details h3,
+:global(html[data-theme='light']) .details h3,
+:global(html[data-theme='dark']) .details h3 {
+  color: var(--text-primary) !important;
+}
+
+.metaDate,
+.metaLocation,
+.card:hover .metaDate,
+.card:hover .metaLocation,
+:global(html[data-theme='light']) .metaDate,
+:global(html[data-theme='light']) .metaLocation,
+:global(html[data-theme='dark']) .metaDate,
+:global(html[data-theme='dark']) .metaLocation {
+  color: var(--text-muted) !important;
+}
+
+.metaDate svg,
+.metaLocation svg {
+  color: var(--interactive) !important;
+  stroke: currentColor !important;
+}
+
+.favoriteButton,
+.favoriteButton:hover,
+.favoriteButton:focus-visible,
+.favoriteButton.isFavorite,
+:global(html[data-theme='light']) .favoriteButton,
+:global(html[data-theme='light']) .favoriteButton:hover,
+:global(html[data-theme='light']) .favoriteButton:focus-visible,
+:global(html[data-theme='light']) .favoriteButton.isFavorite,
+:global(html[data-theme='dark']) .favoriteButton,
+:global(html[data-theme='dark']) .favoriteButton:hover,
+:global(html[data-theme='dark']) .favoriteButton:focus-visible,
+:global(html[data-theme='dark']) .favoriteButton.isFavorite {
+  border-color: rgb(228 33 34 / 42%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
 }

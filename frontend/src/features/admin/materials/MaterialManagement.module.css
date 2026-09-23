@@ -13,7 +13,7 @@
 .heading h2,
 .manage h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 
 .heading p:last-child,
@@ -26,20 +26,23 @@
   display: grid;
   gap: 7px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .form input:not([type='range']) {
   width: 100%;
   border: 1px solid var(--color-line);
-  padding: 11px;
-  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--color-surface-strong);
   color: var(--color-ink);
 }
 
 .form input:focus {
-  outline: 2px solid rgb(35 34 32 / 25%);
-  outline-offset: 1px;
+  border-color: var(--brand-blue);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .formActions {
@@ -50,16 +53,18 @@
 
 .formActions button {
   flex: 1 1 180px;
-  border: 0;
-  padding: 12px;
-  background: var(--color-ink);
+  border: 1px solid var(--brand-navy);
+  border-radius: var(--radius-pill);
+  padding: 12px 14px;
+  background: var(--brand-navy);
   color: white;
   font: inherit;
+  font-weight: 760;
 }
 
 .formActions button + button {
   border: 1px solid var(--color-line);
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-ink);
 }
 
@@ -70,14 +75,17 @@
   gap: 14px;
   padding: 12px;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .preview img {
   width: 118px;
   aspect-ratio: 1;
   border: 1px solid var(--color-line);
-  background: #e6e3dd;
+  border-radius: var(--radius-sm);
+  background: #e8ded0;
   object-fit: cover;
 }
 
@@ -85,8 +93,8 @@
 .rowActions button {
   width: fit-content;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   padding: 8px 10px;
-  background: transparent;
   color: var(--color-ink);
   font: inherit;
   font-size: 12px;
@@ -118,13 +126,16 @@
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
-  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--ease), box-shadow var(--ease), opacity var(--ease), transform var(--ease);
 }
 
 .row:hover {
-  border-color: var(--color-ink);
-  box-shadow: 0 10px 24px rgb(35 34 32 / 7%);
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .draggingRow {
@@ -145,7 +156,8 @@
   width: 72px;
   aspect-ratio: 1;
   border: 1px solid var(--color-line);
-  background: #e6e3dd;
+  border-radius: var(--radius-sm);
+  background: #e8ded0;
   object-fit: cover;
 }
 
@@ -180,4 +192,364 @@ button:disabled {
   .row img {
     width: 100%;
   }
+}
+
+.fileUploadField {
+  display: grid;
+  gap: 8px;
+}
+
+.fileUploadButton {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: 9px 15px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-size: .86rem;
+  font-weight: 760;
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+
+.fileUploadButton:hover {
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
+}
+
+.fileUploadButton:focus-within {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fileUploadButton input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.row {
+  grid-template-columns: 30px 72px minmax(0, 1fr);
+}
+
+.row strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.rowActions {
+  grid-column: 3;
+  justify-content: flex-start;
+}
+
+.page {
+  color: var(--site-dark-text);
+}
+
+.heading h2,
+.manage h2,
+.row strong {
+  color: white;
+}
+
+.heading p:last-child,
+.manage > p,
+.form label,
+.dragHandle {
+  color: var(--site-dark-muted);
+}
+
+.form input:not([type='range']) {
+  border-color: var(--site-dark-line);
+  border-radius: 9px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.formActions button {
+  border-radius: 9px;
+  background: var(--brand-blue);
+}
+
+.formActions button + button {
+  border-color: var(--site-dark-line);
+  color: white;
+  background: transparent;
+}
+
+.preview,
+.row {
+  border-color: var(--site-dark-line);
+  border-radius: 12px;
+  background: var(--site-dark-panel);
+}
+
+.preview img,
+.row img {
+  border-color: var(--site-dark-line);
+  background: #090c0f;
+}
+
+.row:hover {
+  border-color: rgb(134 207 245 / 34%);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 20%);
+}
+
+.preview button,
+.rowActions button {
+  border-color: var(--site-dark-line);
+  border-radius: 8px;
+  color: white;
+  background: transparent;
+}
+
+:global(html[data-theme='light']) .formActions button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .heading h2,
+:global(html[data-theme='light']) .manage h2,
+:global(html[data-theme='light']) .row strong {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .form input:not([type='range']) {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .formActions button + button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .preview img,
+:global(html[data-theme='light']) .row img {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .preview button,
+:global(html[data-theme='light']) .rowActions button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .page {
+  color: var(--text-primary);
+}
+
+:global(html[data-theme='light']) .heading p:last-child,
+:global(html[data-theme='light']) .manage > p,
+:global(html[data-theme='light']) .form label,
+:global(html[data-theme='light']) .dragHandle {
+  color: var(--text-muted) !important;
+}
+
+:global(html[data-theme='light']) .form input:not([type='range']) {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+:global(html[data-theme='light']) .form input:not([type='range'])::placeholder {
+  color: var(--text-subtle) !important;
+}
+
+:global(html[data-theme='light']) .preview,
+:global(html[data-theme='light']) .row {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow-xs) !important;
+}
+
+:global(html[data-theme='light']) .row:hover {
+  border-color: var(--interactive) !important;
+  background: var(--surface-elevated) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+:global(html[data-theme='light']) .preview img,
+:global(html[data-theme='light']) .row img {
+  border-color: var(--border-strong) !important;
+  background: var(--surface-muted) !important;
+}
+
+:global(html[data-theme='light']) .fileUploadButton,
+:global(html[data-theme='light']) .preview button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='light']) .formActions button + button {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+:global(html[data-theme='light']) .fileUploadButton:hover,
+:global(html[data-theme='light']) .preview button:hover,
+:global(html[data-theme='light']) .rowActions button:hover:not(:disabled),
+:global(html[data-theme='light']) .formActions button + button:hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+:global(html[data-theme='light']) .formActions button:first-child {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+:global(html[data-theme='light']) .formActions button:first-child:hover:not(:disabled) {
+  border-color: var(--interactive-hover) !important;
+  background: var(--interactive-hover) !important;
+}
+
+:global(html[data-theme='light']) .preview button,
+:global(html[data-theme='light']) .rowActions button:last-child {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+:global(html[data-theme='light']) .preview button:hover,
+:global(html[data-theme='light']) .rowActions button:last-child:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+:global(html[data-theme='light']) .formActions button:disabled,
+:global(html[data-theme='light']) .rowActions button:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1;
+}
+
+.fileUploadButton,
+.preview button,
+.rowActions button,
+.formActions button,
+:global(html[data-theme='light']) .fileUploadButton,
+:global(html[data-theme='light']) .preview button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='light']) .formActions button,
+:global(html[data-theme='dark']) .fileUploadButton,
+:global(html[data-theme='dark']) .preview button,
+:global(html[data-theme='dark']) .rowActions button,
+:global(html[data-theme='dark']) .formActions button {
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  padding: 9px 13px !important;
+  font-size: .82rem !important;
+  font-weight: 760 !important;
+}
+
+.rowActions button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='dark']) .rowActions button {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.rowActions button[aria-label],
+:global(html[data-theme='light']) .rowActions button[aria-label],
+:global(html[data-theme='dark']) .rowActions button[aria-label] {
+  display: inline-grid !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  place-items: center !important;
+  padding: 0 !important;
+}
+
+.fileUploadButton,
+.formActions button + button,
+.rowActions button:not(:last-child),
+:global(html[data-theme='light']) .fileUploadButton,
+:global(html[data-theme='light']) .formActions button + button,
+:global(html[data-theme='light']) .rowActions button:not(:last-child),
+:global(html[data-theme='dark']) .fileUploadButton,
+:global(html[data-theme='dark']) .formActions button + button,
+:global(html[data-theme='dark']) .rowActions button:not(:last-child) {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.fileUploadButton:hover,
+.formActions button + button:hover:not(:disabled),
+.rowActions button:not(:last-child):hover:not(:disabled),
+:global(html[data-theme='light']) .fileUploadButton:hover,
+:global(html[data-theme='light']) .formActions button + button:hover:not(:disabled),
+:global(html[data-theme='light']) .rowActions button:not(:last-child):hover:not(:disabled),
+:global(html[data-theme='dark']) .fileUploadButton:hover,
+:global(html[data-theme='dark']) .formActions button + button:hover:not(:disabled),
+:global(html[data-theme='dark']) .rowActions button:not(:last-child):hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.formActions button:first-child,
+:global(html[data-theme='light']) .formActions button:first-child,
+:global(html[data-theme='dark']) .formActions button:first-child {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.formActions button:first-child:hover:not(:disabled),
+:global(html[data-theme='light']) .formActions button:first-child:hover:not(:disabled),
+:global(html[data-theme='dark']) .formActions button:first-child:hover:not(:disabled) {
+  border-color: var(--interactive-hover) !important;
+  color: #ffffff !important;
+  background: var(--interactive-hover) !important;
+}
+
+.preview button,
+.rowActions button:last-child,
+:global(html[data-theme='light']) .preview button,
+:global(html[data-theme='light']) .rowActions button:last-child,
+:global(html[data-theme='dark']) .preview button,
+:global(html[data-theme='dark']) .rowActions button:last-child {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+.preview button:hover:not(:disabled),
+.rowActions button:last-child:hover:not(:disabled),
+:global(html[data-theme='light']) .preview button:hover:not(:disabled),
+:global(html[data-theme='light']) .rowActions button:last-child:hover:not(:disabled),
+:global(html[data-theme='dark']) .preview button:hover:not(:disabled),
+:global(html[data-theme='dark']) .rowActions button:last-child:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+.formActions button:disabled,
+.rowActions button:disabled,
+:global(html[data-theme='light']) .formActions button:disabled,
+:global(html[data-theme='light']) .rowActions button:disabled,
+:global(html[data-theme='dark']) .formActions button:disabled,
+:global(html[data-theme='dark']) .rowActions button:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1 !important;
 }

@@ -163,10 +163,9 @@ export function BookingManagement({
   }
 
   return (
-    <section className={styles.page} aria-labelledby="bookings-heading">
+    <section className={styles.page} aria-label="Gestão de agendamentos">
       <header className={styles.header}>
         <div>
-          <h2 id="bookings-heading">Agendamentos</h2>
           <p>Consulta pedidos privados, confirma horários e mantém a agenda atualizada.</p>
         </div>
         <div className={styles.controls}>

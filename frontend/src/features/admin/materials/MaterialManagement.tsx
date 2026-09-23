@@ -176,9 +176,19 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
           />
         </label>
 
-        <label>
-          Fotografia do material
-          <input accept="image/*" disabled={isUploading} type="file" onChange={uploadMaterialImage} />
+        <label className={styles.fileUploadField}>
+          <span>Fotografia do material</span>
+          <span className={styles.fileUploadButton}>
+            <span aria-hidden="true">＋</span>
+            {isUploading ? 'A carregar fotografia...' : 'Adicionar fotografia'}
+            <input
+              accept="image/*"
+              aria-label="Adicionar fotografia do material"
+              disabled={isUploading}
+              type="file"
+              onChange={uploadMaterialImage}
+            />
+          </span>
         </label>
 
         <label>

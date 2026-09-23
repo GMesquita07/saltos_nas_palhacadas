@@ -15,6 +15,7 @@ public record AdminProfileResponse(
         String profileImagePosition,
         double profileImageZoom,
         String featuredVideoUrl,
+        String heroBackgroundImageUrl,
         String notificationEmail,
         int displayOrder,
         List<ProfileSocialLinkResponse> socialLinks) {
@@ -30,6 +31,7 @@ public record AdminProfileResponse(
                 profile.getProfileImagePosition(),
                 profile.getProfileImageZoom(),
                 profile.getFeaturedVideoUrl(),
+                profile.getHeroBackgroundImageUrl(),
                 profile.getNotificationEmail(),
                 profile.getDisplayOrder(),
                 profile.getActiveSocialLinks()

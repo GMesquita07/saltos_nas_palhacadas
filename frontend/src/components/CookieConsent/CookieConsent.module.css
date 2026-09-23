@@ -10,16 +10,17 @@
   gap: 20px;
   border-top: 1px solid var(--color-line);
   padding: 16px 24px;
-  background: rgba(250, 249, 246, .96);
+  background: rgb(255 253 248 / 96%);
   color: var(--color-ink);
-  box-shadow: 0 -12px 36px rgba(37, 36, 33, .08);
+  box-shadow: 0 -14px 42px rgb(32 31 27 / 10%);
+  backdrop-filter: blur(10px);
 }
 
 .banner p {
   max-width: 680px;
   margin: 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: .82rem;
   line-height: 1.5;
 }
 
@@ -32,20 +33,30 @@
 
 .actions button {
   border: 1px solid var(--color-line);
-  padding: 9px 12px;
+  border-radius: var(--radius-pill);
+  padding: 9px 13px;
   background: var(--color-surface);
   color: var(--color-ink);
-  font-size: 13px;
+  font-size: .82rem;
+  font-weight: 740;
+  transition: border-color var(--ease), background-color var(--ease), color var(--ease), transform var(--ease);
 }
 
 .actions button:hover {
-  border-color: var(--color-ink);
+  color: var(--brand-blue);
+  transform: translateY(-1px);
 }
 
 .actions .primary {
-  border-color: var(--color-ink);
-  background: var(--color-ink);
+  border-color: var(--brand-navy);
+  background: var(--brand-navy);
   color: white;
+}
+
+.actions .primary:hover {
+  border-color: var(--brand-blue);
+  color: var(--brand-navy);
+  background: var(--brand-blue);
 }
 
 @media (max-width: 720px) {
@@ -64,4 +75,73 @@
     min-height: 42px;
     padding: 9px 8px;
   }
+}
+
+.banner {
+  border-top-color: var(--site-dark-line);
+  color: white;
+  background: rgb(7 9 11 / 96%);
+  box-shadow: 0 -18px 46px rgb(0 0 0 / 34%);
+  backdrop-filter: blur(12px);
+}
+
+.banner p {
+  color: var(--site-dark-muted);
+}
+
+.actions button {
+  border-color: var(--site-dark-line);
+  border-radius: 9px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.actions button:hover {
+  border-color: var(--brand-blue);
+}
+
+.actions .primary {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue);
+}
+
+.actions button:hover {
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+.actions .primary:hover {
+  color: white !important;
+  background: var(--brand-blue) !important;
+}
+
+:global(html[data-theme='light']) .banner {
+  border-top-color: #dfe3e8 !important;
+  color: #171a1d !important;
+  background: rgb(255 255 255 / 97%) !important;
+  box-shadow: 0 -12px 36px rgb(26 33 39 / 9%) !important;
+}
+:global(html[data-theme='light']) .banner p { color: #626970 !important; }
+:global(html[data-theme='light']) .actions button { border-color: #d4dae0 !important; color: #252a2f !important; background: #ffffff !important; }
+:global(html[data-theme='light']) .actions .primary { border-color: #168bd0 !important; color: white !important; background: #168bd0 !important;
+  color: #171a1d !important; }
+
+:global(html[data-theme='light'])
+.banner {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .actions button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.actions button:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .actions .primary:hover {
+  color: #171a1d !important;
 }

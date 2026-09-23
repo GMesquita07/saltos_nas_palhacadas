@@ -1,21 +1,561 @@
-.page { width: min(960px, calc(100% - 48px)); padding: 65px 0 95px; margin: auto; }
-.back { border: 0; padding: 0; color: var(--color-muted); background: none; font-size: 13px; }
-.back:hover { color: var(--color-ink); }
-.panel { width: min(100%, 430px); margin: 56px auto; }
-.panel h1 { margin-bottom: 12px; }
-.intro { color: var(--color-muted); line-height: 1.6; }
-.modeSwitch { display: grid; grid-template-columns: 1fr 1fr; margin-top: 30px; border-bottom: 1px solid var(--color-line); }
-.modeSwitch button { border: 0; border-bottom: 2px solid transparent; padding: 12px; color: var(--color-muted); background: transparent; }
-.modeSwitch .active { border-color: var(--color-ink); color: var(--color-ink); font-weight: 600; }
-.panel form { display: grid; gap: 16px; margin-top: 25px; }
-.panel label { display: grid; gap: 7px; color: var(--color-muted); font-size: 12px; }
-.nameFields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.panel input { width: 100%; border: 1px solid var(--color-line); padding: 11px; color: var(--color-ink); background: var(--color-surface); }
-.panel small { color: var(--color-muted); font-size: 11px; }
-.turnstile { min-height: 65px; }
-.panel form > button { border: 0; padding: 12px; color: white; background: var(--color-ink); }
-.panel form > .textButton { border: 0; padding: 4px 0; color: var(--color-muted); background: transparent; text-align: left; }
-.panel form > .textButton:hover { color: var(--color-ink); }
-.error { margin: 0; color: #9b332c; line-height: 1.5; }
-.success { margin: 0; color: #3a6848; line-height: 1.5; }
-@media (max-width: 650px) { .page { width: min(100% - 32px, 960px); padding-top: 40px; } .panel { margin-top: 45px; } .nameFields { grid-template-columns: 1fr; } }
+.page {
+  width: min(960px, calc(100% - 48px));
+  padding: 65px 0 95px;
+  margin: auto;
+}
+
+.back {
+  border: 0;
+  padding: 0;
+  color: var(--color-muted);
+  background: none;
+  font-size: .84rem;
+  font-weight: 720;
+  transition: color var(--ease), transform var(--ease);
+}
+
+.back:hover {
+  color: var(--color-ink);
+  transform: translateX(-2px);
+}
+
+.panel {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  margin: 56px auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel h1 {
+  margin-bottom: 12px;
+}
+
+.intro {
+  color: var(--color-muted);
+  line-height: 1.7;
+}
+
+.modeSwitch {
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: 5px;
+  margin-top: 30px;
+  background: var(--surface-soft);
+}
+
+.modeSwitch button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 10px 12px;
+  color: var(--color-muted);
+  background: transparent;
+  font-weight: 760;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease), box-shadow var(--ease);
+}
+
+.modeSwitch .active {
+  border-color: rgb(32 31 27 / 8%);
+  color: var(--color-ink);
+  background: white;
+  box-shadow: var(--shadow-xs);
+}
+
+.panel form {
+  display: grid;
+  gap: 16px;
+  margin-top: 25px;
+}
+
+.panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.nameFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.panel input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+}
+
+.panel small {
+  color: var(--color-muted);
+  font-size: .74rem;
+}
+
+.turnstile {
+  min-height: 65px;
+}
+
+.panel form > button {
+  border: 1px solid var(--brand-navy);
+  border-radius: var(--radius-pill);
+  padding: 12px 16px;
+  color: white;
+  background: var(--brand-navy);
+  font-weight: 780;
+  transition: background-color var(--ease), color var(--ease), transform var(--ease);
+}
+
+.panel form > button:hover:not(:disabled) {
+  color: var(--brand-navy);
+  background: var(--brand-blue);
+  transform: translateY(-1px);
+}
+
+.panel form > .textButton {
+  border: 0;
+  padding: 4px 0;
+  color: var(--color-muted);
+  background: transparent;
+  text-align: left;
+}
+
+.panel form > .textButton:hover {
+  color: var(--color-ink);
+}
+
+.error,
+.success {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.error {
+  color: var(--color-accent-danger);
+}
+
+.success {
+  color: var(--color-accent-success);
+}
+
+@media (max-width: 650px) {
+  .page {
+    width: min(100% - 32px, 960px);
+    padding-top: 40px;
+  }
+
+  .panel {
+    padding: 24px 18px;
+    margin-top: 45px;
+  }
+
+  .nameFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.page {
+  width: min(1040px, calc(100% - 48px));
+  color: var(--site-dark-text);
+}
+
+.back {
+  color: rgb(247 247 243 / 62%);
+}
+
+.back:hover {
+  color: white;
+}
+
+.panel {
+  width: min(100%, 470px);
+  margin: 52px auto;
+  border: 1px solid var(--site-dark-line);
+  padding: 30px;
+  background:
+    radial-gradient(circle at 90% 0%, rgb(22 139 208 / 9%), transparent 16rem),
+    var(--site-dark-panel);
+  box-shadow: var(--site-dark-shadow);
+}
+
+.panel h1 {
+  color: white;
+  font-size: clamp(36px, 5vw, 52px);
+  letter-spacing: -.045em;
+}
+
+.intro,
+.panel label,
+.panel small {
+  color: var(--site-dark-muted);
+}
+
+.modeSwitch {
+  border-bottom-color: var(--site-dark-line);
+}
+
+.modeSwitch button {
+  color: rgb(247 247 243 / 46%);
+}
+
+.modeSwitch .active {
+  border-color: var(--brand-blue);
+  color: white;
+}
+
+.panel input {
+  border-color: var(--site-dark-line);
+  border-radius: 10px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.panel form > button:not(.textButton) {
+  border-radius: 10px;
+  color: white;
+  background: var(--brand-blue);
+}
+
+.panel form > .textButton {
+  color: rgb(247 247 243 / 52%);
+}
+
+.panel form > .textButton:hover {
+  color: white;
+}
+
+.panel {
+  width: min(100%, 460px);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 18px;
+  padding: 28px;
+  color: #f7f7f3;
+  background:
+    radial-gradient(circle at 88% 0%, rgb(22 139 208 / 9%), transparent 17rem),
+    #0d1115;
+  box-shadow: 0 26px 70px rgb(0 0 0 / 28%);
+}
+
+.panel h1 {
+  color: white !important;
+}
+
+.intro,
+.panel label,
+.panel small {
+  color: rgb(247 247 243 / 54%) !important;
+}
+
+.modeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 24px;
+  border: 1px solid rgb(255 255 255 / 10%) !important;
+  border-radius: 12px;
+  padding: 4px;
+  background: #090c0f !important;
+}
+
+.modeSwitch button {
+  min-height: 40px;
+  border: 0 !important;
+  border-radius: 8px;
+  color: rgb(247 247 243 / 52%) !important;
+  background: transparent !important;
+}
+
+.modeSwitch button:hover {
+  color: white !important;
+  background: rgb(255 255 255 / 5%) !important;
+}
+
+.modeSwitch .active {
+  color: white !important;
+  background: var(--brand-blue) !important;
+  box-shadow: 0 8px 20px rgb(22 139 208 / 20%);
+}
+
+.panel input {
+  border-color: rgb(255 255 255 / 10%) !important;
+  border-radius: 9px;
+  color: white !important;
+  caret-color: white;
+  background: #11161b !important;
+}
+
+.panel input:-webkit-autofill,
+.panel input:-webkit-autofill:hover,
+.panel input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f7f7f3 !important;
+  box-shadow: 0 0 0 1000px #11161b inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.panel form > button:not(.textButton) {
+  min-height: 43px;
+  border-radius: 9px;
+  color: white !important;
+  background: var(--brand-blue) !important;
+}
+
+.panel form > button:not(.textButton):hover:not(:disabled) {
+  color: white !important;
+  filter: brightness(1.08);
+}
+
+.panel form > .textButton {
+  color: rgb(247 247 243 / 58%) !important;
+}
+
+.panel form > .textButton:hover {
+  color: #86cff5 !important;
+}
+
+:global(html[data-theme='light']) .panel {
+  border-color: #dfddd7 !important;
+  color: #252421 !important;
+  background: white !important;
+}
+
+:global(html[data-theme='light']) .panel h1 {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .panel label,
+:global(html[data-theme='light']) .panel small {
+  color: #66615c !important;
+}
+
+:global(html[data-theme='light']) .modeSwitch {
+  border-color: #dfddd7 !important;
+  background: #f4f2ec !important;
+}
+
+:global(html[data-theme='light']) .modeSwitch .active {
+  background: var(--brand-blue) !important;
+}
+
+:global(html[data-theme='light']) .panel input {
+  border-color: #d9d7d1 !important;
+  color: #252421 !important;
+  background: white !important;
+}
+
+:global(html[data-theme='light']) .page { color: #171a1d !important; }
+:global(html[data-theme='light']) .panel {
+  border: 1px solid #dfe3e8 !important;
+  border-radius: 16px !important;
+  padding: 28px !important;
+  box-shadow: 0 22px 56px rgb(26 33 39 / 10%) !important;
+}
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .panel label,
+:global(html[data-theme='light']) .panel small { color: #626970 !important; }
+:global(html[data-theme='light']) .modeSwitch {
+  border: 1px solid #dfe3e8 !important;
+  border-radius: 12px !important;
+  background: #eef1f4 !important;
+  overflow: hidden;
+}
+:global(html[data-theme='light']) .modeSwitch button { border: 0 !important; color: #555c63 !important; background: transparent !important; }
+:global(html[data-theme='light']) .modeSwitch button:hover { color: #171a1d !important; background: #f8fafb !important; }
+:global(html[data-theme='light']) .modeSwitch .active { color: white !important; background: #168bd0 !important; }
+:global(html[data-theme='light']) .panel input { border-color: #d9dee3 !important; color: #1b2025 !important; background: #ffffff !important; }
+:global(html[data-theme='light']) .panel form > button:not(.textButton) { color: white !important; }
+:global(html[data-theme='light']) .panel form > .textButton { color: #596168 !important; }
+
+.panel form > .textButton,
+.panel form > .textButton:hover,
+.panel form > .textButton:focus-visible {
+  border: 0 !important;
+  padding: 4px 0 !important;
+  color: var(--brand-blue) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.panel form > .textButton:hover,
+.panel form > .textButton:focus-visible {
+  color: #57b7e9 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+:global(html[data-theme='light']) .panel {
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+  box-shadow: 0 22px 58px rgb(24 31 37 / 10%) !important;
+}
+
+:global(html[data-theme='light']) .panel h1 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .panel label,
+:global(html[data-theme='light']) .panel small {
+  color: #626a72 !important;
+}
+
+:global(html[data-theme='light']) .panel input {
+  border-color: #d6dce1 !important;
+  color: #171a1d !important;
+  background: #f9fafb !important;
+}
+
+.page,
+.panel,
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .panel,
+:global(html[data-theme='dark']) .page,
+:global(html[data-theme='dark']) .panel {
+  color: var(--text-primary) !important;
+}
+
+.panel,
+:global(html[data-theme='light']) .panel,
+:global(html[data-theme='dark']) .panel {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+}
+
+.intro,
+.panel label,
+.panel small,
+.back,
+.panel form > .textButton,
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .panel label,
+:global(html[data-theme='light']) .panel small,
+:global(html[data-theme='light']) .back,
+:global(html[data-theme='light']) .panel form > .textButton,
+:global(html[data-theme='dark']) .intro,
+:global(html[data-theme='dark']) .panel label,
+:global(html[data-theme='dark']) .panel small,
+:global(html[data-theme='dark']) .back,
+:global(html[data-theme='dark']) .panel form > .textButton {
+  color: var(--text-muted) !important;
+}
+
+.panel input,
+:global(html[data-theme='light']) .panel input,
+:global(html[data-theme='dark']) .panel input {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.modeSwitch,
+:global(html[data-theme='light']) .modeSwitch,
+:global(html[data-theme='dark']) .modeSwitch {
+  border-color: var(--border) !important;
+  background: var(--surface-soft) !important;
+}
+
+.modeSwitch button,
+:global(html[data-theme='light']) .modeSwitch button,
+:global(html[data-theme='dark']) .modeSwitch button {
+  color: var(--text-muted) !important;
+}
+
+.modeSwitch .active,
+:global(html[data-theme='light']) .modeSwitch .active,
+:global(html[data-theme='dark']) .modeSwitch .active {
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.panel form > button:not(.textButton),
+:global(html[data-theme='light']) .panel form > button:not(.textButton),
+:global(html[data-theme='dark']) .panel form > button:not(.textButton) {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.panel form > button:not(.textButton):hover:not(:disabled),
+:global(html[data-theme='light']) .panel form > button:not(.textButton):hover:not(:disabled),
+:global(html[data-theme='dark']) .panel form > button:not(.textButton):hover:not(:disabled) {
+  border-color: var(--interactive-hover) !important;
+  color: #ffffff !important;
+  background: var(--interactive-hover) !important;
+}
+
+:global(html[data-theme='light']) .panel form > button:not(.textButton) {
+  border-color: #168bd0 !important;
+  color: #ffffff !important;
+  background: #168bd0 !important;
+}
+
+:global(html[data-theme='light']) .panel form > button:not(.textButton):hover:not(:disabled) {
+  border-color: #1175ae !important;
+  color: #ffffff !important;
+  background: #1175ae !important;
+}
+
+:global(html[data-theme='light']) .panel form > .textButton,
+:global(html[data-theme='light']) .panel form > .textButton:hover,
+:global(html[data-theme='light']) .panel form > .textButton:focus-visible {
+  color: #126fa8 !important;
+  background: transparent !important;
+}
+
+.panel form > .textButton,
+:global(html[data-theme='dark']) .panel form > .textButton {
+  border: 1px solid var(--border) !important;
+  border-radius: 9px !important;
+  padding: 10px 12px !important;
+  color: var(--interactive-hover) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.panel form > .textButton:hover,
+.panel form > .textButton:focus-visible,
+:global(html[data-theme='dark']) .panel form > .textButton:hover,
+:global(html[data-theme='dark']) .panel form > .textButton:focus-visible {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive-soft) !important;
+  text-decoration: none !important;
+}
+
+:global(html[data-theme='light']) .panel form > .textButton,
+:global(html[data-theme='light']) .panel form > .textButton:hover,
+:global(html[data-theme='light']) .panel form > .textButton:focus-visible {
+  border-color: var(--border) !important;
+  border-radius: 9px !important;
+  padding: 10px 12px !important;
+}
+
+:global(html[data-theme='light']) .panel form > .textButton:hover,
+:global(html[data-theme='light']) .panel form > .textButton:focus-visible {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.back svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--ease);
+}
+
+.back:hover svg {
+  transform: translateX(-2px);
+}

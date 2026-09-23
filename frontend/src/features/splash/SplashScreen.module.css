@@ -59,3 +59,15 @@
     display: none;
   }
 }
+
+:global(html[data-theme='light']) .splash {
+  background-color: #050505 !important;
+  color: #f7f7f3 !important;
+  border-color: rgb(255 255 255 / 10%) !important;
+}
+
+:global(html[data-theme='light']) .docking {
+  background-color: rgb(0 0 0 / 0%) !important;
+  color: #f7f7f3 !important;
+  border-color: rgb(255 255 255 / 10%) !important;
+}

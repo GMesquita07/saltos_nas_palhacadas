@@ -10,11 +10,18 @@
   width: 58px;
   place-items: center;
   aspect-ratio: 1;
-  border: 0;
+  border: 1px solid rgb(255 255 255 / 16%);
   border-radius: 999px;
-  background: var(--color-ink);
+  background: var(--brand-navy);
   color: white;
-  box-shadow: 0 16px 38px rgb(35 34 32 / 20%);
+  box-shadow: 0 16px 38px rgb(5 11 29 / 24%);
+  transition: transform var(--ease), box-shadow var(--ease), background-color var(--ease);
+}
+
+.launcher:hover {
+  background: var(--brand-blue);
+  box-shadow: 0 20px 46px rgb(5 11 29 / 28%);
+  transform: translateY(-2px);
 }
 
 .launcher svg {
@@ -28,6 +35,7 @@
   width: min(390px, calc(100vw - 32px));
   max-height: min(680px, calc(100svh - 160px));
   border: 1px solid rgb(35 34 32 / 16%);
+  border-radius: var(--radius-card);
   background: var(--color-paper);
   box-shadow: 0 24px 60px rgb(35 34 32 / 22%);
 }
@@ -43,7 +51,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 15px 16px;
-  background: var(--color-ink);
+  background: var(--brand-navy);
   color: white;
 }
 
@@ -93,8 +101,15 @@
   place-items: center;
   aspect-ratio: 1;
   border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 50%;
   background: transparent;
   color: white;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.headerActions button:hover {
+  border-color: white;
+  background: rgb(255 255 255 / 12%);
 }
 
 .headerActions svg,
@@ -139,9 +154,9 @@
 
 .user {
   justify-self: end;
-  border-color: var(--color-ink);
+  border-color: var(--brand-navy);
   border-radius: 8px 8px 2px 8px;
-  background: var(--color-ink);
+  background: var(--brand-navy);
   color: white;
 }
 
@@ -153,7 +168,8 @@
 
 .suggestions button {
   min-height: 38px;
-  border: 1px solid var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   padding: 9px 12px;
   background: var(--color-surface);
   color: var(--color-ink);
@@ -162,7 +178,7 @@
 }
 
 .suggestions button:hover {
-  background: var(--color-ink);
+  background: var(--brand-blue);
   color: white;
 }
 
@@ -203,23 +219,31 @@
 .form input {
   min-width: 0;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   padding: 12px 13px;
   background: white;
   color: var(--color-ink);
 }
 
 .form input:focus {
-  outline: 2px solid rgb(35 34 32 / 25%);
+  outline: 3px solid var(--color-focus);
   outline-offset: 1px;
 }
 
 .form button {
   display: grid;
   place-items: center;
-  border: 0;
+  border: 1px solid var(--brand-navy);
   border-radius: 999px;
-  background: var(--color-ink);
+  background: var(--brand-navy);
   color: white;
+  transition: background-color var(--ease), border-color var(--ease), transform var(--ease);
+}
+
+.form button:hover:not(:disabled) {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue);
+  transform: translateY(-1px);
 }
 
 .form button:disabled,
@@ -245,4 +269,271 @@
     min-height: 260px;
     max-height: calc(100svh - 305px);
   }
+}
+
+.launcher {
+  background: #0d1115;
+  box-shadow: 0 16px 42px rgb(0 0 0 / 36%);
+}
+
+.panel {
+  border-color: var(--site-dark-line);
+  border-radius: 16px;
+  color: white;
+  background: var(--site-dark-bg-soft);
+  box-shadow: 0 28px 74px rgb(0 0 0 / 45%);
+  overflow: hidden;
+}
+
+.header {
+  background: #0d1115;
+}
+
+.thread {
+  background: #090c0f;
+}
+
+.message {
+  border-color: var(--site-dark-line);
+  color: white;
+  background: var(--site-dark-panel);
+}
+
+.assistant {
+  box-shadow: 0 8px 18px rgb(0 0 0 / 22%);
+}
+
+.user {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue);
+}
+
+.suggestions button {
+  border-color: var(--site-dark-line);
+  border-radius: 9px;
+  color: white;
+  background: var(--site-dark-panel);
+}
+
+.suggestions button:hover {
+  border-color: var(--brand-blue);
+  background: rgb(22 139 208 / 12%);
+}
+
+.suggestions .moreButton {
+  color: rgb(247 247 243 / 68%);
+}
+
+.form {
+  border-top-color: var(--site-dark-line);
+  background: #0d1115;
+}
+
+.privacyNotice {
+  color: rgb(247 247 243 / 42%);
+}
+
+.form input {
+  border-color: var(--site-dark-line);
+  border-radius: 9px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.form button {
+  background: var(--brand-blue);
+}
+
+.suggestions button:hover,
+.headerActions button:hover,
+.form button:hover:not(:disabled) {
+  color: white !important;
+}
+
+.suggestions button:hover {
+  border-color: rgb(134 207 245 / 34%) !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+:global(html[data-theme='light']) .launcher { color: white !important; background: #168bd0 !important; }
+:global(html[data-theme='light']) .panel,
+:global(html[data-theme='light']) .thread,
+:global(html[data-theme='light']) .form {
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+  background: #f7f8fa !important;
+}
+:global(html[data-theme='light']) .header { color: white !important; background: #17212a !important; }
+:global(html[data-theme='light']) .message,
+:global(html[data-theme='light']) .suggestions button,
+:global(html[data-theme='light']) .form input {
+  border-color: #d9dee3 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+}
+:global(html[data-theme='light']) .user { border-color: #168bd0 !important; color: white !important; background: #168bd0 !important; }
+
+:global(html[data-theme='light']) .launcher {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .header {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .headerActions button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .headerActions button:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .user {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .suggestions button:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .form button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.launcher {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .panel {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .thread {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .message {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .suggestions button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .suggestions .moreButton {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .form {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .privacyNotice {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .form input {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.suggestions button:hover,
+:global(html[data-theme='light']) .headerActions button:hover,
+:global(html[data-theme='light']) .form button:hover:not(:disabled) {
+  color: #171a1d !important;
+}
+
+.header,
+:global(html[data-theme='light']) .header,
+:global(html[data-theme='dark']) .header {
+  color: #ffffff !important;
+  background: #05090c !important;
+}
+
+.header p,
+.header strong,
+.headerActions button,
+:global(html[data-theme='light']) .header p,
+:global(html[data-theme='light']) .header strong,
+:global(html[data-theme='light']) .headerActions button {
+  color: #ffffff !important;
+}
+
+.panel,
+.thread,
+.form,
+:global(html[data-theme='light']) .panel,
+:global(html[data-theme='light']) .thread,
+:global(html[data-theme='light']) .form,
+:global(html[data-theme='dark']) .panel,
+:global(html[data-theme='dark']) .thread,
+:global(html[data-theme='dark']) .form {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+.assistant,
+:global(html[data-theme='light']) .assistant,
+:global(html[data-theme='dark']) .assistant {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.user,
+:global(html[data-theme='light']) .user,
+:global(html[data-theme='dark']) .user {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.suggestions button,
+:global(html[data-theme='light']) .suggestions button,
+:global(html[data-theme='dark']) .suggestions button {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.suggestions button:hover,
+:global(html[data-theme='light']) .suggestions button:hover,
+:global(html[data-theme='dark']) .suggestions button:hover {
+  border-color: var(--interactive) !important;
+  color: var(--interactive) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.form input,
+:global(html[data-theme='light']) .form input,
+:global(html[data-theme='dark']) .form input {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.privacyNotice,
+:global(html[data-theme='light']) .privacyNotice,
+:global(html[data-theme='dark']) .privacyNotice {
+  color: var(--text-muted) !important;
+}
+
+.form button,
+:global(html[data-theme='light']) .form button,
+:global(html[data-theme='dark']) .form button,
+.launcher,
+:global(html[data-theme='light']) .launcher,
+:global(html[data-theme='dark']) .launcher {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
 }

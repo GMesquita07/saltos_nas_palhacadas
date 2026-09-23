@@ -35,6 +35,18 @@ import styles from './App.module.css'
 
 type NavigationView = 'profiles' | 'contacts' | 'materials' | 'admin' | 'auth' | 'favorites' | 'account' | 'booking' | 'privacy' | 'terms' | 'cookies' | 'faq'
 type SplashPhase = 'playing' | 'docking' | 'done'
+type ColorTheme = 'dark' | 'light'
+
+const themeStorageKey = 'saltos.theme'
+
+function storedTheme(): ColorTheme | null {
+  try {
+    const value = localStorage.getItem(themeStorageKey)
+    return value === 'dark' || value === 'light' ? value : null
+  } catch {
+    return null
+  }
+}
 
 function App() {
   const { isSessionReady, logout, session } = useAuth()
@@ -44,6 +56,24 @@ function App() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [profilesError, setProfilesError] = useState(false)
   const [isProfilesLoading, setIsProfilesLoading] = useState(true)
+  const [theme, setTheme] = useState<ColorTheme>(() => storedTheme() ?? 'dark')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => {
+      const next = current === 'dark' ? 'light' : 'dark'
+      try {
+        localStorage.setItem(themeStorageKey, next)
+      } catch {
+        // Mantém a preferência apenas nesta sessão.
+      }
+      return next
+    })
+  }, [])
 
   const loadProfiles = useCallback(async (force = false) => {
     try {
@@ -144,6 +174,7 @@ function App() {
       />
       <div className={`${styles.application} ${splashPhase === 'playing' ? styles.isWaiting : ''}`}>
         <Header
+          theme={theme}
           activeView={activeView}
           isBrandHidden={splashPhase === 'docking'}
           session={isSessionReady ? session : null}
@@ -157,6 +188,7 @@ function App() {
           onLogout={handleLogout}
           onMaterialsClick={() => navigate('/materiais')}
           onProfilesClick={goHome}
+          onThemeToggle={toggleTheme}
         />
         <main className={styles.main}>
           <Routes>
