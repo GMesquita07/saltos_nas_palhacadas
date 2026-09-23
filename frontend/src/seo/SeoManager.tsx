@@ -92,4 +92,3 @@ function setJsonLd(jsonLd: unknown) {
 function getOrCreateElement<T extends Element>(selector: string, create: () => T): T {
   return document.head.querySelector<T>(selector) ?? create()
 }
-
