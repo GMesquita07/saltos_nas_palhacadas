@@ -2,6 +2,8 @@
 
 Last verified: 2026-09-24.
 
+Feature 6 foi promovida por PR #55 -> `dev` e PR #56 -> `main`. O frontend de produção ficou em `a97c3c26deddbc7359a0c1b802eb80a22580be5c`; CI, CodeQL e Cloudflare Pages concluíram com sucesso. PageSpeed/Core Web Vitals reais continuam por medir pós-deploy.
+
 ## Baseline
 
 Medido com:
