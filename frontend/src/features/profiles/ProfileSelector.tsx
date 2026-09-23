@@ -5,10 +5,9 @@ import type { Profile } from '../../types/profile'
 type ProfileSelectorProps = {
   profiles: Profile[]
   viewerName?: string
-  onProfileSelect: (profile: Profile) => void
 }
 
-export function ProfileSelector({ profiles, viewerName, onProfileSelect }: ProfileSelectorProps) {
+export function ProfileSelector({ profiles, viewerName }: ProfileSelectorProps) {
   return (
     <section className={styles.section}>
       <div className={styles.intro}>
@@ -21,7 +20,7 @@ export function ProfileSelector({ profiles, viewerName, onProfileSelect }: Profi
         <p className={styles.empty}>Ainda não existem perfis publicados.</p>
       ) : (
         <div className={styles.cards}>
-          {profiles.map((profile) => <ProfileCard key={profile.id} profile={profile} onSelect={onProfileSelect} />)}
+          {profiles.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}
         </div>
       )}
     </section>

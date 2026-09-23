@@ -2,6 +2,26 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.saltosnaspalhacadas.pt/</loc>
-    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/agendar</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/contactos</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/materiais</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/faq</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/privacidade</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/termos</loc>
+  </url>
+  <url>
+    <loc>https://www.saltosnaspalhacadas.pt/cookies</loc>
   </url>
 </urlset>

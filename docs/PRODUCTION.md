@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-09-18.
+Last verified: 2026-09-23.
 
 ## Arquitetura Real
 
@@ -33,6 +33,7 @@ Variáveis:
 
 - `VITE_API_URL`
 - `VITE_TURNSTILE_SITE_KEY`
+- `SEO_API_URL` opcional no build, para gerar sitemap com perfis publicados quando disponível
 
 `VITE_TURNSTILE_SITE_KEY` é pública por definição. Nenhum secret deve usar prefixo `VITE_`.
 
@@ -45,9 +46,9 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | GCP project | `saltos-prod-gmesquita` |
 | Região | `europe-west1` |
 | Cloud Run service | `saltos-backend` |
-| Imagem/código da aplicação | baseado em `backend:ee8d9c1` |
-| Revisões recentes | alterações apenas de ambiente/secrets |
-| Tráfego | 100% |
+| Imagem/código da aplicação | `backend:55056d5` |
+| Revisão atual | `saltos-backend-00017-88t` |
+| Tráfego | 100% nesta revisão |
 | Scaling | scale-to-zero enabled, max 2 |
 | CPU/memória | 1 CPU, 1 GiB |
 | Concurrency | 80 |
@@ -55,7 +56,7 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | Billing | request-based |
 | Health | `/actuator/health` |
 
-O health endpoint de produção está UP. Recentes logs ERROR do Cloud Run foram verificados e estavam limpos durante a verificação final. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
+O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00017-88t` serve 100% do tráfego. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
 
 - `spring.jpa.hibernate.ddl-auto=validate`
 - `app.security.hsts.enabled=true` por default
@@ -72,9 +73,11 @@ O health endpoint de produção está UP. Recentes logs ERROR do Cloud Run foram
 | Database | `neondb` |
 | Região | AWS Frankfurt / `eu-central-1` |
 | SSL | Obrigatório |
-| Schema | Flyway até V20 antes da Feature 4 |
+| Schema | Flyway V23 |
 | PITR/history observado no plano atual | 6 horas |
 | Snapshot manual durável | `pre-launch-2026-09-16` |
+
+Flyway validou 23 migrations. Produção estava em V22 e aplicou V23, cuja alteração é `add profile hero background`; produção está agora em Flyway V23.
 
 Não documentar passwords, connection strings completas ou hosts privados.
 
@@ -192,14 +195,12 @@ Validações E2E em produção:
 
 O contacto público `ola@saltosnaspalhacadas.pt` ainda precisa decisão de inbound email; Brevo SMTP não é automaticamente mailbox inbound.
 
-Feature 4 em desenvolvimento na branch `feat/notifications-and-email` mantém Brevo SMTP e adiciona:
+Feature 4 notifications/email está DONE e foi promovida por PR #27 -> `dev` e PR #29 -> `main`. V21 está em produção e mantém Brevo SMTP com:
 
 - `V21__profile_notification_email.sql` com `profiles.notification_email VARCHAR(254)` nullable;
 - email privado por artista usado apenas para notificações operacionais;
 - notificações para todos os admins ativos da DB;
 - wording PT-PT atualizado em emails de booking.
-
-Esta feature ainda não está production-complete nem promovida a produção.
 
 ## Domínio
 
@@ -260,6 +261,10 @@ Migrations:
 
 Concluído:
 
+- Feature 4 notifications/email DONE: PR #27 -> `dev`, PR #29 -> `main`;
+- Global UI Redesign: PR #44 -> `dev`, PR #45 -> `main`, seguido de fixes visuais posteriores;
+- backend de produção atualizado para `main` em `55056d5`, imagem `backend:55056d5`, revisão `saltos-backend-00017-88t`;
+- Flyway em produção validado até V23;
 - CI, PostgreSQL CI e CodeQL passaram na release final `main`;
 - Cloudflare Pages production deployment vem de `main`;
 - produção manual smoke testing passou;
@@ -269,7 +274,7 @@ Concluído:
 Ainda pós-lançamento:
 
 - confirmação administrativa .PT externa;
-- Google Search Console e sitemap;
+- Google Search Console ainda não configurado; submeter sitemap;
 - melhorias visuais/frontend futuras;
 - otimização futura de media/assets estáticos.
 
