@@ -1,14 +1,16 @@
+import { Link } from 'react-router-dom'
 import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import { profilePath } from '../../navigation/routes'
 import styles from './ProfileCard.module.css'
 
-export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect: (profile: Profile) => void }) {
+export function ProfileCard({ profile }: { profile: Profile }) {
   const imagePosition = profile.imagePosition ?? '50% 50%'
   const imageZoom = profile.imageZoom ?? 1
 
   return (
-    <button className={styles.card} type="button" onClick={() => onSelect(profile)}>
+    <Link className={styles.card} to={profilePath(profile.slug)}>
       <span className={styles.portrait}>
         <CroppedImage
           alt={'Foto de perfil de ' + profile.name}
@@ -25,6 +27,6 @@ export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect:
         <strong>{profile.name}</strong>
         <span>Ver portfólio <b><NavIcon name="arrow-right" /></b></span>
       </span>
-    </button>
+    </Link>
   )
 }
