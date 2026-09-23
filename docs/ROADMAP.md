@@ -41,11 +41,11 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Admin content management V2 | DONE | Portfolio admin vê publicados/ocultos, materiais editáveis, contactos ocultáveis e painel redesenhado |
 | Feature 4: notificações email admin/artista | DONE | PR #27 -> `dev`; PR #29 -> `main`; V21 em produção |
 | Global UI Redesign | DONE | PR #44 -> `dev`; PR #45 -> `main`; houve fixes visuais posteriores |
-| Favicon branding final | DONE | PR #53 -> `dev`; PR #54 -> `main`; produção main `1e47e52260c792c803d750824ac9bf7b3049c414` |
-| Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
+| Favicon branding final | DONE | PR #53 -> `dev`; PR #54 -> `main` |
+| Otimização de media/assets estáticos | POST-LAUNCH | Cache de `/assets/*` concluído na Feature 6; WebP/AVIF e imagens responsivas ficam para avaliação futura |
 | Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
-| Feature 6: Performance & Media | IN PROGRESS | Code splitting, media loading, fontes e cache em `feat/performance-media`; ver `docs/PERFORMANCE.md` |
+| Feature 6: Performance & Media | DONE | PR #55 -> `dev`; PR #56 -> `main`; produção frontend `a97c3c26deddbc7359a0c1b802eb80a22580be5c`; PageSpeed/Core Web Vitals reais ainda por medir |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
 | Avatares predefinidos | OPTIONAL | Reduzir uploads livres |
 
