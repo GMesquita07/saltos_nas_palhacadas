@@ -62,7 +62,7 @@ export function MaterialsPage() {
           {materials.map((material) => (
             <article className={styles.card} key={material.id}>
               <figure>
-                <img src={material.imageUrl} alt={material.name} />
+                <img src={material.imageUrl} alt={material.name} decoding="async" loading="lazy" />
                 <figcaption>{material.name}</figcaption>
               </figure>
             </article>

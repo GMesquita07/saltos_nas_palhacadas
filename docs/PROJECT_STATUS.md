@@ -1,10 +1,10 @@
 # Estado do Projeto
 
-Last verified: 2026-09-23.
+Last verified: 2026-09-24.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 4 notifications/email está DONE e o Global UI Redesign foi promovido a `main`, com fixes visuais posteriores.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. O favicon branding final foi promovido por PR #53 -> `dev` e PR #54 -> `main`, com produção main em `1e47e52260c792c803d750824ac9bf7b3049c414`.
 
 ## Estado por Área
 
@@ -39,14 +39,15 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | RGPD export/delete | DONE técnico | Sim | Sim em código | Revisão jurídica |
 | Privacy/Terms/Cookies | DONE técnico | Sim | Sim em código | Revisão jurídica e UX |
 | Smoke final de produção | DONE | Sim | Sim | Manter checklist de regressão |
-| Search Console | TODO | Não | Não | Ainda não configurado; submeter sitemap após Feature 5 |
-| SEO por perfil | IN PROGRESS | Não | Em desenvolvimento | Feature 5 prepara metadata client-side, JSON-LD e sitemap; validar no Search Console antes de decidir prerender |
+| Search Console | DONE | Sim | Sim | Domain property `saltosnaspalhacadas.pt` verificada; sitemap enviado com 11 URLs descobertas |
+| Feature 5 SEO / Google | DONE | Sim | Sim | Páginas públicas/perfis indexados; structured data ProfilePage reconhecido pelo Search Console |
+| Performance & Media | IN PROGRESS | Não | Validado local | Feature 6 reduz JS/CSS inicial, divide rotas, otimiza media/fontes/cache; ver `docs/PERFORMANCE.md` |
 
 ## Branches e Release
 
 | Branch | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | release final validada | Production branch do Cloudflare Pages |
+| `main` | `1e47e52260c792c803d750824ac9bf7b3049c414` | Production branch do Cloudflare Pages após favicon branding final |
 | `dev` | integrado | Branch de integração |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
 | `feat/notifications-and-email` | integrado | Feature 4: notifications/email DONE; PR #27 -> `dev`, PR #29 -> `main` |
@@ -70,7 +71,10 @@ Distinção importante:
 - produção estava em Flyway V22 e aplicou V23; Flyway validou 23 migrations;
 - V23 adiciona `profile.heroBackgroundImageUrl`;
 - Feature 4 notifications/email está DONE e V21 está em produção;
-- Global UI Redesign foi promovido por PR #44 -> `dev` e PR #45 -> `main`, seguido de fixes visuais.
+- Global UI Redesign foi promovido por PR #44 -> `dev` e PR #45 -> `main`, seguido de fixes visuais;
+- Feature 5 SEO / Google está DONE: Search Console configurado, domain property `saltosnaspalhacadas.pt` verificada, sitemap enviado com 11 URLs descobertas, páginas públicas/perfis indexados e ProfilePage reconhecido;
+- favicon branding final foi promovido por PR #53 -> `dev` e PR #54 -> `main`; produção main `1e47e52260c792c803d750824ac9bf7b3049c414`;
+- o favicon pode demorar a atualizar visualmente nos resultados do Google.
 
 ## Produção Conhecida
 

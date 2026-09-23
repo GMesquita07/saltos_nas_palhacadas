@@ -3,9 +3,10 @@ import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { profilePath } from '../../navigation/routes'
+import type { ImageLoadingPolicy } from '../../performance/performanceConfig'
 import styles from './ProfileCard.module.css'
 
-export function ProfileCard({ profile }: { profile: Profile }) {
+export function ProfileCard({ imageLoading, profile }: { imageLoading?: ImageLoadingPolicy; profile: Profile }) {
   const imagePosition = profile.imagePosition ?? '50% 50%'
   const imageZoom = profile.imageZoom ?? 1
 
@@ -16,7 +17,10 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           alt={'Foto de perfil de ' + profile.name}
           className={styles.image}
           shape="circle"
+          decoding={imageLoading?.decoding}
           fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+          fetchPriority={imageLoading?.fetchPriority}
+          loading={imageLoading?.loading}
           position={imagePosition}
           src={profile.imageUrl}
           zoom={imageZoom}
