@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-23.
+Last verified: 2026-09-24.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -31,20 +31,21 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
 | Item | Estado | Nota |
 | --- | --- | --- |
-| Google Search Console | TODO | Ainda não configurado; próximo passo após a base SEO |
-| Submeter sitemap | TODO | Sitemap dinâmico preparado; submeter quando Search Console estiver configurado |
-| Confirmar indexação | POST-LAUNCH | Especialmente marca e artistas |
-| SEO por animador | IN PROGRESS | Feature 5 prepara metadata client-side, JSON-LD e sitemap; validar no Search Console |
+| Google Search Console | DONE | Domain property `saltosnaspalhacadas.pt` verificada |
+| Submeter sitemap | DONE | Sitemap enviado com sucesso; 11 URLs descobertas |
+| Confirmar indexação | DONE | Páginas públicas/perfis confirmados como indexados no Google |
+| Feature 5: SEO / Google | DONE | ProfilePage reconhecido pelo Search Console; favicon pode demorar a atualizar nos resultados |
 | URLs reais por perfil | DONE | `/perfis/:slug` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
 | Admin content management V2 | DONE | Portfolio admin vê publicados/ocultos, materiais editáveis, contactos ocultáveis e painel redesenhado |
 | Feature 4: notificações email admin/artista | DONE | PR #27 -> `dev`; PR #29 -> `main`; V21 em produção |
 | Global UI Redesign | DONE | PR #44 -> `dev`; PR #45 -> `main`; houve fixes visuais posteriores |
+| Favicon branding final | DONE | PR #53 -> `dev`; PR #54 -> `main`; produção main `1e47e52260c792c803d750824ac9bf7b3049c414` |
 | Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
 | Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
-| Performance | POST-LAUNCH | Lighthouse/WebPageTest |
+| Feature 6: Performance & Media | IN PROGRESS | Code splitting, media loading, fontes e cache em `feat/performance-media`; ver `docs/PERFORMANCE.md` |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
 | Avatares predefinidos | OPTIONAL | Reduzir uploads livres |
 
@@ -53,7 +54,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Item antigo | Estado | Decisão |
 | --- | --- | --- |
 | Deploy online do site | DONE técnico | Domínio oficial live; Pages production deployment vem de `main` |
-| SEO para DJ KidG / João Tomás | IN PROGRESS | Feature 5 cria base SEO; Search Console ainda não configurado |
+| SEO para DJ KidG / João Tomás | DONE | Search Console validou indexação e structured data ProfilePage |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | DONE | Corrigido na Feature 4; PR #27 -> `dev` e PR #29 -> `main` |
 | Área pessoal do cliente como botões | STILL TODO | Produto/UX |

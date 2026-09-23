@@ -1,21 +1,10 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
 import { CookieConsent } from './components/CookieConsent/CookieConsent'
-import { SupportChat } from './components/SupportChat/SupportChat'
-import { AccountPage } from './features/auth/AccountPage'
-import { AuthPage } from './features/auth/AuthPage'
 import { useAuth } from './features/auth/AuthContext'
 import type { AuthMode } from './features/auth/authTypes'
-import { AdminArea } from './features/admin/AdminArea'
-import { BookingPage } from './features/booking/BookingPage'
-import { ContactPage } from './features/contacts/ContactPage'
-import { FAQPage } from './features/faq/FAQPage'
-import { FavoritesPage } from './features/favorites/FavoritesPage'
-import { LegalPage } from './features/legal/LegalPage'
-import { MaterialsPage } from './features/materials/MaterialsPage'
-import { PortfolioPage } from './features/portfolio/PortfolioPage'
 import { ProfileSelector } from './features/profiles/ProfileSelector'
 import { SplashScreen } from './features/splash/SplashScreen'
 import {
@@ -28,8 +17,9 @@ import {
   profilePath,
   type AdminPage,
 } from './navigation/routes'
+import { routeNeedsProfiles } from './performance/performanceConfig'
 import { SeoManager } from './seo/SeoManager'
-import { getProfiles } from './services/profileService'
+import { getProfiles, invalidateProfilesCache } from './services/profileService'
 import type { AuthSession } from './types/auth'
 import type { Profile } from './types/profile'
 import styles from './App.module.css'
@@ -39,6 +29,18 @@ type SplashPhase = 'playing' | 'docking' | 'done'
 type ColorTheme = 'dark' | 'light'
 
 const themeStorageKey = 'saltos.theme'
+
+const AccountPage = lazy(() => import('./features/auth/AccountPage').then((module) => ({ default: module.AccountPage })))
+const AdminArea = lazy(() => import('./features/admin/AdminArea').then((module) => ({ default: module.AdminArea })))
+const AuthPage = lazy(() => import('./features/auth/AuthPage').then((module) => ({ default: module.AuthPage })))
+const BookingPage = lazy(() => import('./features/booking/BookingPage').then((module) => ({ default: module.BookingPage })))
+const ContactPage = lazy(() => import('./features/contacts/ContactPage').then((module) => ({ default: module.ContactPage })))
+const FAQPage = lazy(() => import('./features/faq/FAQPage').then((module) => ({ default: module.FAQPage })))
+const FavoritesPage = lazy(() => import('./features/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })))
+const LegalPage = lazy(() => import('./features/legal/LegalPage').then((module) => ({ default: module.LegalPage })))
+const MaterialsPage = lazy(() => import('./features/materials/MaterialsPage').then((module) => ({ default: module.MaterialsPage })))
+const PortfolioPage = lazy(() => import('./features/portfolio/PortfolioPage').then((module) => ({ default: module.PortfolioPage })))
+const SupportChat = lazy(() => import('./components/SupportChat/SupportChat').then((module) => ({ default: module.SupportChat })))
 
 function storedTheme(): ColorTheme | null {
   try {
@@ -56,8 +58,12 @@ function App() {
   const [splashPhase, setSplashPhase] = useState<SplashPhase>(() => prefersReducedMotion() ? 'done' : 'playing')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [profilesError, setProfilesError] = useState(false)
-  const [isProfilesLoading, setIsProfilesLoading] = useState(true)
+  const [hasLoadedProfiles, setHasLoadedProfiles] = useState(false)
+  const [isProfilesLoading, setIsProfilesLoading] = useState(() => routeNeedsProfiles(location.pathname))
   const [theme, setTheme] = useState<ColorTheme>(() => storedTheme() ?? 'dark')
+  const profilesNeeded = routeNeedsProfiles(location.pathname)
+  const areProfilesPending = profilesNeeded && !hasLoadedProfiles
+  const effectiveProfilesLoading = isProfilesLoading || areProfilesPending
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -84,16 +90,25 @@ function App() {
     } catch {
       setProfilesError(true)
     } finally {
+      setHasLoadedProfiles(true)
       setIsProfilesLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    if (!profilesNeeded) return
+
     queueMicrotask(() => {
+      setIsProfilesLoading(true)
       void loadProfiles()
     })
+  }, [loadProfiles, profilesNeeded])
 
+  useEffect(() => {
     const handleProfilesChanged = () => {
+      invalidateProfilesCache()
+      setHasLoadedProfiles(false)
+      if (!routeNeedsProfiles(window.location.pathname)) return
       setIsProfilesLoading(true)
       void loadProfiles(true)
     }
@@ -154,7 +169,7 @@ function App() {
 
   return (
     <>
-      <SeoManager hasProfilesError={profilesError} isProfilesLoading={isProfilesLoading} profiles={profiles} />
+      <SeoManager hasProfilesError={profilesError} isProfilesLoading={effectiveProfilesLoading} profiles={profiles} />
       <SplashScreen
         phase={splashPhase}
         onDockingEnd={() => setSplashPhase('done')}
@@ -179,12 +194,13 @@ function App() {
           onThemeToggle={toggleTheme}
         />
         <main className={styles.main}>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route
               path="/"
               element={profilesError
                 ? <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
-                : isProfilesLoading && profiles.length === 0
+                : effectiveProfilesLoading && profiles.length === 0
                   ? <p className={styles.feedback}>A carregar perfis...</p>
                 : <ProfileSelector profiles={profiles} viewerName={session && isSessionReady ? displaySessionName(session) : undefined} />}
             />
@@ -194,7 +210,7 @@ function App() {
               element={(
                 <ProfileRoute
                   hasError={profilesError}
-                  isLoading={isProfilesLoading}
+                  isLoading={effectiveProfilesLoading}
                   profiles={profiles}
                   onBack={goHome}
                   onBooking={(profile) => navigate(bookingPath(profile.slug))}
@@ -204,11 +220,11 @@ function App() {
             />
             <Route
               path="/agendar"
-              element={<BookingRoute hasError={profilesError} isLoading={isProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
+              element={<BookingRoute hasError={profilesError} isLoading={effectiveProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
             />
             <Route
               path="/agendar/:slug"
-              element={<BookingRoute hasError={profilesError} isLoading={isProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
+              element={<BookingRoute hasError={profilesError} isLoading={effectiveProfilesLoading} profiles={profiles} onBack={goHome} onRequireLogin={requireLogin} />}
             />
             <Route path="/contactos" element={<ContactPage />} />
             <Route path="/materiais" element={<MaterialsPage />} />
@@ -245,6 +261,7 @@ function App() {
             <Route path="/admin/materiais" element={renderAdminRoute('materials')} />
             <Route path="*" element={<NotFoundPage onHome={goHome} />} />
           </Routes>
+          </Suspense>
         </main>
         <Footer
           onFAQClick={() => navigate('/faq')}
@@ -253,7 +270,11 @@ function App() {
           onTermsClick={() => navigate('/termos')}
         />
         <CookieConsent onManage={() => navigate('/cookies')} />
-        {splashPhase === 'done' && <SupportChat />}
+        {splashPhase === 'done' && (
+          <Suspense fallback={null}>
+            <SupportChat />
+          </Suspense>
+        )}
       </div>
     </>
   )
@@ -389,6 +410,10 @@ function NotFoundPage({ onHome, title = 'Página não encontrada' }: { onHome: (
       <button type="button" onClick={onHome}>Voltar ao início</button>
     </section>
   )
+}
+
+function RouteFallback() {
+  return <p className={styles.feedback}>A carregar...</p>
 }
 
 function displaySessionName(session: AuthSession) {

@@ -13,7 +13,7 @@ export function BrandMark({ compact = false, dockTarget = false, isHidden = fals
       className={`${styles.brandMark} ${variant === 'square' ? styles.square : ''} ${compact ? styles.compact : ''} ${isHidden ? styles.hidden : ''}`}
       data-splash-logo-target={dockTarget ? 'true' : undefined}
     >
-      <img alt="Saltos nas Palhaçadas" className={styles.logo} src={variant === 'square' ? '/saltos_logo.jpeg' : '/saltos_logo_redondo.png'} />
+      <img alt="Saltos nas Palhaçadas" className={styles.logo} decoding="async" src={variant === 'square' ? '/saltos_logo.jpeg' : '/saltos_logo_redondo.png'} />
     </span>
   )
 }

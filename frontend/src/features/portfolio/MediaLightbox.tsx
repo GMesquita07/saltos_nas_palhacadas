@@ -77,7 +77,7 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
                 <source src={item.mediaUrl} />
               </video>
             )
-            : <img src={item.mediaUrl} alt={item.title} />}
+            : <img src={item.mediaUrl} alt={item.title} decoding="async" />}
         </div>
         <div className={styles.caption}>
           <p>{item.location} · {item.eventDate}</p>
