@@ -1,6 +1,6 @@
 .login,
 .dashboard {
-  width: min(960px, calc(100% - 48px));
+  width: min(var(--content-wide), calc(100% - 48px));
   margin: auto;
   padding: 65px 0 95px;
 }
@@ -20,7 +20,11 @@
 
 .login > div {
   width: min(100%, 420px);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   margin: 60px auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .login h1,
@@ -45,7 +49,8 @@
   display: grid;
   gap: 7px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .login input,
@@ -54,8 +59,9 @@
 .page select {
   width: 100%;
   border: 1px solid var(--color-line);
-  padding: 11px;
-  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--color-surface-strong);
   color: var(--color-ink);
 }
 
@@ -63,8 +69,9 @@
 .page input:focus,
 .page textarea:focus,
 .page select:focus {
-  outline: 2px solid rgb(35 34 32 / 25%);
-  outline-offset: 1px;
+  border-color: var(--brand-blue);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .page input:disabled,
@@ -86,10 +93,20 @@
 
 .login form button,
 .formActions > button {
-  border: 0;
-  padding: 12px;
-  background: var(--color-ink);
+  border: 1px solid var(--brand-navy);
+  border-radius: var(--radius-pill);
+  padding: 12px 15px;
+  background: var(--brand-navy);
   color: white;
+  font-weight: 760;
+  transition: background-color var(--ease), color var(--ease), transform var(--ease), border-color var(--ease);
+}
+
+.login form button:hover:not(:disabled),
+.formActions > button:hover:not(:disabled) {
+  color: var(--brand-navy);
+  background: var(--brand-blue);
+  transform: translateY(-1px);
 }
 
 button:disabled {
@@ -97,15 +114,7 @@ button:disabled {
   opacity: 0.6;
 }
 
-.top {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-start;
-}
-
 .notice {
-  max-width: 650px;
   margin: 0;
   line-height: 1.5;
 }
@@ -123,24 +132,27 @@ button:disabled {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 35px;
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 0;
 }
 
 .tabs button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  padding: 13px 16px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: 11px 15px;
   color: var(--color-muted);
+  font-weight: 720;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease), box-shadow var(--ease);
 }
 
 .tabs .activeTab {
-  border-color: var(--color-ink);
+  border-color: rgb(22 139 208 / 28%);
   color: var(--color-ink);
-  font-weight: 600;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 780;
 }
 
 .tabBadge {
@@ -161,15 +173,18 @@ button:disabled {
 .refreshButton {
   flex: 0 0 auto;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   padding: 10px 14px;
   color: var(--color-ink);
-  background: transparent;
+  background: var(--color-surface);
   font: inherit;
-  font-size: 13px;
+  font-size: .84rem;
+  font-weight: 720;
 }
 
 .refreshButton:hover:not(:disabled) {
-  border-color: var(--color-ink);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
 }
 
 .metricGrid {
@@ -182,14 +197,19 @@ button:disabled {
   display: grid;
   min-height: 118px;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   padding: 18px;
   color: var(--color-ink);
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
   text-align: left;
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
 
 .metric:hover {
-  border-color: var(--color-ink);
+  border-color: rgb(22 139 208 / 32%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .metric span {
@@ -200,7 +220,7 @@ button:disabled {
 
 .metric strong {
   align-self: end;
-  font: 600 38px/1 Georgia, 'Times New Roman', serif;
+  font: 700 2.4rem/1 var(--font-display);
 }
 
 .overviewGrid {
@@ -211,8 +231,10 @@ button:disabled {
 
 .overviewPanel {
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   padding: 20px;
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .overviewPanel > div {
@@ -225,20 +247,21 @@ button:disabled {
 
 .overviewPanel h3 {
   margin: 0;
-  font: 600 22px/1.2 Georgia, 'Times New Roman', serif;
+  font: 680 1.38rem/1.2 var(--font-display);
 }
 
 .overviewPanel button {
   border: 1px solid var(--color-line);
   padding: 8px 10px;
   color: var(--color-ink);
-  background: transparent;
+  background: var(--color-surface-strong);
   font: inherit;
-  font-size: 12px;
+  font-size: .78rem;
+  font-weight: 720;
 }
 
 .overviewPanel button:hover {
-  border-color: var(--color-ink);
+  color: var(--brand-blue);
 }
 
 .overviewPanel p {
@@ -364,8 +387,9 @@ button:disabled {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
   cursor: grab;
-  background: #e6e3dd;
+  background: #e8ded0;
   user-select: none;
   touch-action: none;
 }
@@ -650,10 +674,6 @@ button:disabled {
   font-size: 16px;
 }
 
-.contactRow span:nth-child(2) {
-  min-width: 0;
-}
-
 .contactRow strong,
 .contactRow small {
   display: block;
@@ -853,9 +873,10 @@ button:disabled {
   align-self: start;
   min-height: calc(100vh - 48px);
   border: 1px solid rgb(35 34 32 / 10%);
+  border-radius: var(--radius-card);
   padding: 20px;
-  background: #fffdf8;
-  box-shadow: 0 18px 46px rgb(35 34 32 / 8%);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebarBrand {
@@ -866,7 +887,7 @@ button:disabled {
 
 .sidebarBrand h1 {
   margin: 0;
-  font-size: clamp(28px, 3vw, 38px);
+  font-size: 2.3rem;
   line-height: 1;
 }
 
@@ -882,13 +903,14 @@ button:disabled {
   margin-bottom: 22px;
   padding: 22px;
   border: 1px solid rgb(35 34 32 / 10%);
-  background: #fffdf8;
-  box-shadow: 0 16px 40px rgb(35 34 32 / 6%);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .top h2 {
   margin: 4px 0 0;
-  font-size: clamp(30px, 4vw, 48px);
+  font-size: 3rem;
   line-height: 1;
 }
 
@@ -1231,6 +1253,14 @@ button:disabled {
     width: min(100% - 24px, 980px);
   }
 
+  .sidebarBrand h1 {
+    font-size: 1.9rem;
+  }
+
+  .top h2 {
+    font-size: 2.1rem;
+  }
+
   .tabs {
     grid-template-columns: 1fr 1fr;
   }
@@ -1269,4 +1299,1165 @@ button:disabled {
     grid-column: 2;
     justify-self: start;
   }
+}
+
+.dashboard {
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  width: min(1320px, calc(100% - 48px));
+}
+
+.sidebar {
+  min-height: auto;
+  padding: 22px;
+}
+
+.sidebarBrand h1 {
+  font-size: 1.9rem;
+  line-height: 1.08;
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+}
+
+.top h2 {
+  font-size: 2.25rem;
+  line-height: 1.05;
+}
+
+.notice {
+  max-width: 650px;
+}
+
+.overview {
+  gap: 18px;
+}
+
+@media (max-width: 1050px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    width: min(100% - 32px, 980px);
+  }
+
+  .sidebar {
+    position: static;
+    min-height: 0;
+  }
+
+  .sidebarBrand h1 {
+    font-size: 1.75rem;
+  }
+}
+
+.fileUploadField {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.fileUploadButton {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: 9px 15px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-size: .86rem;
+  font-weight: 760;
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+
+.fileUploadButton:hover {
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
+}
+
+.fileUploadButton:focus-within {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fileUploadButton input[type='file'] {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0;
+  padding: 0 !important;
+  cursor: pointer;
+  opacity: 0;
+}
+
+/* Nomes e valores completos nas listas de Perfis/Contactos. */
+.contactRow {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+}
+
+.contactRow span:nth-child(2) {
+  min-width: 0;
+}
+
+.contactRow strong,
+.contactRow small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.contactRow strong {
+  line-height: 1.35;
+}
+
+.contactRow small {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.contactRow .statusBadge,
+.contactRow .rowActions {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.contactRow .rowActions {
+  justify-content: flex-start;
+}
+
+/* Botões "Abrir" do dashboard mais claros e melhor posicionados. */
+.overviewPanel > div {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.overviewPanel button {
+  display: inline-flex;
+  min-width: 82px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  padding: 9px 15px;
+  background: var(--color-surface);
+  font-size: .82rem;
+  font-weight: 760;
+  box-shadow: var(--shadow-xs);
+}
+
+.overviewPanel button:hover {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue-text);
+  transform: translateY(-1px);
+}
+
+.login,
+.dashboard {
+  width: min(1180px, calc(100% - 48px));
+  color: var(--site-dark-text);
+}
+
+.login > button,
+.top > button {
+  color: rgb(247 247 243 / 58%);
+}
+
+.login > button:hover,
+.top > button:hover {
+  color: white;
+}
+
+.login > div {
+  border: 1px solid var(--site-dark-line);
+  border-radius: 18px;
+  padding: 28px;
+  background: var(--site-dark-panel);
+  box-shadow: var(--site-dark-shadow);
+}
+
+.login h1,
+.dashboard h1,
+.manage h2,
+.cropTitle,
+.socialLinksEditor legend,
+.rangeLabel span,
+.reviewRow h3 {
+  color: white;
+}
+
+.login > div > p:not(.error),
+.login label,
+.page label,
+.notice,
+.manage > p,
+.fieldHint,
+.cropDescription,
+.emptyInline,
+.reviewMeta {
+  color: var(--site-dark-muted);
+}
+
+.login input,
+.page input:not([type='range']),
+.page textarea,
+.page select {
+  border-color: var(--site-dark-line);
+  border-radius: 9px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.page input:disabled,
+.page select:disabled,
+.readonlyField {
+  color: rgb(247 247 243 / 38%) !important;
+  background: #0a0e12 !important;
+}
+
+.login form button,
+.formActions > button {
+  border-radius: 9px;
+  background: var(--brand-blue);
+}
+
+.tabs {
+  border-bottom-color: var(--site-dark-line);
+}
+
+.tabs button {
+  color: rgb(247 247 243 / 48%);
+}
+
+.tabs .activeTab {
+  border-color: var(--brand-blue);
+  color: white;
+}
+
+.metric,
+.cropEditor,
+.socialLinksEditor,
+.socialLinkCard,
+.thumbnailPreview,
+.contactRow,
+.reviewRow {
+  border-color: var(--site-dark-line);
+  border-radius: 12px;
+  color: var(--site-dark-text);
+  background: var(--site-dark-panel);
+}
+
+.cropEditor {
+  background: linear-gradient(180deg, #0f1419, #0d1115);
+}
+
+.cropPreview {
+  border-color: var(--site-dark-line);
+  background: #090c0f;
+}
+
+.socialLinkIcon {
+  border-color: var(--site-dark-line);
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.socialLinkActions button,
+.addInlineButton,
+.reviewModeration button,
+.visibilityToggle,
+.refreshButton,
+.formActions > .cancelButton {
+  border-color: var(--site-dark-line);
+  border-radius: 8px;
+  color: white;
+  background: transparent;
+}
+
+.profileRow {
+  border-bottom-color: var(--site-dark-line);
+}
+
+.profileRow small {
+  color: var(--site-dark-muted);
+}
+
+.contactRow:hover {
+  border-color: rgb(134 207 245 / 34%);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 20%);
+}
+
+.reviewStars {
+  color: #f0c61c;
+}
+
+.dashboard {
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 22px;
+  width: min(1320px, calc(100% - 40px));
+}
+
+.sidebar {
+  min-height: 0;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+  padding: 18px;
+  color: #f7f7f3;
+  background:
+    linear-gradient(180deg, rgb(22 139 208 / 5%), transparent 220px),
+    #0d1115 !important;
+  box-shadow: 0 22px 54px rgb(0 0 0 / 24%);
+}
+
+.sidebarBrand h1,
+.top h2,
+.overview h2,
+.overview h3,
+.page h2,
+.manage h2,
+.editorCard h2,
+.formSection legend,
+.contentMeta h3,
+.metric strong,
+.overviewPanel h3,
+.overviewPanel strong {
+  color: white !important;
+}
+
+.sidebarBrand p,
+.sectionTitleRow p,
+.emptyState,
+.contentMeta p,
+.overviewPanel p,
+.overviewPanel span,
+.metric span,
+.intro,
+.fieldHint {
+  color: rgb(247 247 243 / 52%) !important;
+}
+
+.top,
+.editorCard,
+.page form,
+.manage,
+.overviewPanel,
+.reviewRow,
+.contentCard,
+.formSection,
+.socialLinksEditor,
+.socialLinkCard,
+.thumbnailPreview,
+.contactRow,
+.cropEditor {
+  border-color: rgb(255 255 255 / 10%) !important;
+  color: #f7f7f3 !important;
+  background: #0d1115 !important;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 16%);
+}
+
+.top {
+  border-radius: 16px;
+  border-top: 2px solid var(--brand-blue) !important;
+}
+
+.editorCard,
+.page form,
+.manage,
+.overviewPanel {
+  border-radius: 14px;
+}
+
+.tabs button {
+  border-radius: 9px;
+  color: rgb(247 247 243 / 54%) !important;
+}
+
+.tabs button:hover,
+.tabs .activeTab {
+  border-color: rgb(134 207 245 / 28%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+.tabs .activeTab {
+  box-shadow: inset 3px 0 0 var(--brand-blue);
+}
+
+.exitButton,
+.refreshButton,
+.overviewPanel button,
+.contentActions button,
+.socialLinkActions button,
+.addInlineButton,
+.reviewModeration button,
+.formActions > .cancelButton {
+  border-color: rgb(255 255 255 / 12%) !important;
+  border-radius: 9px;
+  color: rgb(247 247 243 / 78%) !important;
+  background: rgb(255 255 255 / 3%) !important;
+}
+
+.exitButton:hover,
+.refreshButton:hover:not(:disabled),
+.overviewPanel button:hover,
+.contentActions button:hover:not(:disabled),
+.socialLinkActions button:hover:not(:disabled),
+.addInlineButton:hover:not(:disabled),
+.reviewModeration button:hover:not(:disabled),
+.formActions > .cancelButton:hover:not(:disabled) {
+  border-color: rgb(134 207 245 / 36%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+.metric {
+  min-height: 104px;
+  border: 1px solid rgb(255 255 255 / 10%) !important;
+  border-radius: 13px;
+  color: #f7f7f3 !important;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 3%), transparent),
+    #0f1419 !important;
+}
+
+.metric:hover {
+  border-color: rgb(134 207 245 / 36%) !important;
+  color: white !important;
+  background: #111820 !important;
+}
+
+.overviewGrid {
+  gap: 12px;
+}
+
+.overviewPanel {
+  padding: 18px;
+}
+
+.overviewPanel li {
+  border-color: rgb(255 255 255 / 8%) !important;
+}
+
+.notice {
+  border-radius: 10px;
+  background: rgb(255 255 255 / 4%) !important;
+}
+
+.login input,
+.page input:not([type='range']),
+.page textarea,
+.page select {
+  border-color: rgb(255 255 255 / 10%) !important;
+  color: white !important;
+  background: #11161b !important;
+}
+
+.formSection {
+  background: #10151a !important;
+}
+
+.checkboxLabel {
+  color: rgb(247 247 243 / 76%) !important;
+}
+
+.contentPreview {
+  border-color: rgb(255 255 255 / 10%) !important;
+  color: rgb(247 247 243 / 50%) !important;
+  background: #090c0f !important;
+}
+
+.statusBadge-success {
+  color: #84cda8;
+  background: rgb(34 124 87 / 14%);
+}
+
+.statusBadge-warning {
+  color: #f2cf70;
+  background: rgb(214 180 95 / 13%);
+}
+
+.statusBadge-neutral {
+  color: rgb(247 247 243 / 58%);
+  background: rgb(255 255 255 / 5%);
+}
+
+@media (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+.dashboard button:not(:disabled) {
+  color: #f7f7f3;
+}
+
+.exitButton,
+.refreshButton,
+.overviewPanel button,
+.contentActions button,
+.rowActions button,
+.reviewModeration button,
+.visibilityToggle,
+.socialLinkActions button,
+.addInlineButton,
+.formActions > .cancelButton {
+  border-color: rgb(255 255 255 / 20%) !important;
+  color: rgb(247 247 243 / 90%) !important;
+  background: #151b21 !important;
+}
+
+.exitButton:hover,
+.refreshButton:hover:not(:disabled),
+.overviewPanel button:hover,
+.contentActions button:hover:not(:disabled),
+.rowActions button:hover:not(:disabled),
+.reviewModeration button:hover:not(:disabled),
+.visibilityToggle:hover:not(:disabled),
+.socialLinkActions button:hover:not(:disabled),
+.addInlineButton:hover:not(:disabled),
+.formActions > .cancelButton:hover:not(:disabled) {
+  border-color: rgb(134 207 245 / 52%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 16%) !important;
+}
+
+.dangerButton,
+.rowActions button:last-child,
+.reviewModeration button:last-child {
+  border-color: rgb(218 77 70 / 48%) !important;
+  color: #ff817a !important;
+  background: rgb(119 32 28 / 14%) !important;
+}
+
+:global(html[data-theme='light']) .dashboard {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .sidebar,
+:global(html[data-theme='light']) .top,
+:global(html[data-theme='light']) .editorCard,
+:global(html[data-theme='light']) .page form,
+:global(html[data-theme='light']) .manage,
+:global(html[data-theme='light']) .overviewPanel,
+:global(html[data-theme='light']) .reviewRow,
+:global(html[data-theme='light']) .contentCard,
+:global(html[data-theme='light']) .formSection,
+:global(html[data-theme='light']) .socialLinksEditor,
+:global(html[data-theme='light']) .socialLinkCard,
+:global(html[data-theme='light']) .contactRow,
+:global(html[data-theme='light']) .metric {
+  border-color: #dfddd7 !important;
+  color: #252421 !important;
+  background: #fffdf8 !important;
+}
+
+:global(html[data-theme='light']) .sidebarBrand h1,
+:global(html[data-theme='light']) .top h2,
+:global(html[data-theme='light']) .overview h2,
+:global(html[data-theme='light']) .overview h3,
+:global(html[data-theme='light']) .page h2,
+:global(html[data-theme='light']) .manage h2,
+:global(html[data-theme='light']) .contentMeta h3,
+:global(html[data-theme='light']) .metric strong,
+:global(html[data-theme='light']) .overviewPanel h3 {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .fieldHint,
+:global(html[data-theme='light']) .overviewPanel p,
+:global(html[data-theme='light']) .metric span {
+  color: #68645f !important;
+}
+:global(html[data-theme='light']) .sidebar,
+:global(html[data-theme='light']) .top,
+:global(html[data-theme='light']) .editorCard,
+:global(html[data-theme='light']) .page form,
+:global(html[data-theme='light']) .manage,
+:global(html[data-theme='light']) .overviewPanel,
+:global(html[data-theme='light']) .reviewRow,
+:global(html[data-theme='light']) .contentCard,
+:global(html[data-theme='light']) .formSection,
+:global(html[data-theme='light']) .socialLinksEditor,
+:global(html[data-theme='light']) .socialLinkCard,
+:global(html[data-theme='light']) .contactRow,
+:global(html[data-theme='light']) .metric,
+:global(html[data-theme='light']) .thumbnailPreview,
+:global(html[data-theme='light']) .cropEditor {
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 34px rgb(26 33 39 / 6%) !important;
+}
+:global(html[data-theme='light']) .sidebarBrand,
+:global(html[data-theme='light']) .sidebarBrand h1,
+:global(html[data-theme='light']) .top h2,
+:global(html[data-theme='light']) .overview h2,
+:global(html[data-theme='light']) .overview h3,
+:global(html[data-theme='light']) .page h2,
+:global(html[data-theme='light']) .manage h2,
+:global(html[data-theme='light']) .reviewRow h3,
+:global(html[data-theme='light']) .contentMeta h3,
+:global(html[data-theme='light']) .metric strong,
+:global(html[data-theme='light']) .overviewPanel h3,
+:global(html[data-theme='light']) .overviewPanel strong,
+:global(html[data-theme='light']) .formSection legend { color: #171a1d !important; }
+:global(html[data-theme='light']) .tabs button { color: #555c63 !important; background: transparent !important; }
+:global(html[data-theme='light']) .tabs button:hover,
+:global(html[data-theme='light']) .tabs .activeTab {
+  border-color: rgb(22 139 208 / 24%) !important;
+  background: #eef7fc !important;
+}
+:global(html[data-theme='light']) .sectionTitleRow p,
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .fieldHint,
+:global(html[data-theme='light']) .emptyState,
+:global(html[data-theme='light']) .contentMeta p,
+:global(html[data-theme='light']) .reviewMeta,
+:global(html[data-theme='light']) .overviewPanel p,
+:global(html[data-theme='light']) .overviewPanel span,
+:global(html[data-theme='light']) .metric span,
+:global(html[data-theme='light']) .contactRow small { color: #626970 !important; }
+:global(html[data-theme='light']) .page input:not([type='range']),
+:global(html[data-theme='light']) .page textarea,
+:global(html[data-theme='light']) .page select,
+:global(html[data-theme='light']) .login input {
+  border-color: #d9dee3 !important;
+  color: #1b2025 !important;
+  background: #f9fafb !important;
+}
+:global(html[data-theme='light']) .exitButton,
+:global(html[data-theme='light']) .refreshButton,
+:global(html[data-theme='light']) .overviewPanel button,
+:global(html[data-theme='light']) .contentActions button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='light']) .reviewModeration button,
+:global(html[data-theme='light']) .visibilityToggle,
+:global(html[data-theme='light']) .socialLinkActions button,
+:global(html[data-theme='light']) .addInlineButton,
+:global(html[data-theme='light']) .formActions > .cancelButton {
+  border-color: #cfd5db !important;
+  color: #252a2f !important;
+  background: #f7f8fa !important;
+}
+
+.dashboard {
+  grid-template-columns: 244px minmax(0, 1fr) !important;
+  width: min(1380px, calc(100% - 48px)) !important;
+  gap: 24px !important;
+}
+
+.sidebar {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.adminContent {
+  width: 100% !important;
+  max-width: 1080px !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+}
+
+.top,
+.overview,
+.singlePage,
+.page {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.page {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+  align-items: start !important;
+}
+
+.page > *,
+.page form,
+.manage,
+.editorCard {
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+:global(html[data-theme='light']) .dashboard {
+  color: #171a1d !important;
+  background: transparent !important;
+}
+
+:global(html[data-theme='light']) .sidebar,
+:global(html[data-theme='light']) .top,
+:global(html[data-theme='light']) .editorCard,
+:global(html[data-theme='light']) .page form,
+:global(html[data-theme='light']) .manage,
+:global(html[data-theme='light']) .overviewPanel,
+:global(html[data-theme='light']) .reviewRow,
+:global(html[data-theme='light']) .contentCard,
+:global(html[data-theme='light']) .formSection,
+:global(html[data-theme='light']) .contactRow,
+:global(html[data-theme='light']) .metric {
+  border-color: #dce2e7 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 32px rgb(26 33 39 / 6%) !important;
+}
+
+:global(html[data-theme='light']) .tabs button {
+  color: #535b62 !important;
+}
+
+:global(html[data-theme='light']) .tabs button:hover,
+:global(html[data-theme='light']) .tabs .activeTab {
+  border-color: rgb(22 139 208 / 28%) !important;
+  color: #171a1d !important;
+  background: #eef8fd !important;
+}
+
+:global(html[data-theme='light']) .exitButton,
+:global(html[data-theme='light']) .refreshButton,
+:global(html[data-theme='light']) .overviewPanel button,
+:global(html[data-theme='light']) .contentActions button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='light']) .reviewModeration button,
+:global(html[data-theme='light']) .addInlineButton,
+:global(html[data-theme='light']) .formActions > .cancelButton {
+  border-color: #cfd6dc !important;
+  color: #2f363c !important;
+  background: #f7f9fa !important;
+}
+
+:global(html[data-theme='light']) .exitButton:hover,
+:global(html[data-theme='light']) .refreshButton:hover:not(:disabled),
+:global(html[data-theme='light']) .overviewPanel button:hover,
+:global(html[data-theme='light']) .contentActions button:hover:not(:disabled),
+:global(html[data-theme='light']) .rowActions button:hover:not(:disabled),
+:global(html[data-theme='light']) .reviewModeration button:hover:not(:disabled),
+:global(html[data-theme='light']) .addInlineButton:hover:not(:disabled),
+:global(html[data-theme='light']) .formActions > .cancelButton:hover:not(:disabled) {
+  border-color: #168bd0 !important;
+  color: #126fa8 !important;
+  background: #eef8fd !important;
+}
+
+:global(html[data-theme='light']) .page input:not([type='range']),
+:global(html[data-theme='light']) .page textarea,
+:global(html[data-theme='light']) .page select {
+  border-color: #d6dce1 !important;
+  color: #171a1d !important;
+  background: #f9fafb !important;
+}
+
+@media (max-width: 1050px) {
+  .dashboard {
+    grid-template-columns: 1fr !important;
+    width: min(100% - 32px, 980px) !important;
+  }
+
+  .adminContent {
+    max-width: none !important;
+  }
+
+  .page {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .formGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.dashboard,
+.page,
+.adminContent,
+:global(html[data-theme='light']) .dashboard,
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .adminContent,
+:global(html[data-theme='dark']) .dashboard,
+:global(html[data-theme='dark']) .page,
+:global(html[data-theme='dark']) .adminContent {
+  color: var(--text-primary) !important;
+}
+
+.sidebar,
+.top,
+.metric,
+.overviewPanel,
+.editorCard,
+.contentCard,
+.formSection,
+.manage,
+.reviewRow,
+.contactRow,
+.socialLinkCard,
+.page form,
+:global(html[data-theme='light']) .sidebar,
+:global(html[data-theme='light']) .top,
+:global(html[data-theme='light']) .metric,
+:global(html[data-theme='light']) .overviewPanel,
+:global(html[data-theme='light']) .editorCard,
+:global(html[data-theme='light']) .contentCard,
+:global(html[data-theme='light']) .formSection,
+:global(html[data-theme='light']) .manage,
+:global(html[data-theme='light']) .reviewRow,
+:global(html[data-theme='light']) .contactRow,
+:global(html[data-theme='light']) .socialLinkCard,
+:global(html[data-theme='light']) .page form,
+:global(html[data-theme='dark']) .sidebar,
+:global(html[data-theme='dark']) .top,
+:global(html[data-theme='dark']) .metric,
+:global(html[data-theme='dark']) .overviewPanel,
+:global(html[data-theme='dark']) .editorCard,
+:global(html[data-theme='dark']) .contentCard,
+:global(html[data-theme='dark']) .formSection,
+:global(html[data-theme='dark']) .manage,
+:global(html[data-theme='dark']) .reviewRow,
+:global(html[data-theme='dark']) .contactRow,
+:global(html[data-theme='dark']) .socialLinkCard,
+:global(html[data-theme='dark']) .page form {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+.page label,
+.page legend,
+.fieldHint,
+.notice,
+.overviewPanel p,
+.contentMeta,
+.reviewMeta,
+.emptyInline,
+.emptyState,
+:global(html[data-theme='light']) .page label,
+:global(html[data-theme='light']) .page legend,
+:global(html[data-theme='light']) .fieldHint,
+:global(html[data-theme='light']) .notice,
+:global(html[data-theme='light']) .overviewPanel p,
+:global(html[data-theme='light']) .contentMeta,
+:global(html[data-theme='light']) .reviewMeta,
+:global(html[data-theme='light']) .emptyInline,
+:global(html[data-theme='light']) .emptyState,
+:global(html[data-theme='dark']) .page label,
+:global(html[data-theme='dark']) .page legend,
+:global(html[data-theme='dark']) .fieldHint,
+:global(html[data-theme='dark']) .notice,
+:global(html[data-theme='dark']) .overviewPanel p,
+:global(html[data-theme='dark']) .contentMeta,
+:global(html[data-theme='dark']) .reviewMeta,
+:global(html[data-theme='dark']) .emptyInline,
+:global(html[data-theme='dark']) .emptyState {
+  color: var(--text-muted) !important;
+}
+
+.page input:not([type='range']),
+.page textarea,
+.page select,
+.readonlyField,
+:global(html[data-theme='light']) .page input:not([type='range']),
+:global(html[data-theme='light']) .page textarea,
+:global(html[data-theme='light']) .page select,
+:global(html[data-theme='light']) .readonlyField,
+:global(html[data-theme='dark']) .page input:not([type='range']),
+:global(html[data-theme='dark']) .page textarea,
+:global(html[data-theme='dark']) .page select,
+:global(html[data-theme='dark']) .readonlyField {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.page input:disabled,
+.page select:disabled,
+.readonlyField {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+}
+
+.tabs button,
+.refreshButton,
+.overviewPanel button,
+.rowActions button,
+.addInlineButton,
+.cancelButton,
+.exitButton,
+.reviewModeration button,
+:global(html[data-theme='light']) .tabs button,
+:global(html[data-theme='light']) .refreshButton,
+:global(html[data-theme='light']) .overviewPanel button,
+:global(html[data-theme='light']) .rowActions button,
+:global(html[data-theme='light']) .addInlineButton,
+:global(html[data-theme='light']) .cancelButton,
+:global(html[data-theme='light']) .exitButton,
+:global(html[data-theme='light']) .reviewModeration button,
+:global(html[data-theme='dark']) .tabs button,
+:global(html[data-theme='dark']) .refreshButton,
+:global(html[data-theme='dark']) .overviewPanel button,
+:global(html[data-theme='dark']) .rowActions button,
+:global(html[data-theme='dark']) .addInlineButton,
+:global(html[data-theme='dark']) .cancelButton,
+:global(html[data-theme='dark']) .exitButton,
+:global(html[data-theme='dark']) .reviewModeration button {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.tabs button:hover,
+.refreshButton:hover,
+.overviewPanel button:hover,
+.rowActions button:hover,
+.addInlineButton:hover,
+.cancelButton:hover,
+.exitButton:hover,
+.reviewModeration button:hover {
+  border-color: var(--interactive) !important;
+  color: var(--interactive) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.tabs .activeTab,
+.formActions > button,
+.contentActions button:first-child,
+:global(html[data-theme='light']) .tabs .activeTab,
+:global(html[data-theme='light']) .formActions > button,
+:global(html[data-theme='light']) .contentActions button:first-child,
+:global(html[data-theme='dark']) .tabs .activeTab,
+:global(html[data-theme='dark']) .formActions > button,
+:global(html[data-theme='dark']) .contentActions button:first-child {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.formActions > button:hover:not(:disabled),
+.contentActions button:first-child:hover:not(:disabled) {
+  border-color: var(--interactive-hover) !important;
+  color: #ffffff !important;
+  background: var(--interactive-hover) !important;
+}
+
+.dangerButton,
+.rowActions button:last-child,
+.profileRow button:last-child,
+:global(html[data-theme='light']) .dangerButton,
+:global(html[data-theme='light']) .rowActions button:last-child,
+:global(html[data-theme='light']) .profileRow button:last-child,
+:global(html[data-theme='dark']) .dangerButton,
+:global(html[data-theme='dark']) .rowActions button:last-child,
+:global(html[data-theme='dark']) .profileRow button:last-child {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+.dangerButton:hover,
+.rowActions button:last-child:hover,
+.profileRow button:last-child:hover {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+:global(html[data-theme='light']) .tabs .activeTab {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+:global(html[data-theme='light']) .tabs .activeTab:hover {
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+:global(html[data-theme='light']) .page label,
+:global(html[data-theme='light']) .page legend {
+  color: var(--text-secondary) !important;
+}
+
+:global(html[data-theme='light']) .fieldHint,
+:global(html[data-theme='light']) .notice,
+:global(html[data-theme='light']) .contentMeta,
+:global(html[data-theme='light']) .reviewMeta,
+:global(html[data-theme='light']) .emptyInline,
+:global(html[data-theme='light']) .emptyState {
+  color: var(--text-muted) !important;
+}
+
+:global(html[data-theme='light']) .thumbnailPreview {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+}
+
+:global(html[data-theme='light']) .thumbnailPreview button {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+:global(html[data-theme='light']) .thumbnailPreview button:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+:global(html[data-theme='light']) .page button:disabled,
+:global(html[data-theme='light']) .page input:disabled,
+:global(html[data-theme='light']) .page select:disabled,
+:global(html[data-theme='light']) .page textarea:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1 !important;
+}
+
+:global(html[data-theme='light']) .formActions > button:not(:disabled) {
+  color: #ffffff !important;
+}
+
+:global(html[data-theme='light']) .formActions > .cancelButton:not(:disabled) {
+  color: var(--text-primary) !important;
+}
+
+.tabs button,
+.refreshButton,
+.overviewPanel button,
+.contentActions button,
+.rowActions button,
+.profileRow button,
+.reviewModeration button,
+.visibilityToggle,
+.addInlineButton,
+.cancelButton,
+.exitButton,
+.socialLinkActions button,
+.thumbnailPreview button,
+.fileUploadButton,
+.formActions > button {
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  padding: 9px 13px !important;
+  font-size: .82rem !important;
+  font-weight: 760 !important;
+}
+
+.rowActions button,
+.profileRow button,
+.socialLinkActions button {
+  min-width: 38px !important;
+}
+
+.socialLinkActions button,
+.rowActions button[aria-label],
+.profileRow button[aria-label] {
+  display: inline-grid !important;
+  width: 38px !important;
+  height: 38px !important;
+  place-items: center !important;
+  padding: 0 !important;
+}
+
+.formActions > button,
+.contentActions button:first-child {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.formActions > .cancelButton,
+.contentActions button:not(:first-child):not(.dangerButton),
+.rowActions button:not(:last-child),
+.profileRow button:not(:last-child),
+.reviewModeration button,
+.visibilityToggle,
+.addInlineButton,
+.exitButton,
+.socialLinkActions button,
+.thumbnailPreview button {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.formActions > .cancelButton:hover:not(:disabled),
+.contentActions button:not(:first-child):not(.dangerButton):hover:not(:disabled),
+.rowActions button:not(:last-child):hover:not(:disabled),
+.profileRow button:not(:last-child):hover:not(:disabled),
+.reviewModeration button:hover:not(:disabled),
+.visibilityToggle:hover:not(:disabled),
+.addInlineButton:hover:not(:disabled),
+.exitButton:hover:not(:disabled),
+.socialLinkActions button:hover:not(:disabled),
+.thumbnailPreview button:hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.dangerButton,
+.contentActions .dangerButton,
+.rowActions button:last-child,
+.profileRow button:last-child,
+.thumbnailPreview button {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+.dangerButton:hover:not(:disabled),
+.contentActions .dangerButton:hover:not(:disabled),
+.rowActions button:last-child:hover:not(:disabled),
+.profileRow button:last-child:hover:not(:disabled),
+.thumbnailPreview button:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+.page button:disabled,
+.tabs button:disabled,
+.contentActions button:disabled,
+.rowActions button:disabled,
+.profileRow button:disabled,
+.reviewModeration button:disabled,
+.socialLinkActions button:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1 !important;
+}
+
+.exitButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+}
+
+.exitButton svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--ease);
+}
+
+.exitButton:hover svg {
+  transform: translateX(-2px);
 }

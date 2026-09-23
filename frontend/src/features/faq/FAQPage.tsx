@@ -1,3 +1,4 @@
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './FAQPage.module.css'
 
 type FAQPageProps = {
@@ -16,7 +17,10 @@ const faqs = [
 export function FAQPage({ onBack }: FAQPageProps) {
   return (
     <section className={styles.page}>
-      <button className={styles.backButton} type="button" onClick={onBack}>Voltar ao site</button>
+      <button className={styles.backButton} type="button" onClick={onBack}>
+        <NavIcon name="arrow-left" />
+        Voltar ao site
+      </button>
       <p className="eyebrow">Ajuda</p>
       <h1>Perguntas frequentes</h1>
       <p className={styles.intro}>Respostas rápidas sobre pedidos, contas, disponibilidade e materiais.</p>

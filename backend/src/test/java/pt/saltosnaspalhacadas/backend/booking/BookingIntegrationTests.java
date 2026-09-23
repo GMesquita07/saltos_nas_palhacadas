@@ -215,6 +215,52 @@ class BookingIntegrationTests {
     }
 
     @Test
+    void customerCanCancelOwnAcceptedBookingAndFreeConfirmedSlot() throws Exception {
+        TestData data = createTestData();
+        LocalDate eventDate = LocalDate.now().plusDays(29);
+
+        try {
+            createBooking(
+                    data.customer(),
+                    data.profile().getSlug(),
+                    eventDate,
+                    "Cliente cancela aceite " + data.suffix(),
+                    "14:00",
+                    "16:00");
+            Long bookingId = bookingIdFor(data.customer());
+
+            mockMvc.perform(put("/api/v1/admin/bookings/{id}/decision", bookingId)
+                            .header("Authorization", bearer(admin()))
+                            .contentType("application/json")
+                            .content("{\"status\":\"ACCEPTED\",\"eventDate\":\"" + eventDate
+                                    + "\",\"startTime\":\"14:00\",\"endTime\":\"16:00\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
+                            .param("from", eventDate.toString())
+                            .param("to", eventDate.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.slots[0].status").value("ACCEPTED"));
+
+            mockMvc.perform(put("/api/v1/bookings/{id}/cancel", bookingId)
+                            .header("Authorization", bearer(data.customer()))
+                            .contentType("application/json")
+                            .content("{\"message\":\"Já não posso realizar o evento.\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}/availability", data.profile().getSlug())
+                            .param("from", eventDate.toString())
+                            .param("to", eventDate.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.slots.length()").value(0));
+        } finally {
+            cleanup(data);
+        }
+    }
+
+    @Test
     void wholeDayAcceptedBookingBlocksTheDateAndCancellationFreesIt() throws Exception {
         TestData data = createTestData();
         LocalDate eventDate = LocalDate.now().plusDays(35);

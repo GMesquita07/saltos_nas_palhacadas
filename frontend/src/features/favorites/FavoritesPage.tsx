@@ -3,6 +3,7 @@ import { PortfolioCard } from '../portfolio/PortfolioCard'
 import { MediaLightbox } from '../portfolio/MediaLightbox'
 import { useAuth } from '../auth/AuthContext'
 import type { PortfolioItem } from '../../types/portfolio'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './FavoritesPage.module.css'
 
 type FavoritesPageProps = {
@@ -15,7 +16,10 @@ export function FavoritesPage({ onBack }: FavoritesPageProps) {
 
   return (
     <section className={styles.page}>
-      <button className={styles.back} type="button" onClick={onBack}>← Todos os perfis</button>
+      <button className={styles.back} type="button" onClick={onBack}>
+        <NavIcon name="arrow-left" />
+        Todos os perfis
+      </button>
       <header className={styles.header}>
         <p className="eyebrow">A minha coleção</p>
         <h1>Favoritos</h1>

@@ -2,7 +2,7 @@ import { apiClient } from './apiClient'
 import { createPublicRequestCache } from './publicRequestCache'
 import type { Profile, ProfileSocialLink } from '../types/profile'
 
-type ApiProfile = { id: number; slug: string; name: string; role: string; description: string; profileImageUrl: string | null; profileImagePosition: string | null; profileImageZoom: number | null; featuredVideoUrl: string | null; displayOrder?: number | null; socialLinks?: ApiProfileSocialLink[] | null }
+type ApiProfile = { id: number; slug: string; name: string; role: string; description: string; profileImageUrl: string | null; profileImagePosition: string | null; profileImageZoom: number | null; featuredVideoUrl: string | null; heroBackgroundImageUrl: string | null; displayOrder?: number | null; socialLinks?: ApiProfileSocialLink[] | null }
 type ApiProfileSocialLink = { id: number; platform: string; label: string | null; url: string; displayOrder: number }
 
 const profileRequestCache = createPublicRequestCache<Profile[]>(loadProfiles)
@@ -27,6 +27,7 @@ async function loadProfiles(requestOptions: RequestInit = {}): Promise<Profile[]
     imagePosition: profile.profileImagePosition ?? '50% 50%',
     imageZoom: profile.profileImageZoom ?? 1,
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
+    heroBackgroundImageUrl: profile.heroBackgroundImageUrl ?? undefined,
     displayOrder: profile.displayOrder ?? 0,
     socialLinks: mapSocialLinks(profile.socialLinks),
   }))

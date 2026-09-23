@@ -14,8 +14,10 @@
       img { width: 52px; height: 52px; }
       p { color: #716f6a; line-height: 1.65; }
       h1 { margin: 22px 0 14px; font: 600 56px/1 Georgia, "Times New Roman", serif; letter-spacing: 0; }
-      a { display: inline-flex; border: 1px solid #252421; padding: 12px 16px; color: #252421; text-decoration: none; }
+      a { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #252421; padding: 12px 16px; color: #252421; text-decoration: none; }
       a:hover { background: #252421; color: white; }
+      a svg { width: 17px; height: 17px; transition: transform 160ms ease; }
+      a:hover svg { transform: translateX(-2px); }
       @media (max-width: 620px) { main { padding: 64px 0; } h1 { font-size: 40px; } }
     </style>
   </head>
@@ -24,7 +26,13 @@
       <img src="/favicon.svg" alt="" />
       <h1>Página não encontrada</h1>
       <p>Este endereço não existe ou já não está disponível.</p>
-      <a href="/">Voltar ao site</a>
+      <a href="/">
+        <svg aria-hidden="true" fill="none" focusable="false" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24">
+          <path d="M19 12H5" />
+          <path d="m11 6-6 6 6 6" />
+        </svg>
+        Voltar ao site
+      </a>
     </main>
   </body>
 </html>

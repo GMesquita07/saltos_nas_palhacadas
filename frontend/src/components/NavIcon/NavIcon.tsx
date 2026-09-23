@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type NavIconName = 'profiles' | 'booking' | 'contacts' | 'materials' | 'favorites' | 'admin' | 'account' | 'logout' | 'login'
+export type NavIconName = 'profiles' | 'booking' | 'contacts' | 'materials' | 'favorites' | 'admin' | 'account' | 'logout' | 'login' | 'camera' | 'calendar-check' | 'arrow-left' | 'arrow-right' | 'chevron-left' | 'chevron-right'
 
 type NavIconProps = SVGProps<SVGSVGElement> & {
   name: NavIconName
@@ -24,10 +24,16 @@ export function NavIcon({ name, ...props }: NavIconProps) {
       {name === 'contacts' && <><path d="M20.5 16.2a2.2 2.2 0 0 1-2.4 2.4A16.4 16.4 0 0 1 5.4 5.9a2.2 2.2 0 0 1 2.4-2.4l2.1.4a1.8 1.8 0 0 1 1.4 1.3l.4 1.7a1.8 1.8 0 0 1-.5 1.7L10 9.8a12.1 12.1 0 0 0 4.2 4.2l1.2-1.2a1.8 1.8 0 0 1 1.7-.5l1.7.4a1.8 1.8 0 0 1 1.3 1.4Z" /></>}
       {name === 'materials' && <><rect x="4" y="6" width="16" height="12" rx="1.6" /><path d="M8 6V4h8v2M8 18v2h8v-2M8 10h8M8 14h5" /></>}
       {name === 'favorites' && <path d="M20.8 8.7c0 5.1-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.3Z" />}
+      {name === 'camera' && <><path d="M4.5 8.5h3l1.4-2h6.2l1.4 2h3A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18v-8a1.5 1.5 0 0 1 1.5-1.5Z" /><circle cx="12" cy="14" r="3.2" /></>}
+      {name === 'calendar-check' && <><rect x="4" y="5" width="16" height="15" rx="1.5" /><path d="M8 3v4M16 3v4M4 10h16" /><path d="m9 15 2 2 4-4" /></>}
       {name === 'admin' && <><path d="M12 3 4.8 6.2v5.1c0 4.1 2.8 7.9 7.2 9.7 4.4-1.8 7.2-5.6 7.2-9.7V6.2L12 3Z" /><path d="m9.5 12 1.7 1.7 3.5-3.5" /></>}
       {name === 'account' && <><circle cx="12" cy="8" r="3.5" /><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" /></>}
       {name === 'logout' && <><path d="M10 5H5.5A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19H10" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></>}
       {name === 'login' && <><circle cx="10" cy="8" r="3" /><path d="M4.5 20a5.5 5.5 0 0 1 11 0" /><path d="M17 10l3 2-3 2" /><path d="M20 12h-6" /></>}
+      {name === 'arrow-left' && <><path d="M19 12H5" /><path d="m11 6-6 6 6 6" /></>}
+      {name === 'arrow-right' && <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>}
+      {name === 'chevron-left' && <path d="m15 18-6-6 6-6" />}
+      {name === 'chevron-right' && <path d="m9 18 6-6-6-6" />}
     </svg>
   )
 }

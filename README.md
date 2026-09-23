@@ -36,7 +36,8 @@ Ainda ficam tarefas pós-lançamento como Search Console/sitemap, confirmação 
 
 ## Stack
 
-- Frontend: React, TypeScript, Vite, CSS Modules.
+- Frontend: React, TypeScript, Vite, Tailwind CSS v4 via `@tailwindcss/vite`, CSS Modules e design tokens em CSS variables.
+- UI/fonts: tipografia self-hosted com Fontsource Variable (`Manrope` para UI/body e `Bricolage Grotesque` para headings/display); sem dependência de Google Fonts em runtime.
 - Backend: Java 21, Spring Boot, Spring Security, JWT, JPA/Hibernate, Flyway.
 - Dados: PostgreSQL em Neon, `ddl-auto=validate` em produção.
 - Media: Cloudflare R2 com buckets separados para objetos públicos e privados.

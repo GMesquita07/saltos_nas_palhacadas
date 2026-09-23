@@ -57,9 +57,25 @@ export function PortfolioCard({ item, onOpen }: { item: PortfolioItem; onOpen?: 
           {isFavorite ? '♥' : '♡'}
         </button>
       </div>
+
       <div className={styles.details}>
-        <p>{item.location} · {item.eventDate}</p>
+        <p className={styles.metaDate}>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M7 3v3M17 3v3M4.5 8.5h15M5 5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 5 5Z" />
+          </svg>
+          {item.eventDate}
+        </p>
+
         <h3>{item.title}</h3>
+
+        <p className={styles.metaLocation}>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 21s6-5.25 6-11a6 6 0 1 0-12 0c0 5.75 6 11 6 11Z" />
+            <circle cx="12" cy="10" r="2.1" />
+          </svg>
+          {item.location}
+        </p>
+
         {error && <p className={styles.favoriteError} role="status">{error}</p>}
       </div>
     </article>

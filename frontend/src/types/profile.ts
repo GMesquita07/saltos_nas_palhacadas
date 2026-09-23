@@ -16,6 +16,7 @@ export type Profile = {
   imagePosition?: string
   imageZoom?: number
   featuredVideoUrl?: string
+  heroBackgroundImageUrl?: string
   displayOrder?: number
   socialLinks: ProfileSocialLink[]
 }

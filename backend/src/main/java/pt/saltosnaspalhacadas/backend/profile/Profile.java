@@ -48,6 +48,9 @@ public class Profile {
     @Column(name = "featured_video_url", length = 2048)
     private String featuredVideoUrl;
 
+    @Column(name = "hero_background_image_url", length = 2048)
+    private String heroBackgroundImageUrl;
+
     @Column(name = "notification_email", length = 254)
     private String notificationEmail;
 
@@ -231,6 +234,14 @@ public class Profile {
 
     public String getFeaturedVideoUrl() {
         return featuredVideoUrl;
+    }
+
+    public String getHeroBackgroundImageUrl() {
+        return heroBackgroundImageUrl;
+    }
+
+    public void updateHeroBackgroundImageUrl(String heroBackgroundImageUrl) {
+        this.heroBackgroundImageUrl = heroBackgroundImageUrl;
     }
 
     public String getNotificationEmail() {

@@ -52,6 +52,14 @@ A sessão guardada em `sessionStorage` é restaurada imediatamente no cliente pa
 
 Produção pública atual: `https://www.saltosnaspalhacadas.pt`. O apex `saltosnaspalhacadas.pt` redireciona com 301 para `www` preservando query strings.
 
+## Frontend Design System
+
+O frontend usa Tailwind CSS v4 com integração oficial Vite (`@tailwindcss/vite`) como camada de build/utilitários, mantendo CSS Modules para componentes com comportamento próprio como crop, media cards, lightbox, suporte e admin.
+
+Os valores de marca vivem em CSS variables globais em `frontend/src/index.css`: cores Saltos, superfícies, tipografia, espaçamento, sombras, radii, estados e transições. A tipografia é self-hosted via Fontsource Variable, com `Manrope` para UI/body e `Bricolage Grotesque` para headings/display, evitando pedidos externos de fontes e layout shift por Google Fonts.
+
+O sistema visual evita frameworks UI monolíticos. Componentes e padrões inspirados em primitives modernas são implementados localmente e adaptados à identidade Saltos.
+
 ## Fluxo de Auth e Turnstile
 
 ```mermaid
