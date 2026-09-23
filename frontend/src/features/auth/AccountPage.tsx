@@ -5,6 +5,7 @@ import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { uploadUserImage } from '../../services/apiClient'
 import { useAuth } from './AuthContext'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './AccountPage.module.css'
 
 type AccountPageProps = {
@@ -205,7 +206,10 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
 
   return (
     <section className={styles.page}>
-      <button className={styles.back} type="button" onClick={onExit}>← Voltar aos perfis</button>
+      <button className={styles.back} type="button" onClick={onExit}>
+        <NavIcon name="arrow-left" />
+        Voltar aos perfis
+      </button>
       <div className={styles.content}>
         <p className="eyebrow">A minha conta</p>
         <div className={styles.accountHeader}>
@@ -319,10 +323,19 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
           <form className={styles.profileForm} onSubmit={(event) => { void submit(event) }}>
             <div className={styles.avatarEditor}>
               {avatar}
-              <label>
-                Foto de perfil
-                <input accept="image/*" type="file" onChange={(event) => { void uploadPhoto(event) }} />
-              </label>
+              <div className={styles.avatarUpload}>
+                <span className={styles.avatarUploadLabel}>Foto de perfil</span>
+                <label className={styles.uploadButton}>
+                  <span>＋ Adicionar foto</span>
+                  <input
+                    accept="image/*"
+                    className={styles.fileInput}
+                    type="file"
+                    onChange={(event) => { void uploadPhoto(event) }}
+                  />
+                </label>
+                <small>Escolhe uma imagem e ajusta o enquadramento antes de guardar.</small>
+              </div>
             </div>
 
             {form.profileImageUrl && resolvedProfileImageUrl && (

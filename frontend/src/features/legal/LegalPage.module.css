@@ -1,24 +1,26 @@
 .page {
-  width: min(850px, calc(100% - 48px));
+  width: min(var(--content-narrow), calc(100% - 48px));
   margin: auto;
-  padding: 76px 0 120px;
+  padding: 82px 0 120px;
 }
 
 .backButton {
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   min-height: 42px;
   padding: 10px 14px;
   margin-bottom: 44px;
   background: var(--color-surface);
   color: var(--color-ink);
-  font-size: 13px;
-  font-weight: 600;
-  transition: border-color var(--ease), color var(--ease);
+  font-size: .84rem;
+  font-weight: 760;
+  transition: border-color var(--ease), color var(--ease), transform var(--ease), box-shadow var(--ease);
 }
 
 .backButton:hover {
-  border-color: var(--brand-blue);
   color: var(--brand-blue);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
 }
 
 .page h1 {
@@ -30,8 +32,8 @@
 .intro {
   max-width: 700px;
   color: var(--color-muted);
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: 1.04rem;
+  line-height: 1.7;
 }
 
 .intro::after {
@@ -39,6 +41,7 @@
   width: 40px;
   height: 3px;
   margin-top: 26px;
+  border-radius: var(--radius-pill);
   background: var(--brand-yellow);
   content: '';
 }
@@ -50,10 +53,11 @@
 }
 
 .cookiePanel {
-  border-top: 1px solid var(--color-line);
-  border-bottom: 1px solid var(--color-line);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   margin: 0 0 42px;
-  padding: 18px 0;
+  padding: 18px;
+  background: var(--color-surface);
 }
 
 .cookiePanel p {
@@ -74,6 +78,7 @@
 
 .cookieActions button {
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   min-height: 42px;
   padding: 10px 14px;
   background: var(--color-surface);
@@ -84,23 +89,25 @@
 }
 
 .cookieActions button:hover {
-  border-color: var(--brand-blue);
   color: var(--brand-blue);
 }
 
 .sections {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .sections article {
-  border-top: 1px solid var(--color-line);
-  padding-top: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .sections h2 {
   margin-bottom: 10px;
-  font-size: 25px;
+  font-size: 1.48rem;
   letter-spacing: 0;
 }
 
@@ -112,11 +119,235 @@
 
 @media (max-width: 650px) {
   .page {
-    width: min(100% - 32px, 850px);
+    width: min(100% - 32px, var(--content-narrow));
     padding: 48px 0 78px;
   }
 
   .backButton {
     margin-bottom: 34px;
   }
+}
+
+.page {
+  width: min(920px, calc(100% - 48px));
+  color: var(--site-dark-text);
+}
+
+.backButton {
+  border-color: var(--site-dark-line);
+  border-radius: 10px;
+  color: rgb(247 247 243 / 70%);
+  background: var(--site-dark-panel);
+}
+
+.backButton:hover {
+  border-color: var(--brand-blue);
+  color: #86cff5;
+}
+
+.page h1 {
+  color: white;
+  font-size: clamp(42px, 6vw, 64px);
+  letter-spacing: -.045em;
+}
+
+.intro,
+.updated,
+.cookiePanel p,
+.sections p {
+  color: var(--site-dark-muted);
+}
+
+.intro::after {
+  background: linear-gradient(90deg, var(--brand-blue), var(--brand-green));
+}
+
+.cookiePanel {
+  border-color: var(--site-dark-line);
+}
+
+.cookiePanel strong,
+.sections h2 {
+  color: white;
+}
+
+.cookieActions button {
+  border-color: var(--site-dark-line);
+  border-radius: 10px;
+  color: white;
+  background: var(--site-dark-panel);
+}
+
+.cookieActions button:hover {
+  border-color: var(--brand-blue);
+  color: #86cff5;
+}
+
+.sections {
+  gap: 12px;
+}
+
+.sections article {
+  border: 1px solid var(--site-dark-line);
+  border-radius: 13px;
+  padding: 18px 20px;
+  background: var(--site-dark-panel);
+}
+
+.cookiePanel {
+  border: 1px solid rgb(255 255 255 / 10%) !important;
+  border-radius: 14px;
+  margin-bottom: 30px;
+  padding: 18px 20px;
+  color: #f7f7f3;
+  background: #0d1115 !important;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 14%);
+}
+
+.cookiePanel p {
+  color: rgb(247 247 243 / 54%) !important;
+}
+
+.cookiePanel strong {
+  color: white !important;
+}
+
+.cookieActions button {
+  border-color: rgb(255 255 255 / 12%) !important;
+  border-radius: 9px;
+  color: rgb(247 247 243 / 78%) !important;
+  background: #11161b !important;
+}
+
+.cookieActions button:hover {
+  border-color: rgb(134 207 245 / 38%) !important;
+  color: white !important;
+  background: rgb(22 139 208 / 10%) !important;
+}
+
+.sections article {
+  border-color: rgb(255 255 255 / 10%) !important;
+  color: #f7f7f3;
+  background: #0d1115 !important;
+}
+
+.sections article:hover {
+  border-color: rgb(134 207 245 / 22%) !important;
+}
+
+.sections h2 {
+  color: white !important;
+}
+
+.sections p {
+  color: rgb(247 247 243 / 55%) !important;
+}
+
+:global(html[data-theme='light']) .page {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .page h1,
+:global(html[data-theme='light']) .sections h2,
+:global(html[data-theme='light']) .cookiePanel strong {
+  color: #252421 !important;
+}
+
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .updated,
+:global(html[data-theme='light']) .sections p,
+:global(html[data-theme='light']) .cookiePanel p {
+  color: #66615c !important;
+}
+
+:global(html[data-theme='light']) .cookiePanel,
+:global(html[data-theme='light']) .sections article {
+  border-color: #dfddd7 !important;
+  color: #252421 !important;
+  background: white !important;
+}
+
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .page h1,
+:global(html[data-theme='light']) .sections h2,
+:global(html[data-theme='light']) .cookiePanel strong { color: #171a1d !important; }
+:global(html[data-theme='light']) .intro,
+:global(html[data-theme='light']) .updated,
+:global(html[data-theme='light']) .sections p,
+:global(html[data-theme='light']) .cookiePanel p { color: #626970 !important; }
+:global(html[data-theme='light']) .cookiePanel,
+:global(html[data-theme='light']) .sections article { border-color: #dfe3e8 !important; }
+:global(html[data-theme='light']) .cookieActions button,
+:global(html[data-theme='light']) .backButton {
+  border-color: #d4dae0 !important;
+  color: #2d3339 !important;
+  background: #ffffff !important;
+}
+
+:global(html[data-theme='light']) .backButton {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .page h1 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .cookiePanel strong,
+:global(html[data-theme='light']) .sections h2 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light'])
+.cookiePanel {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .cookiePanel p {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .cookiePanel strong {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .cookieActions button {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .cookieActions button:hover {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .sections article {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .sections h2 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .sections p {
+  color: #171a1d !important;
+}
+
+.backButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.backButton svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--ease);
+}
+
+.backButton:hover svg {
+  transform: translateX(-2px);
 }

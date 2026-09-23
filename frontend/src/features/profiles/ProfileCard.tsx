@@ -1,5 +1,6 @@
 import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './ProfileCard.module.css'
 
 export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect: (profile: Profile) => void }) {
@@ -12,6 +13,7 @@ export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect:
         <CroppedImage
           alt={'Foto de perfil de ' + profile.name}
           className={styles.image}
+          shape="circle"
           fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
           position={imagePosition}
           src={profile.imageUrl}
@@ -21,7 +23,7 @@ export function ProfileCard({ profile, onSelect }: { profile: Profile; onSelect:
       <span className={styles.details}>
         <small>{profile.role}</small>
         <strong>{profile.name}</strong>
-        <span>Ver portfólio <b>→</b></span>
+        <span>Ver portfólio <b><NavIcon name="arrow-right" /></b></span>
       </span>
     </button>
   )

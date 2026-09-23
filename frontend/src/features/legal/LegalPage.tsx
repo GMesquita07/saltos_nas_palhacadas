@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './LegalPage.module.css'
 
 type LegalPageProps = {
@@ -63,7 +64,10 @@ export function LegalPage({ onBack, type }: LegalPageProps) {
 
   return (
     <section className={styles.page}>
-      <button className={styles.backButton} type="button" onClick={onBack}>Voltar ao site</button>
+      <button className={styles.backButton} type="button" onClick={onBack}>
+        <NavIcon name="arrow-left" />
+        Voltar ao site
+      </button>
       <p className="eyebrow">{page.eyebrow}</p>
       <h1>{page.title}</h1>
       <p className={styles.intro}>{page.intro}</p>

@@ -13,7 +13,7 @@
 
 .header h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 
 .header p,
@@ -38,7 +38,8 @@
   display: grid;
   gap: 7px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .controls select,
@@ -48,6 +49,7 @@
 .decisionForm textarea,
 .decisionForm button {
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink);
 }
@@ -62,12 +64,15 @@
 .actions button,
 .decisionForm button {
   padding: 11px 13px;
+  font-weight: 720;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease), transform var(--ease);
 }
 
 .controls button:hover,
 .actions button:hover,
 .decisionForm button:hover {
   border-color: var(--color-ink);
+  transform: translateY(-1px);
 }
 
 .controls button:disabled,
@@ -89,7 +94,10 @@
 
 .booking {
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   padding: 24px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .bookingHeader {
@@ -101,7 +109,7 @@
 
 .bookingHeader h3 {
   margin: 5px 0 0;
-  font-size: 24px;
+  font-size: 1.5rem;
 }
 
 .subline {
@@ -126,9 +134,10 @@
 .status {
   flex: 0 0 auto;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
   padding: 6px 9px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: .68rem;
+  font-weight: 820;
 }
 
 .statusPENDING {
@@ -200,6 +209,7 @@
   display: grid;
   gap: 6px;
   border-left: 3px solid #807199;
+  border-radius: var(--radius-sm);
   padding: 10px 13px;
   background: #f7f5f8;
 }
@@ -224,8 +234,8 @@
 
 .actions button:first-child,
 .confirmButton {
-  border-color: var(--color-ink) !important;
-  background: var(--color-ink) !important;
+  border-color: var(--brand-navy) !important;
+  background: var(--brand-navy) !important;
   color: white !important;
 }
 
@@ -307,4 +317,247 @@
   .scheduleFields {
     grid-template-columns: 1fr;
   }
+}
+
+.page {
+  color: var(--site-dark-text);
+}
+
+.header {
+  border-bottom-color: var(--site-dark-line);
+}
+
+.header h2,
+.bookingHeader h3,
+.details dd {
+  color: white;
+}
+
+.header p,
+.feedback,
+.subline,
+.eyebrow,
+.details dt,
+.request h4,
+.counterSummary strong,
+.message strong,
+.createdAt,
+.decisionHeading p {
+  color: var(--site-dark-muted);
+}
+
+.controls select,
+.controls button,
+.actions button,
+.decisionForm input,
+.decisionForm textarea,
+.decisionForm button {
+  border-color: var(--site-dark-line);
+  border-radius: 8px;
+  color: white;
+  background: var(--site-dark-panel-2);
+}
+
+.booking {
+  border-color: var(--site-dark-line);
+  border-radius: 14px;
+  background: var(--site-dark-panel);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 16%);
+}
+
+.details > div,
+.decisionForm {
+  border-color: var(--site-dark-line);
+}
+
+.counterSummary,
+.message {
+  border-left-color: var(--brand-blue);
+  color: var(--site-dark-text);
+  background: rgb(22 139 208 / 7%);
+}
+
+.message {
+  border-left-color: var(--brand-green);
+  background: rgb(34 124 87 / 7%);
+}
+
+.actions button:first-child,
+.confirmButton {
+  border-color: var(--brand-blue) !important;
+  background: var(--brand-blue) !important;
+}
+
+.counterButton {
+  border-color: rgb(134 207 245 / 40%) !important;
+  color: #86cff5 !important;
+}
+
+:global(html[data-theme='light']) .page,
+:global(html[data-theme='light']) .booking { color: #171a1d !important; }
+:global(html[data-theme='light']) .header { border-bottom-color: #dfe3e8 !important; }
+:global(html[data-theme='light']) .header p,
+:global(html[data-theme='light']) .feedback,
+:global(html[data-theme='light']) .subline,
+:global(html[data-theme='light']) .eyebrow,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .createdAt,
+:global(html[data-theme='light']) .decisionHeading p { color: #626970 !important; }
+:global(html[data-theme='light']) .booking,
+:global(html[data-theme='light']) .decisionForm,
+:global(html[data-theme='light']) .counterSummary,
+:global(html[data-theme='light']) .message {
+  border-color: #dfe3e8 !important;
+  background: #ffffff !important;
+}
+:global(html[data-theme='light']) .bookingHeader h3,
+:global(html[data-theme='light']) .details dd,
+:global(html[data-theme='light']) .request p,
+:global(html[data-theme='light']) .message p { color: #171a1d !important; }
+:global(html[data-theme='light']) .controls select,
+:global(html[data-theme='light']) .controls button,
+:global(html[data-theme='light']) .actions button,
+:global(html[data-theme='light']) .decisionForm input,
+:global(html[data-theme='light']) .decisionForm textarea,
+:global(html[data-theme='light']) .decisionForm button {
+  border-color: #d9dee3 !important;
+  color: #1b2025 !important;
+  background: #f9fafb !important;
+}
+:global(html[data-theme='light']) .actions button:first-child,
+:global(html[data-theme='light']) .confirmButton { border-color: #168bd0 !important; color: white !important; background: #168bd0 !important;
+  color: #171a1d !important; }
+
+:global(html[data-theme='light']) .header h2,
+:global(html[data-theme='light']) .bookingHeader h3,
+:global(html[data-theme='light']) .details dd {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .controls select,
+:global(html[data-theme='light']) .controls button,
+:global(html[data-theme='light']) .actions button,
+:global(html[data-theme='light']) .decisionForm input,
+:global(html[data-theme='light']) .decisionForm textarea,
+:global(html[data-theme='light']) .decisionForm button {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .booking {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+:global(html[data-theme='light']) .eyebrow,
+:global(html[data-theme='light']) .details dt,
+:global(html[data-theme='light']) .request h4,
+:global(html[data-theme='light']) .counterSummary strong,
+:global(html[data-theme='light']) .message strong,
+:global(html[data-theme='light']) .createdAt,
+:global(html[data-theme='light']) .decisionHeading p {
+  color: var(--text-muted) !important;
+}
+
+:global(html[data-theme='light']) .counterSummary,
+:global(html[data-theme='light']) .message {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-soft) !important;
+}
+
+:global(html[data-theme='light']) .message {
+  border-left-color: var(--success) !important;
+}
+
+:global(html[data-theme='light']) .message p,
+:global(html[data-theme='light']) .request p,
+:global(html[data-theme='light']) .details dd {
+  color: var(--text-primary) !important;
+}
+
+:global(html[data-theme='light']) .controls button:hover:not(:disabled),
+:global(html[data-theme='light']) .actions button:hover:not(:disabled),
+:global(html[data-theme='light']) .decisionForm button:hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+:global(html[data-theme='light']) .actions button:first-child,
+:global(html[data-theme='light']) .confirmButton {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+:global(html[data-theme='light']) .declineButton {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+:global(html[data-theme='light']) .declineButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+:global(html[data-theme='light']) .controls button:disabled,
+:global(html[data-theme='light']) .actions button:disabled,
+:global(html[data-theme='light']) .decisionForm button:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1 !important;
+}
+
+.controls button,
+.actions button,
+.decisionForm button {
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  padding: 9px 13px !important;
+  font-size: .82rem !important;
+  font-weight: 760 !important;
+}
+
+.actions button:first-child,
+.confirmButton {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.controls button,
+.actions button:not(:first-child):not(.declineButton),
+.decisionForm button:not(.confirmButton) {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.controls button:hover:not(:disabled),
+.actions button:not(:first-child):not(.declineButton):hover:not(:disabled),
+.decisionForm button:not(.confirmButton):hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive-hover) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.declineButton {
+  border-color: rgb(228 33 34 / 38%) !important;
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+.declineButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--danger-hover) !important;
+}
+
+.controls button:disabled,
+.actions button:disabled,
+.decisionForm button:disabled {
+  color: var(--disabled-text) !important;
+  background: var(--disabled-bg) !important;
+  opacity: 1 !important;
 }

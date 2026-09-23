@@ -5,50 +5,55 @@
   display: grid;
   place-items: center;
   padding: 28px;
-  background: rgb(8 9 12 / 78%);
+  background: rgb(5 11 29 / 78%);
+  backdrop-filter: blur(10px);
 }
 
 .dialog {
   position: relative;
   display: grid;
-  width: min(1040px, 100%);
-  max-height: min(88vh, 840px);
+  width: min(1080px, 100%);
+  max-height: min(88vh, 860px);
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 20%);
-  background: #111;
-  box-shadow: 0 30px 90px rgb(0 0 0 / 38%);
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--radius-card);
+  background: #0f1013;
+  box-shadow: 0 34px 100px rgb(0 0 0 / 42%);
 }
 
 .media {
   display: grid;
   min-height: 0;
   place-items: center;
-  background: #111;
+  background: #0f1013;
 }
 
 .media img,
 .media video {
   display: block;
   width: 100%;
-  max-height: calc(88vh - 112px);
+  max-height: calc(88vh - 116px);
   object-fit: contain;
 }
 
 .caption {
+  border-top: 1px solid rgb(255 255 255 / 9%);
   padding: 18px 22px;
   color: white;
-  background: rgb(0 0 0 / 72%);
+  background: rgb(10 11 14 / 92%);
 }
 
 .caption p {
   margin: 0 0 5px;
-  color: rgb(255 255 255 / 72%);
-  font-size: 12px;
+  color: rgb(255 255 255 / 68%);
+  font-size: .78rem;
+  font-weight: 680;
 }
 
 .caption h2 {
   margin: 0;
-  font-size: 24px;
+  color: white;
+  font-size: 1.55rem;
 }
 
 .close {
@@ -57,19 +62,23 @@
   top: 12px;
   right: 12px;
   display: grid;
-  width: 38px;
+  width: 40px;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid rgb(255 255 255 / 30%);
+  border: 1px solid rgb(255 255 255 / 34%);
   border-radius: 50%;
   color: white;
-  background: rgb(0 0 0 / 58%);
-  font-size: 26px;
+  background: rgb(0 0 0 / 52%);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 24%);
+  font-size: 1.55rem;
   line-height: 1;
+  transition: border-color var(--ease), background-color var(--ease), transform var(--ease);
 }
 
 .close:hover {
   border-color: white;
+  background: rgb(0 0 0 / 68%);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 760px) {
@@ -78,6 +87,45 @@
   }
 
   .caption h2 {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
+}
+
+:global(html[data-theme='light']) .backdrop {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .dialog {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .caption {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .caption p {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .caption h2 {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .close {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+}
+
+:global(html[data-theme='light']) .close:hover {
+  background-color: #ffffff !important;
+  color: #171a1d !important;
+  border-color: #dfe3e8 !important;
+  color: #171a1d !important;
 }

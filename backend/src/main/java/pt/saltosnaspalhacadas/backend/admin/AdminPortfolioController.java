@@ -96,6 +96,11 @@ public class AdminPortfolioController {
                 nextProfileDisplayOrder(),
                 request.notificationEmail());
 
+        profile.updateHeroBackgroundImageUrl(
+                PublicUrlValidator.optional(
+                        request.heroBackgroundImageUrl(),
+                        "Indica um URL de background válido"));
+
         socialLinks.replaceSocialLinks(
                 profile,
                 toSocialLinkInputs(request.socialLinks()));
@@ -172,6 +177,11 @@ public class AdminPortfolioController {
                         request.featuredVideoUrl(),
                         "Indica um URL de vídeo válido"),
                 request.notificationEmail());
+
+        profile.updateHeroBackgroundImageUrl(
+                PublicUrlValidator.optional(
+                        request.heroBackgroundImageUrl(),
+                        "Indica um URL de background válido"));
 
         socialLinks.replaceSocialLinks(
                 profile,
@@ -377,6 +387,11 @@ public class AdminPortfolioController {
                     message = "O URL do vídeo de destaque é demasiado longo")
             String featuredVideoUrl,
 
+            @Size(
+                    max = 2048,
+                    message = "O URL do background é demasiado longo")
+            String heroBackgroundImageUrl,
+
             @Email(
                     message = "Indica um email de notificações válido")
             @Size(
@@ -436,6 +451,11 @@ public class AdminPortfolioController {
                     max = 2048,
                     message = "O URL do vídeo de destaque é demasiado longo")
             String featuredVideoUrl,
+
+            @Size(
+                    max = 2048,
+                    message = "O URL do background é demasiado longo")
+            String heroBackgroundImageUrl,
 
             @Email(
                     message = "Indica um email de notificações válido")

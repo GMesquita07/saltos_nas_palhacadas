@@ -3,7 +3,9 @@
   gap: 16px;
   padding: 18px;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
   background: linear-gradient(180deg, #fff 0%, var(--color-surface) 100%);
+  box-shadow: var(--shadow-xs);
 }
 
 .cropTitle,
@@ -28,8 +30,9 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
   cursor: grab;
-  background: #e6e3dd;
+  background: #e8ded0;
   user-select: none;
   touch-action: none;
 }
@@ -81,10 +84,54 @@
 .rangeLabel input {
   grid-column: 1 / -1;
   width: 100%;
-  accent-color: var(--color-ink);
+  accent-color: var(--brand-blue);
 }
 
 .rangeLabel span {
   color: var(--color-ink);
   font-size: 11px;
+}
+
+.editor {
+  background: var(--color-surface);
+}
+
+.cropEditor {
+  background: var(--color-surface) !important;
+}
+
+:global(html[data-theme='dark']) .cropEditor {
+  border-color: #2b353d !important;
+  color: #f6f7f8 !important;
+  background: #0f151a !important;
+}
+
+:global(html[data-theme='dark']) .cropTitle,
+:global(html[data-theme='dark']) .rangeLabel span {
+  color: #f6f7f8 !important;
+}
+
+:global(html[data-theme='dark']) .cropDescription,
+:global(html[data-theme='dark']) .rangeLabel {
+  color: #a2abb3 !important;
+}
+
+:global(html[data-theme='light']) .cropEditor {
+  border-color: #dce2e7 !important;
+  color: #171a1d !important;
+  background: #ffffff !important;
+}
+
+:global(html[data-theme='light']) .cropTitle,
+:global(html[data-theme='light']) .rangeLabel span {
+  color: #171a1d !important;
+}
+
+:global(html[data-theme='light']) .cropDescription,
+:global(html[data-theme='light']) .rangeLabel {
+  color: #626b73 !important;
+}
+
+.rangeLabel input {
+  accent-color: var(--brand-blue) !important;
 }

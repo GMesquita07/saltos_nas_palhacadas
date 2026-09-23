@@ -218,7 +218,9 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não tens permissão para cancelar este pedido");
         }
 
-        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.COUNTER_PROPOSED) {
+        if (booking.getStatus() != BookingStatus.PENDING
+                && booking.getStatus() != BookingStatus.COUNTER_PROPOSED
+                && booking.getStatus() != BookingStatus.ACCEPTED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este pedido já não pode ser cancelado pelo cliente");
         }
 

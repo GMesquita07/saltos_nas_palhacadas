@@ -36,6 +36,7 @@ Last verified: 2026-09-20.
 | SEO metadata | Público | `index.html`, `App.tsx`, React Router | N/A | N/A | Cloudflare Pages | Parcial por ser SPA client-rendered; rotas reais existem |
 | Sitemap/robots/404 | Público | `public/` | N/A | N/A | Cloudflare Pages | DONE |
 | Turnstile | Público auth | `Turnstile`, `AuthPage` | `TurnstileService` | N/A | Cloudflare Siteverify | DONE/VALIDATED |
+| Design system frontend | Público/Cliente/Admin | CSS variables, Tailwind v4, CSS Modules | N/A | N/A | Fontsource self-hosted | DONE |
 
 ## Regras Importantes
 
@@ -48,6 +49,7 @@ Last verified: 2026-09-20.
 - O conteúdo inicial dos três perfis usa assets estáticos em `frontend/public/content/profiles/`; a metadata permanece editável na BD e uploads posteriores continuam no fluxo R2 existente.
 - O admin content management V2 permite gerir portfolio publicado/oculto, editar materiais, ocultar/mostrar contactos e reorganiza o painel num backoffice responsivo sem alterar o comportamento público.
 - O portfolio público e admin permanece ordenado cronologicamente por `eventDate DESC`, com `id DESC` como fallback; `display_order` não é usado como ordenação canónica do portfolio.
+- O design system frontend usa tokens CSS globais, Tailwind CSS v4 via Vite e fontes Fontsource self-hosted; CSS Modules continuam a existir onde ajudam a encapsular comportamento visual especializado.
 
 ## Limitações Funcionais Conhecidas
 

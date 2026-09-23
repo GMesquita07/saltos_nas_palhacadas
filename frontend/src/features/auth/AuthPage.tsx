@@ -5,6 +5,7 @@ import type { AuthSession } from '../../types/auth'
 import { Turnstile, type TurnstileHandle } from './Turnstile'
 import type { AuthMode } from './authTypes'
 import { canSubmitProtectedAuth, protectedAuthRequiresSiteKey, turnstileActionForMode } from './turnstileAuth'
+import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './AuthPage.module.css'
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
@@ -204,7 +205,10 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
 
   return (
     <section className={styles.page}>
-      <button className={styles.back} type="button" onClick={onBack}>← Voltar ao site</button>
+      <button className={styles.back} type="button" onClick={onBack}>
+        <NavIcon name="arrow-left" />
+        Voltar ao site
+      </button>
       <div className={styles.panel}>
         <p className="eyebrow">Conta Saltos nas Palhaçadas</p>
         <h1>{pageTitle(mode)}</h1>

@@ -15,9 +15,10 @@ type ReviewFormState = {
 type ReviewsSectionProps = {
   profile: Profile
   onLoginClick: () => void
+  onSummaryChange?: (summary: { average: number; count: number }) => void
 }
 
-export function ReviewsSection({ profile, onLoginClick }: ReviewsSectionProps) {
+export function ReviewsSection({ profile, onLoginClick, onSummaryChange }: ReviewsSectionProps) {
   const { isSessionReady, session: authenticatedSession } = useAuth()
   const session = isSessionReady ? authenticatedSession : null
   const [reviews, setReviews] = useState<Review[]>([])
@@ -52,6 +53,10 @@ export function ReviewsSection({ profile, onLoginClick }: ReviewsSectionProps) {
     if (reviews.length === 0) return 0
     return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length
   }, [reviews])
+
+  useEffect(() => {
+    onSummaryChange?.({ average, count: reviews.length })
+  }, [average, onSummaryChange, reviews.length])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
