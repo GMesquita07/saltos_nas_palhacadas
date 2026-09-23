@@ -97,7 +97,8 @@ test('builds ProfilePage and Person JSON-LD with valid sameAs URLs only', () => 
   const person = profilePage?.mainEntity as { sameAs?: string[] } | undefined
 
   assert.ok(profilePage)
-  assert.equal(person?.sameAs?.includes('https://instagram.example/djkidg'), true)
-  assert.equal(person?.sameAs?.includes('http://facebook.example/djkidg'), true)
-  assert.deepEqual(person?.sameAs?.filter((url) => url.includes('kidg@example.test') || url.startsWith('javascript:') || url.includes('/relative-profile')), [])
+  assert.deepEqual(person?.sameAs, [
+    'https://instagram.example/djkidg',
+    'http://facebook.example/djkidg',
+  ])
 })

@@ -46,25 +46,26 @@ export function SeoManager({ hasProfilesError, isProfilesLoading, profiles }: Se
 }
 
 function setMetaContent(name: string, content: string) {
-  const selector = `meta[name="${cssEscape(name)}"]`
-  const tag = getOrCreateElement(selector, () => {
-    const meta = document.createElement('meta')
-    meta.setAttribute('name', name)
-    document.head.append(meta)
-    return meta
-  })
+  const tag = Array.from(document.head.querySelectorAll<HTMLMetaElement>('meta[name]'))
+    .find((meta) => meta.getAttribute('name') === name)
+    ?? createMetaTag('name', name)
+
   tag.setAttribute('content', content)
 }
 
 function setMetaProperty(property: string, content: string) {
-  const selector = `meta[property="${cssEscape(property)}"]`
-  const tag = getOrCreateElement(selector, () => {
-    const meta = document.createElement('meta')
-    meta.setAttribute('property', property)
-    document.head.append(meta)
-    return meta
-  })
+  const tag = Array.from(document.head.querySelectorAll<HTMLMetaElement>('meta[property]'))
+    .find((meta) => meta.getAttribute('property') === property)
+    ?? createMetaTag('property', property)
+
   tag.setAttribute('content', content)
+}
+
+function createMetaTag(attribute: 'name' | 'property', value: string) {
+  const meta = document.createElement('meta')
+  meta.setAttribute(attribute, value)
+  document.head.append(meta)
+  return meta
 }
 
 function setCanonical(href: string) {
@@ -92,6 +93,3 @@ function getOrCreateElement<T extends Element>(selector: string, create: () => T
   return document.head.querySelector<T>(selector) ?? create()
 }
 
-function cssEscape(value: string) {
-  return value.replace(/"/g, '\\"')
-}
