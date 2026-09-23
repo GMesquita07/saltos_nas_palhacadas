@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-20.
+Last verified: 2026-09-23.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -31,15 +31,16 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
 | Item | Estado | Nota |
 | --- | --- | --- |
-| Google Search Console | POST-LAUNCH | Submeter/verificar |
-| Submeter sitemap | POST-LAUNCH | Rever após rotas públicas por perfil |
+| Google Search Console | TODO | Ainda não configurado; próximo passo após a base SEO |
+| Submeter sitemap | TODO | Sitemap dinâmico preparado; submeter quando Search Console estiver configurado |
 | Confirmar indexação | POST-LAUNCH | Especialmente marca e artistas |
-| SEO por animador | POST-LAUNCH | Rotas reais existem; falta avaliar sitemap, conteúdo e eventual pré-render |
+| SEO por animador | IN PROGRESS | Feature 5 prepara metadata client-side, JSON-LD e sitemap; validar no Search Console |
 | URLs reais por perfil | DONE | `/perfis/:slug` |
 | Inbound email `ola@` | TODO | Decidir provider ou Cloudflare Email Routing |
 | Monitorizar budgets/logs | TODO | GCP, Cloudflare, Neon, R2 |
 | Admin content management V2 | DONE | Portfolio admin vê publicados/ocultos, materiais editáveis, contactos ocultáveis e painel redesenhado |
-| Feature 4: notificações email admin/artista | IN PROGRESS | Branch `feat/notifications-and-email`; ainda não production-complete |
+| Feature 4: notificações email admin/artista | DONE | PR #27 -> `dev`; PR #29 -> `main`; V21 em produção |
+| Global UI Redesign | DONE | PR #44 -> `dev`; PR #45 -> `main`; houve fixes visuais posteriores |
 | Otimização de media/assets estáticos | POST-LAUNCH | WebP/AVIF, tamanhos responsivos e cache |
 | Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
 | Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
@@ -52,9 +53,9 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Item antigo | Estado | Decisão |
 | --- | --- | --- |
 | Deploy online do site | DONE técnico | Domínio oficial live; Pages production deployment vem de `main` |
-| SEO para DJ KidG / João Tomás | POST-LAUNCH | Rotas individuais existem; falta trabalho de sitemap/indexação e possível pré-render |
+| SEO para DJ KidG / João Tomás | IN PROGRESS | Feature 5 cria base SEO; Search Console ainda não configurado |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
-| Email "O animador" -> "A equipa irá analisar" | IN PROGRESS | Atualizado na branch `feat/notifications-and-email`; validar antes de promover |
+| Email "O animador" -> "A equipa irá analisar" | DONE | Corrigido na Feature 4; PR #27 -> `dev` e PR #29 -> `main` |
 | Área pessoal do cliente como botões | STILL TODO | Produto/UX |
 | Zona de notificações in-site | STILL TODO | Nova funcionalidade |
 | Formatação Privacy/Terms/Cookies | STILL TODO | Melhorar UX e pedir revisão jurídica |

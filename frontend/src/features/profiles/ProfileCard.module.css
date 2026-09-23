@@ -7,6 +7,7 @@
   color: var(--color-ink);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
+  text-decoration: none;
   transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease), background-color var(--ease);
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
@@ -28,6 +28,7 @@ import {
   profilePath,
   type AdminPage,
 } from './navigation/routes'
+import { SeoManager } from './seo/SeoManager'
 import { getProfiles } from './services/profileService'
 import type { AuthSession } from './types/auth'
 import type { Profile } from './types/profile'
@@ -108,21 +109,7 @@ function App() {
     if (target) navigate(target, { replace: true })
   }, [location.pathname, location.search, navigate])
 
-  const currentProfile = useMemo(() => {
-    const slug = profileSlugFromPath(location.pathname)
-    return slug ? profiles.find((profile) => profile.slug === slug) ?? null : null
-  }, [location.pathname, profiles])
   const activeView = activeViewFromPath(location.pathname)
-
-  useEffect(() => {
-    const metadata = pageMetadata(activeView, currentProfile)
-    document.title = metadata.title
-    setMetaContent('description', metadata.description)
-    setMetaContent('twitter:title', metadata.title)
-    setMetaContent('twitter:description', metadata.description)
-    setMetaProperty('og:title', metadata.title)
-    setMetaProperty('og:description', metadata.description)
-  }, [activeView, currentProfile])
 
   const goHome = useCallback(() => {
     navigate('/')
@@ -167,6 +154,7 @@ function App() {
 
   return (
     <>
+      <SeoManager hasProfilesError={profilesError} isProfilesLoading={isProfilesLoading} profiles={profiles} />
       <SplashScreen
         phase={splashPhase}
         onDockingEnd={() => setSplashPhase('done')}
@@ -198,7 +186,7 @@ function App() {
                 ? <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
                 : isProfilesLoading && profiles.length === 0
                   ? <p className={styles.feedback}>A carregar perfis...</p>
-                : <ProfileSelector profiles={profiles} viewerName={session && isSessionReady ? displaySessionName(session) : undefined} onProfileSelect={(profile) => navigate(profilePath(profile.slug))} />}
+                : <ProfileSelector profiles={profiles} viewerName={session && isSessionReady ? displaySessionName(session) : undefined} />}
             />
             <Route path="/perfis" element={<Navigate to="/" replace />} />
             <Route
@@ -425,47 +413,4 @@ function activeViewFromPath(pathname: string): NavigationView {
   if (pathname === '/conta') return 'account'
   if (['/login', '/registo', '/recuperar-password', '/reset-password'].includes(pathname)) return 'auth'
   return 'profiles'
-}
-
-function profileSlugFromPath(pathname: string) {
-  const match = /^\/perfis\/([^/]+)$/.exec(pathname)
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-function pageMetadata(view: NavigationView, profile: Profile | null) {
-  if (profile) {
-    return {
-      title: `${profile.name} | Saltos nas Palhaçadas`,
-      description: `${profile.name}, ${profile.role}. Consulta o portfólio, avaliações e disponibilidade para eventos.`,
-    }
-  }
-
-  const defaults = {
-    title: 'Saltos nas Palhaçadas | Animação de Eventos',
-    description: 'Perfis de artistas, portfólios, materiais disponíveis e pedidos de agendamento.',
-  }
-
-  const metadata: Partial<Record<NavigationView, { title: string; description: string }>> = {
-    account: { title: 'A minha conta | Saltos nas Palhaçadas', description: 'Dados pessoais, foto, segurança, favoritos e agendamentos da conta.' },
-    admin: { title: 'Administração | Saltos nas Palhaçadas', description: 'Backoffice para gerir perfis, conteúdos, contactos, materiais, avaliações e agendamentos.' },
-    auth: { title: 'Login e conta | Saltos nas Palhaçadas', description: 'Entrar, criar conta ou recuperar palavra-passe.' },
-    booking: { title: 'Agendar evento | Saltos nas Palhaçadas', description: 'Consulta a disponibilidade dos artistas e envia um pedido de agendamento.' },
-    contacts: { title: 'Contactos | Saltos nas Palhaçadas', description: 'Contactos para pedidos, reservas e apoio.' },
-    cookies: { title: 'Cookies | Saltos nas Palhaçadas', description: 'Informação sobre cookies e tecnologias semelhantes.' },
-    favorites: { title: 'Favoritos | Saltos nas Palhaçadas', description: 'Conteúdos guardados como favoritos.' },
-    faq: { title: 'FAQ | Saltos nas Palhaçadas', description: 'Perguntas frequentes sobre agendamentos, contas e disponibilidade.' },
-    materials: { title: 'Material disponível | Saltos nas Palhaçadas', description: 'Lista de material disponível para eventos.' },
-    privacy: { title: 'Privacidade | Saltos nas Palhaçadas', description: 'Informação sobre privacidade e proteção de dados.' },
-    terms: { title: 'Termos | Saltos nas Palhaçadas', description: 'Termos de utilização do site Saltos nas Palhaçadas.' },
-  }
-
-  return metadata[view] ?? defaults
-}
-
-function setMetaContent(name: string, content: string) {
-  document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.setAttribute('content', content)
-}
-
-function setMetaProperty(property: string, content: string) {
-  document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`)?.setAttribute('content', content)
 }
