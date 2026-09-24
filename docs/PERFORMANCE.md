@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-24.
 
-Feature 6 foi promovida por PR #55 -> `dev` e PR #56 -> `main`. O frontend de produção ficou em `a97c3c26deddbc7359a0c1b802eb80a22580be5c`; CI, CodeQL e Cloudflare Pages concluíram com sucesso. PageSpeed/Core Web Vitals reais continuam por medir pós-deploy.
+Feature 6 foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Depois, Mobile UX Polish foi promovido por PR #59/#60 e o hotfix do MediaLightbox iOS/iPadOS + refresh completo de branding icons por PR #61/#62. O frontend de produção atual está em `e2bb91cd38b381ec951cae0a6fadf9f4a1055904`; CI, CodeQL e Cloudflare Pages concluíram com sucesso e o último hotfix foi validado num iPhone real.
 
 ## Baseline
 
@@ -128,19 +128,42 @@ Os caracteres portugueses ficam cobertos por `latin`; `latin-ext` fica incluído
 
 HTML e assets públicos sem hash não recebem cache agressiva.
 
+## Validação PageSpeed em Produção
+
+Medição em PageSpeed Insights/Lighthouse em 2026-09-24:
+
+| Métrica | Mobile | Desktop |
+| --- | ---: | ---: |
+| Performance | 85 | 100 |
+| Acessibilidade | 96 | 96 |
+| Práticas recomendadas | 100 | 100 |
+| SEO | 100 | 100 |
+| FCP | 1.4 s | 0.3 s |
+| LCP | 4.4 s | 0.8 s |
+| TBT | 0 ms | 0 ms |
+| CLS | 0.02 | 0.014 |
+| Speed Index | 1.4 s | 0.6 s |
+
+O PageSpeed ainda não tinha dados de campo/CrUX suficientes e mostrava "Sem dados" na secção de experiência de utilizadores reais.
+
+Diagnósticos relevantes do Lighthouse:
+
+- image delivery: poupança estimada de ~656 KiB em mobile e ~675 KiB em desktop;
+- render-blocking requests: ~300 ms em mobile e ~100 ms em desktop;
+- JavaScript não utilizado: ~32 KiB;
+- o principal gargalo remanescente é o LCP mobile, não o main-thread blocking.
+
+## Follow-ups Mobile
+
+O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`. O hotfix seguinte, PR #61 -> `dev` e PR #62 -> `main`, moveu o MediaLightbox para `document.body` via portal, reforçou scroll lock para iOS/iPadOS, respeitou safe areas e substituiu definitivamente os favicons/icons restantes pelo branding Saltos. O comportamento final foi validado num iPhone real.
+
 ## Limitações e Futuro
 
-Não foram medidos Lighthouse/Core Web Vitals nesta feature. Para voltar a medir, usar:
+Próximas melhorias devem ser avaliadas separadamente:
 
-```text
-cd frontend
-npm run build
-```
-
-Depois de deploy, validar em PageSpeed Insights e Search Console/Core Web Vitals. Próximas melhorias devem ser avaliadas separadamente:
-
-- responsive images reais;
-- pipeline WebP/AVIF;
-- prerender/SSG caso Search Console mostre necessidade;
-- image transformation service/CDN dedicado;
-- service worker/PWA caching.
+- Performance 6.2 focada em image delivery/LCP mobile, começando pelo elemento LCP real e imagens acima da dobra;
+- responsive images reais com `srcset`/`sizes` quando houver benefício mensurável;
+- WebP/AVIF ou image transformation service apenas se a medição justificar a complexidade;
+- monitorizar Search Console/Core Web Vitals quando existirem dados de campo suficientes;
+- prerender/SSG apenas se Search Console mostrar necessidade;
+- service worker/PWA caching apenas com caso de uso claro.
