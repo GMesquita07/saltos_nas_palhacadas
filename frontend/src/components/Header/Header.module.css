@@ -240,11 +240,11 @@
   height: 34px;
   flex: 0 0 34px;
   place-items: center;
-  border: 1px solid rgb(250 249 246 / 18%);
+  border: 1px solid var(--border);
   border-radius: 50%;
   padding: 0;
-  color: rgb(250 249 246 / 82%);
-  background: rgb(255 255 255 / 4%);
+  color: var(--text-primary);
+  background: var(--surface-elevated);
 }
 
 .inner nav .themeButton::after {
@@ -254,6 +254,7 @@
 .inner nav .themeButton svg {
   width: 16px;
   height: 16px;
+  flex: 0 0 16px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -261,149 +262,80 @@
   stroke-width: 1.8;
 }
 
-.inner nav .themeButton:hover {
-  border-color: rgb(134 207 245 / 48%);
-  color: white;
-  background: rgb(22 139 208 / 13%);
-}
-
-.header { position: sticky; }
-
-.inner nav .themeButton {
-  position: absolute !important;
-  top: 50% !important;
-  right: 18px !important;
-  z-index: 3;
-  margin: 0 !important;
-  transform: translateY(-50%) !important;
+.themeButtonLabel {
+  display: none;
+  min-width: 0;
 }
 
 .inner nav .themeButton:hover {
-  transform: translateY(-50%) scale(1.04) !important;
+  border-color: var(--interactive);
+  color: var(--interactive);
+  background: var(--interactive-soft);
 }
 
-:global(html[data-theme='light']) .header {
-  background: rgb(255 255 255 / 96%) !important;
-  box-shadow: 0 8px 28px rgb(18 25 32 / 6%);
+.header {
+  position: sticky;
 }
 
-:global(html[data-theme='light']) .inner nav button,
-:global(html[data-theme='light']) .inner nav a {
-  color: #4e555c !important;
-}
-
-:global(html[data-theme='light']) .inner nav button:hover,
-:global(html[data-theme='light']) .inner nav a:hover,
-:global(html[data-theme='light']) .inner nav .accountButton {
-  color: #15191d !important;
-}
-
-:global(html[data-theme='light']) .inner nav .authenticationButton {
-  border-color: #cfd5db !important;
-  color: #1b1f23 !important;
-  background: #ffffff !important;
-}
-
-:global(html[data-theme='light']) .inner nav .authenticationButton:hover {
-  border-color: var(--brand-blue) !important;
-  color: #ffffff !important;
-  background: var(--brand-blue) !important;
-}
-
-:global(html[data-theme='light']) .inner nav .themeButton {
-  border-color: #d3d8dd !important;
-  color: #33383d !important;
-  background: #f2f4f6 !important;
-}
-
-@media (max-width: 760px) {
-  .inner nav .themeButton {
-    position: static !important;
-    transform: none !important;
-  }
-  .inner nav .themeButton:hover { transform: none !important; }
-}
-
-@media (min-width: 761px) {
+@media (min-width: 901px) {
   .header {
-    position: sticky !important;
-    padding-right: 68px !important;
+    padding-right: 68px;
   }
 
   .inner {
-    position: static !important;
+    position: static;
   }
 
   .inner nav .themeButton,
   .themeButton {
-    position: absolute !important;
-    top: 50% !important;
-    right: 18px !important;
-    z-index: 6 !important;
-    margin: 0 !important;
-    transform: translateY(-50%) !important;
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    z-index: 6;
+    margin: 0;
+    transform: translateY(-50%);
   }
 
   .inner nav .themeButton:hover,
   .themeButton:hover {
-    transform: translateY(-50%) scale(1.04) !important;
+    transform: translateY(-50%) scale(1.04);
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .inner nav .themeButton,
   .themeButton {
-    position: static !important;
-    transform: none !important;
+    position: static;
+    display: inline-flex;
+    width: 100%;
+    height: auto;
+    min-height: 42px;
+    flex: initial;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    border-radius: var(--radius-pill);
+    padding: 9px 11px;
+    transform: none;
   }
 
   .inner nav .themeButton:hover,
   .themeButton:hover {
-    transform: none !important;
+    transform: none;
   }
-}
 
-:global(html[data-theme='light']) .header {
-  border-bottom-color: #dfe3e8 !important;
-  box-shadow: 0 8px 28px rgb(18 25 32 / 6%) !important;
-}
-
-:global(html[data-theme='light']) .inner nav button,
-:global(html[data-theme='light']) .inner nav a {
-  color: #4f575f !important;
-}
-
-:global(html[data-theme='light']) .inner nav button:hover,
-:global(html[data-theme='light']) .inner nav a:hover,
-:global(html[data-theme='light']) .inner nav .isActive,
-:global(html[data-theme='light']) .inner nav .accountButton {
-  color: #15191d !important;
-}
-
-:global(html[data-theme='light']) .inner nav .logoutButton {
-  color: #b84d46 !important;
-}
-
-:global(html[data-theme='light']) .themeButton {
-  border-color: #d5dbe0 !important;
-  color: #333a40 !important;
-  background: #f2f5f7 !important;
-}
-
-.inner nav .authenticationButton:hover {
-  border-color: var(--brand-blue) !important;
-  color: #ffffff !important;
-  background: var(--brand-blue) !important;
-}
-
-.inner nav button:not(.isActive):hover::after,
-.inner nav a:not(.isActive):hover::after {
-  background: var(--brand-blue) !important;
+  .themeButtonLabel {
+    display: inline;
+    overflow-wrap: anywhere;
+    font-size: .84rem;
+    font-weight: 760;
+  }
 }
 
 :global(html[data-theme='light']) .header {
   border-bottom-color: var(--border) !important;
   background: rgb(255 255 255 / 97%) !important;
+  box-shadow: 0 8px 28px rgb(18 25 32 / 6%) !important;
 }
 
 :global(html[data-theme='light']) .menuButton,
@@ -423,6 +355,10 @@
 :global(html[data-theme='light']) .inner nav .accountButton {
   color: var(--text-primary) !important;
   background: var(--interactive-soft) !important;
+}
+
+:global(html[data-theme='light']) .inner nav .logoutButton {
+  color: #b84d46 !important;
 }
 
 .inner nav .authenticationButton,
@@ -455,4 +391,9 @@
   border-color: var(--interactive) !important;
   color: var(--interactive) !important;
   background: var(--interactive-soft) !important;
+}
+
+.inner nav button:not(.isActive):hover::after,
+.inner nav a:not(.isActive):hover::after {
+  background: var(--brand-blue) !important;
 }
