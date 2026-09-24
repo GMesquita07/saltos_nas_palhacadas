@@ -41,11 +41,14 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Admin content management V2 | DONE | Portfolio admin vê publicados/ocultos, materiais editáveis, contactos ocultáveis e painel redesenhado |
 | Feature 4: notificações email admin/artista | DONE | PR #27 -> `dev`; PR #29 -> `main`; V21 em produção |
 | Global UI Redesign | DONE | PR #44 -> `dev`; PR #45 -> `main`; houve fixes visuais posteriores |
-| Favicon branding final | DONE | PR #53 -> `dev`; PR #54 -> `main` |
+| Favicon branding final | DONE | PR #53 -> `dev`; PR #54 -> `main`; refresh completo dos icons/favicons e remoção do Vite em PR #61/#62 |
 | Otimização de media/assets estáticos | POST-LAUNCH | Cache de `/assets/*` concluído na Feature 6; WebP/AVIF e imagens responsivas ficam para avaliação futura |
 | Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
-| Acessibilidade | POST-LAUNCH | Auditoria teclado/leitor de ecrã |
-| Feature 6: Performance & Media | DONE | PR #55 -> `dev`; PR #56 -> `main`; produção frontend `a97c3c26deddbc7359a0c1b802eb80a22580be5c`; PageSpeed/Core Web Vitals reais ainda por medir |
+| Acessibilidade | POST-LAUNCH | PageSpeed/Lighthouse atual 96; começar por contraste e depois teclado, focus, formulários, dialogs e leitor de ecrã |
+| Feature 6: Performance & Media | DONE | PR #55 -> `dev`; PR #56 -> `main`; PageSpeed produção 85 mobile / 100 desktop; TBT 0 ms; mobile LCP 4.4 s |
+| Mobile UX Polish | DONE | PR #59 -> `dev`; PR #60 -> `main`; scroll/routing, theme toggle, cards, portfolio e booking mobile corrigidos |
+| Mobile lightbox/iOS + branding icons | DONE | PR #61 -> `dev`; PR #62 -> `main`; validado em iPhone; frontend produção `e2bb91cd38b381ec951cae0a6fadf9f4a1055904` |
+| Performance 6.2: image delivery/LCP mobile | TODO | PageSpeed aponta LCP mobile 4.4 s e poupança estimada ~656 KiB em imagens; medir elemento LCP e otimizar sem redesign |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
 | Avatares predefinidos | OPTIONAL | Reduzir uploads livres |
 
