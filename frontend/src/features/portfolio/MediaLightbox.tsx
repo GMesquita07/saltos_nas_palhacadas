@@ -1,10 +1,27 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { PortfolioItem } from '../../types/portfolio'
 import styles from './MediaLightbox.module.css'
 
 type MediaLightboxProps = {
   item: PortfolioItem
   onClose: () => void
+}
+
+type BodyScrollLockSnapshot = {
+  scrollY: number
+  body: {
+    left: string
+    overflow: string
+    overscrollBehavior: string
+    position: string
+    right: string
+    top: string
+    width: string
+  }
+  documentElement: {
+    overscrollBehavior: string
+  }
 }
 
 const focusableSelector = [
@@ -32,9 +49,8 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
       ? document.activeElement
       : null
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    closeButtonRef.current?.focus()
+    const scrollLock = lockBodyScroll()
+    closeButtonRef.current?.focus({ preventScroll: true })
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -50,15 +66,15 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
+      unlockBodyScroll(scrollLock)
       if (previouslyFocusedElementRef.current && document.contains(previouslyFocusedElementRef.current)) {
-        previouslyFocusedElementRef.current.focus()
+        previouslyFocusedElementRef.current.focus({ preventScroll: true })
       }
     }
   }, [])
 
-  return (
+  return createPortal(
     <div className={styles.backdrop} onMouseDown={onClose}>
       <div
         aria-labelledby="media-lightbox-title"
@@ -84,8 +100,57 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
           <h2 id="media-lightbox-title">{item.title}</h2>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
+}
+
+function lockBodyScroll(): BodyScrollLockSnapshot {
+  const body = document.body
+  const documentElement = document.documentElement
+  const scrollY = window.scrollY
+  const snapshot: BodyScrollLockSnapshot = {
+    scrollY,
+    body: {
+      left: body.style.left,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+      position: body.style.position,
+      right: body.style.right,
+      top: body.style.top,
+      width: body.style.width,
+    },
+    documentElement: {
+      overscrollBehavior: documentElement.style.overscrollBehavior,
+    },
+  }
+
+  body.style.position = 'fixed'
+  body.style.top = `-${scrollY}px`
+  body.style.left = '0'
+  body.style.right = '0'
+  body.style.width = '100%'
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  documentElement.style.overscrollBehavior = 'none'
+
+  return snapshot
+}
+
+function unlockBodyScroll(snapshot: BodyScrollLockSnapshot) {
+  const body = document.body
+  const documentElement = document.documentElement
+
+  body.style.position = snapshot.body.position
+  body.style.top = snapshot.body.top
+  body.style.left = snapshot.body.left
+  body.style.right = snapshot.body.right
+  body.style.width = snapshot.body.width
+  body.style.overflow = snapshot.body.overflow
+  body.style.overscrollBehavior = snapshot.body.overscrollBehavior
+  documentElement.style.overscrollBehavior = snapshot.documentElement.overscrollBehavior
+
+  window.scrollTo({ top: snapshot.scrollY, left: 0, behavior: 'auto' })
 }
 
 function trapFocus(event: KeyboardEvent, dialog: HTMLDivElement | null) {
@@ -95,7 +160,7 @@ function trapFocus(event: KeyboardEvent, dialog: HTMLDivElement | null) {
     .filter((element) => element.offsetParent !== null || element === document.activeElement)
   if (focusableElements.length === 0) {
     event.preventDefault()
-    dialog.focus()
+    dialog.focus({ preventScroll: true })
     return
   }
 
@@ -105,9 +170,9 @@ function trapFocus(event: KeyboardEvent, dialog: HTMLDivElement | null) {
 
   if (event.shiftKey && activeElement === firstElement) {
     event.preventDefault()
-    lastElement.focus()
+    lastElement.focus({ preventScroll: true })
   } else if (!event.shiftKey && activeElement === lastElement) {
     event.preventDefault()
-    firstElement.focus()
+    firstElement.focus({ preventScroll: true })
   }
 }
