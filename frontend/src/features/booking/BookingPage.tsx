@@ -677,12 +677,23 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
                   <td data-label="Ações">
                     <div className={styles.tableActions}>
                       <button
-                        className={styles.detailsButton}
+                        className={`${styles.detailsButton} ${styles.desktopDetailsButton}`}
                         type="button"
                         onClick={() => setSelectedBookingId(booking.id)}
                       >
                         Ver detalhes
                       </button>
+
+                      <BookingInlineDetails
+                        booking={booking}
+                        cancellationFeedback={cancellationFeedback}
+                        cancellingBookingId={cancellingBookingId}
+                        counterProposalFeedback={counterProposalFeedback}
+                        respondingBookingId={respondingBookingId}
+                        respondingCounterDecision={respondingCounterDecision}
+                        onCounterProposalDecision={onCounterProposalDecision}
+                        onRequestCancel={() => setCancelBookingId(booking.id)}
+                      />
 
                       {canCustomerCancel(booking.status) && (
                         <button
@@ -964,6 +975,161 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
         </div>
       )}
     </>
+  )
+}
+
+type BookingInlineDetailsProps = {
+  booking: Booking
+  cancellationFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
+  cancellingBookingId: string | null
+  counterProposalFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
+  onCounterProposalDecision: (bookingId: string, decision: BookingCounterProposalDecision) => void
+  onRequestCancel: () => void
+  respondingBookingId: string | null
+  respondingCounterDecision: BookingCounterProposalDecision | null
+}
+
+function BookingInlineDetails({ booking, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCounterProposalDecision, onRequestCancel, respondingBookingId, respondingCounterDecision }: BookingInlineDetailsProps) {
+  const status = statusMeta(booking.status)
+  const counterDetails = booking.counterProposal
+    ? [
+        booking.counterProposal.budget === null ? null : formatCurrency(booking.counterProposal.budget),
+        booking.counterProposal.eventDate ? dateFormatter.format(toLocalDate(booking.counterProposal.eventDate)) : null,
+      ].filter(Boolean).join(' · ')
+    : ''
+
+  return (
+    <details className={styles.mobileBookingDetails}>
+      <summary className={styles.mobileDetailsSummary}>Ver detalhes</summary>
+      <div className={styles.mobileDetailsPanel}>
+        <dl className={styles.mobileDetailsList}>
+          <div>
+            <dt>Estado</dt>
+            <dd><span className={`${styles.status} ${styles[status.className]}`}>{status.label}</span></dd>
+          </div>
+          <div>
+            <dt>Pedido</dt>
+            <dd>#{booking.id}</dd>
+          </div>
+          <div>
+            <dt>Artista</dt>
+            <dd>{booking.profileName}</dd>
+          </div>
+          <div>
+            <dt>Data</dt>
+            <dd>{dateFormatter.format(toLocalDate(booking.eventDate))}</dd>
+          </div>
+          <div>
+            <dt>Horário</dt>
+            <dd>{formatTimeRange(booking.startTime, booking.endTime)}</dd>
+          </div>
+          <div>
+            <dt>Local</dt>
+            <dd>{booking.location || 'A combinar'}</dd>
+          </div>
+          <div>
+            <dt>Contacto</dt>
+            <dd>{booking.contactName}</dd>
+          </div>
+          <div>
+            <dt>Telemóvel</dt>
+            <dd>{booking.contactPhone || '—'}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{booking.contactEmail || '—'}</dd>
+          </div>
+          <div>
+            <dt>Orçamento</dt>
+            <dd>{booking.budget === null ? 'Não indicado' : formatCurrency(booking.budget)}</dd>
+          </div>
+        </dl>
+
+        <div className={styles.mobileDetailsSection}>
+          <span>Descrição do evento</span>
+          <p>{booking.description}</p>
+        </div>
+
+        {booking.notes && (
+          <div className={styles.mobileDetailsSection}>
+            <span>Notas adicionais</span>
+            <p>{booking.notes}</p>
+          </div>
+        )}
+
+        {booking.counterProposal && (
+          <div className={styles.counterProposal}>
+            <strong>Alteração proposta</strong>
+            <span>{counterDetails || 'A combinar com a equipa.'}</span>
+          </div>
+        )}
+
+        {booking.status === 'COUNTER_PROPOSED' && (
+          <div className={styles.counterResponse}>
+            <p>Queres aceitar esta alteração?</p>
+            <div className={styles.counterActions}>
+              <button
+                disabled={respondingBookingId !== null}
+                type="button"
+                onClick={() => onCounterProposalDecision(booking.id, 'ACCEPTED')}
+              >
+                {respondingBookingId === booking.id && respondingCounterDecision === 'ACCEPTED'
+                  ? 'A aceitar...'
+                  : 'Aceitar alteração'}
+              </button>
+              <button
+                className={styles.declineCounter}
+                disabled={respondingBookingId !== null}
+                type="button"
+                onClick={() => onCounterProposalDecision(booking.id, 'DECLINED')}
+              >
+                {respondingBookingId === booking.id && respondingCounterDecision === 'DECLINED'
+                  ? 'A recusar...'
+                  : 'Recusar alteração'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {booking.message && (
+          <div className={styles.mobileDetailsSection}>
+            <span>Mensagem da equipa</span>
+            <p>{booking.message}</p>
+          </div>
+        )}
+
+        {cancellationFeedback?.bookingId === booking.id && (
+          <p
+            className={cancellationFeedback.type === 'success' ? styles.cancelSuccess : styles.cancelError}
+            role={cancellationFeedback.type === 'error' ? 'alert' : 'status'}
+          >
+            {cancellationFeedback.message}
+          </p>
+        )}
+
+        {counterProposalFeedback?.bookingId === booking.id && (
+          <p
+            className={counterProposalFeedback.type === 'success' ? styles.counterSuccess : styles.counterError}
+            role={counterProposalFeedback.type === 'error' ? 'alert' : 'status'}
+          >
+            {counterProposalFeedback.message}
+          </p>
+        )}
+
+        {canCustomerCancel(booking.status) && (
+          <div className={styles.bookingActions}>
+            <button
+              className={styles.cancelRequest}
+              disabled={cancellingBookingId !== null}
+              type="button"
+              onClick={onRequestCancel}
+            >
+              {cancellingBookingId === booking.id ? 'A cancelar...' : 'Cancelar pedido'}
+            </button>
+          </div>
+        )}
+      </div>
+    </details>
   )
 }
 

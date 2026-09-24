@@ -173,6 +173,9 @@ export function Header({
                 <path d="M20 15.25A8 8 0 0 1 8.75 4 8.25 8.25 0 1 0 20 15.25Z" />
               </svg>
             )}
+            <span className={styles.themeButtonLabel}>
+              {theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            </span>
           </button>
         </nav>
       </div>
