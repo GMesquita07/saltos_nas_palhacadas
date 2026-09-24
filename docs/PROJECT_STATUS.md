@@ -4,7 +4,7 @@ Last verified: 2026-09-24.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media está DONE e foi promovida por PR #55 -> `dev` e PR #56 -> `main`. O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`; o hotfix do MediaLightbox iOS/iPadOS e branding icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`. A última release frontend com alterações de runtime é `e2bb91cd38b381ec951cae0a6fadf9f4a1055904`; a validação real em iPhone ficou concluída. Commits posteriores exclusivamente documentais podem mover o HEAD de `main` sem alterar o runtime publicado.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media está DONE e foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Performance 6.2 Image Delivery / LCP também está DONE, promovida por PR #68 -> `dev` e PR #69 -> `main`: PageSpeed mobile passou de 85 para 98 e LCP de 4.4 s para 2.3 s, mantendo desktop em 100. O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`; o hotfix do MediaLightbox iOS/iPadOS e branding icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`, com seleção final do favicon desktop corrigida em PR #70/#71. A última release frontend com alterações de runtime é `3e6d64275c2bd10238ae24d5e99f53f18f08ac76`; a validação real em iPhone ficou concluída. O próximo foco funcional/técnico é Feature 7 Accessibility.
 
 ## Estado por Área
 
@@ -41,7 +41,8 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Smoke final de produção | DONE | Sim | Sim | Manter checklist de regressão |
 | Search Console | DONE | Sim | Sim | Domain property `saltosnaspalhacadas.pt` verificada; sitemap enviado com 11 URLs descobertas |
 | Feature 5 SEO / Google | DONE | Sim | Sim | Páginas públicas/perfis indexados; structured data ProfilePage reconhecido pelo Search Console |
-| Performance & Media | DONE | Sim | Sim em build/CI/deploy e PageSpeed | PR #55 -> `dev`; PR #56 -> `main`; PageSpeed produção: mobile 85, desktop 100; mobile LCP 4.4 s; TBT 0 ms; próximo alvo é image delivery/LCP |
+| Performance & Media | DONE | Sim | Sim em build/CI/deploy e PageSpeed | PR #55 -> `dev`; PR #56 -> `main`; baseline pós-Feature 6: mobile 85, desktop 100; TBT 0 ms |
+| Performance 6.2 Image Delivery / LCP | DONE | Sim | Sim em PageSpeed pós-deploy | PR #68 -> `dev`; PR #69 -> `main`; mobile 98, LCP 2.3 s, FCP 1.2 s, TBT 0 ms; desktop 100, LCP 0.5 s; image waste estimado caiu de ~656 KiB para ~287 KiB |
 | Mobile UX Polish | DONE | Sim | Sim em dispositivo real | PR #59 -> `dev`; PR #60 -> `main`; scroll-to-top, theme toggle, cards de perfis, portfolio e booking mobile corrigidos |
 | Mobile lightbox + branding icons | DONE | Sim | Sim em iPhone | PR #61 -> `dev`; PR #62 -> `main`; portal para `document.body`, scroll lock iOS/iPadOS, safe areas e favicons Saltos atualizados |
 
@@ -49,7 +50,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 
 | Branch | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | runtime `e2bb91cd38b381ec951cae0a6fadf9f4a1055904` | Production branch; SHA indicado é a última alteração de runtime, podendo existir housekeeping documental posterior |
+| `main` | runtime `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` | Production branch; SHA indicado é a última alteração de runtime antes deste housekeeping documental |
 | `dev` | integrado | Branch de integração |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
 | `feat/notifications-and-email` | integrado | Feature 4: notifications/email DONE; PR #27 -> `dev`, PR #29 -> `main` |
@@ -76,17 +77,18 @@ Distinção importante:
 - Global UI Redesign foi promovido por PR #44 -> `dev` e PR #45 -> `main`, seguido de fixes visuais;
 - Feature 5 SEO / Google está DONE: Search Console configurado, domain property `saltosnaspalhacadas.pt` verificada, sitemap enviado com 11 URLs descobertas, páginas públicas/perfis indexados e ProfilePage reconhecido;
 - favicon branding inicial foi promovido por PR #53 -> `dev` e PR #54 -> `main`;
-- Feature 6 Performance & Media foi promovida por PR #55 -> `dev` e PR #56 -> `main`; PageSpeed em produção mediu 85 mobile e 100 desktop, com TBT 0 ms em ambos e LCP mobile 4.4 s;
+- Feature 6 Performance & Media foi promovida por PR #55 -> `dev` e PR #56 -> `main`; PageSpeed inicial pós-Feature 6 mediu 85 mobile e 100 desktop, com TBT 0 ms e LCP mobile 4.4 s;
+- Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`; nova medição PageSpeed: 98 mobile / 100 desktop, LCP 2.3 s / 0.5 s, FCP 1.2 s / 0.3 s e TBT 0 ms; a oportunidade de image delivery caiu de ~656 KiB para ~287 KiB;
 - Mobile UX Polish foi promovido por PR #59 -> `dev` e PR #60 -> `main` e validado em telemóvel;
-- o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; última release com alteração de runtime `e2bb91cd38b381ec951cae0a6fadf9f4a1055904`, validada em iPhone;
-- PageSpeed ainda não apresenta dados de campo/CrUX suficientes; o próximo follow-up de performance é image delivery/LCP mobile.
+- o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; a seleção final do favicon desktop foi corrigida em PR #70 -> `dev` e PR #71 -> `main`;
+- PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada e o próximo foco é Feature 7 Accessibility.
 
 ## Produção Conhecida
 
 | Componente | Valor operacional documentável |
 | --- | --- |
 | Cloudflare Pages project | `saltos-nas-palhacadas-prod` |
-| Frontend runtime release SHA | `e2bb91cd38b381ec951cae0a6fadf9f4a1055904` (última alteração de runtime; housekeeping documental posterior não altera o frontend funcional) |
+| Frontend runtime release SHA | `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` (última alteração de runtime antes deste housekeeping documental) |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
 | Apex | `https://saltosnaspalhacadas.pt` redireciona 301 para `www` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
