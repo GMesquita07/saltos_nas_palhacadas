@@ -18,8 +18,8 @@ test('only loads profiles on routes that need public profile data', () => {
   assert.equal(routeNeedsProfiles('/admin/perfis'), false)
 })
 
-test('prioritizes only the first homepage profile image', () => {
-  assert.deepEqual(profileCardImagePolicy(0), { decoding: 'async', fetchPriority: 'high', loading: 'eager' })
-  assert.deepEqual(profileCardImagePolicy(1), { decoding: 'async', fetchPriority: 'auto', loading: 'lazy' })
-  assert.deepEqual(profileCardImagePolicy(4), { decoding: 'async', fetchPriority: 'auto', loading: 'lazy' })
+test('keeps homepage profile images below the splash LCP priority', () => {
+  assert.deepEqual(profileCardImagePolicy(0), { decoding: 'async', fetchPriority: 'auto', loading: 'eager' })
+  assert.deepEqual(profileCardImagePolicy(1), { decoding: 'async', fetchPriority: 'low', loading: 'lazy' })
+  assert.deepEqual(profileCardImagePolicy(4), { decoding: 'async', fetchPriority: 'low', loading: 'lazy' })
 })

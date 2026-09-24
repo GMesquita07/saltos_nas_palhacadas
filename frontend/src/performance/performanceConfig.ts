@@ -14,8 +14,8 @@ export function routeNeedsProfiles(pathname: string) {
 
 export function profileCardImagePolicy(index: number): ImageLoadingPolicy {
   return index === 0
-    ? { decoding: 'async', fetchPriority: 'high', loading: 'eager' }
-    : { decoding: 'async', fetchPriority: 'auto', loading: 'lazy' }
+    ? { decoding: 'async', fetchPriority: 'auto', loading: 'eager' }
+    : { decoding: 'async', fetchPriority: 'low', loading: 'lazy' }
 }
 
 function normalizePathname(pathname: string) {
