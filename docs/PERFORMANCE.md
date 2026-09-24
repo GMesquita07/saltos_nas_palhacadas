@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-24.
 
-Feature 6 foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Depois, Mobile UX Polish foi promovido por PR #59/#60 e o hotfix do MediaLightbox iOS/iPadOS + refresh completo de branding icons por PR #61/#62. O frontend de produção atual está em `e2bb91cd38b381ec951cae0a6fadf9f4a1055904`; CI, CodeQL e Cloudflare Pages concluíram com sucesso e o último hotfix foi validado num iPhone real.
+Feature 6 foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`. Depois da correção final de seleção do favicon desktop em PR #70/#71, a última release frontend com alteração de runtime é `3e6d64275c2bd10238ae24d5e99f53f18f08ac76`. CI, CodeQL e Cloudflare Pages concluíram com sucesso.
 
 ## Baseline
 
@@ -155,7 +155,7 @@ Diagnósticos relevantes do Lighthouse:
 
 ## Performance 6.2 Image Delivery / LCP
 
-Estado: implementado localmente para revisão, ainda não marcado como DONE. Só deve fechar depois de deploy e nova medição PageSpeed.
+Estado: DONE. Implementado, promovido para produção e validado com nova medição PageSpeed.
 
 Diagnóstico de produção usado como base:
 
@@ -164,7 +164,7 @@ Diagnóstico de produção usado como base:
 - principal oportunidade: `Melhore a entrega de imagens`, com poupança estimada de ~656 KiB em mobile;
 - elemento LCP mobile identificado: `div.splash > img.dockLogo`.
 
-Alterações locais deste passe:
+Alterações implementadas neste passe:
 
 | Asset | Antes | Depois | Uso |
 | --- | ---: | ---: | --- |
@@ -186,6 +186,25 @@ Preconnect ao backend não foi implementado neste passe. `VITE_API_URL` contém 
 
 As imagens dinâmicas de perfil continuam como follow-up. O caso KidG observado pelo Lighthouse usa uma imagem fonte muito maior do que o display real, mas sem variantes servidas pelo backend/R2 não há `srcset` seguro a gerar no frontend. O caminho correto fica para derivatives no upload, resize no backend ou transformação/CDN com URLs suportados oficialmente.
 
+### Resultado pós-deploy
+
+Nova medição PageSpeed Insights/Lighthouse em 2026-09-24:
+
+| Métrica | Antes mobile | Depois mobile | Desktop depois |
+| --- | ---: | ---: | ---: |
+| Performance | 85 | 98 | 100 |
+| Acessibilidade | 96 | 96 | 96 |
+| Práticas recomendadas | 100 | 100 | 100 |
+| SEO | 100 | 100 | 100 |
+| FCP | 1.4 s | 1.2 s | 0.3 s |
+| LCP | 4.4 s | 2.3 s | 0.5 s |
+| TBT | 0 ms | 0 ms | 0 ms |
+| CLS | 0.02 | 0.022 | 0.019 |
+
+A oportunidade `Melhore a entrega de imagens` caiu de ~656 KiB para ~287 KiB. O asset LCP estático do splash deixou de ser o principal desperdício; a maior parte do remanescente vem de imagens dinâmicas de perfis sem variantes responsivas no backend/CDN, incluindo o caso KidG observado pelo Lighthouse.
+
+O PageSpeed continuava sem dados de campo/CrUX suficientes ("Sem dados"). Com Performance 98 mobile, LCP 2.3 s, TBT 0 ms e desktop 100, Performance 6.2 fica fechada. Render-blocking (~320 ms), JavaScript não utilizado (~32 KiB) e media dinâmica responsiva permanecem como otimizações futuras de retorno marginal ou que exigem suporte arquitetural adicional.
+
 ## Follow-ups Mobile
 
 O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`. O hotfix seguinte, PR #61 -> `dev` e PR #62 -> `main`, moveu o MediaLightbox para `document.body` via portal, reforçou scroll lock para iOS/iPadOS, respeitou safe areas e substituiu definitivamente os favicons/icons restantes pelo branding Saltos. O comportamento final foi validado num iPhone real.
@@ -194,8 +213,7 @@ O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`. O hotfix s
 
 Próximas melhorias devem ser avaliadas separadamente:
 
-- medir Performance 6.2 após deploy para confirmar impacto real no LCP mobile;
-- responsive images reais com `srcset`/`sizes` quando o backend/CDN disponibilizar variantes de media dinâmicos;
+- responsive images reais com `srcset`/`sizes` quando o backend/CDN disponibilizar variantes de media dinâmicos e houver justificação pelo uso real;
 - WebP/AVIF ou image transformation service apenas se a medição justificar a complexidade;
 - monitorizar Search Console/Core Web Vitals quando existirem dados de campo suficientes;
 - prerender/SSG apenas se Search Console mostrar necessidade;
