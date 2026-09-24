@@ -96,8 +96,8 @@ O evento `profiles:changed` continua a invalidar a cache e só faz refetch imedi
 
 Política aplicada:
 
-- primeira imagem de perfil na homepage: `loading="eager"` e `fetchPriority="high"`;
-- restantes cards de perfil: `loading="lazy"`;
+- primeira imagem de perfil na homepage: `loading="eager"` e `fetchPriority="auto"`, para não competir com o dock logo que é o LCP real;
+- restantes cards de perfil: `loading="lazy"` e `fetchPriority="low"`;
 - avatar principal da página de perfil: eager/high;
 - PortfolioCard e MaterialsPage: imagens lazy com `decoding="async"`;
 - MediaLightbox: imagem aberta pelo utilizador com `decoding="async"`;
@@ -153,6 +153,39 @@ Diagnósticos relevantes do Lighthouse:
 - JavaScript não utilizado: ~32 KiB;
 - o principal gargalo remanescente é o LCP mobile, não o main-thread blocking.
 
+## Performance 6.2 Image Delivery / LCP
+
+Estado: implementado localmente para revisão, ainda não marcado como DONE. Só deve fechar depois de deploy e nova medição PageSpeed.
+
+Diagnóstico de produção usado como base:
+
+- PageSpeed mobile: Performance 85, FCP 1.4 s, LCP 4.4 s, TBT 0 ms, CLS 0.02, Speed Index 1.4 s;
+- PageSpeed desktop: Performance 100, LCP 0.8 s, TBT 0 ms;
+- principal oportunidade: `Melhore a entrega de imagens`, com poupança estimada de ~656 KiB em mobile;
+- elemento LCP mobile identificado: `div.splash > img.dockLogo`.
+
+Alterações locais deste passe:
+
+| Asset | Antes | Depois | Uso |
+| --- | ---: | ---: | --- |
+| `saltos_logo_redondo.png` | 783x783 PNG, 364966 bytes / 356.4 KiB | `saltos-logo-dock.webp`, 384x384 WebP, 19846 bytes / 19.4 KiB | dock logo do splash / LCP |
+| `saltos_logo_redondo.png` | 783x783 PNG, 364966 bytes / 356.4 KiB | `saltos-logo-round-192.webp`, 192x192 WebP, 8250 bytes / 8.1 KiB | BrandMark round e 404 visual |
+| `saltos_logo.jpeg` | 797x783 JPEG, 48929 bytes / 47.8 KiB | `saltos-logo-square-192.webp`, 192x192 WebP, 6746 bytes / 6.6 KiB | BrandMark square |
+
+O `index.html` faz preload do LCP asset com o mesmo URL usado pelo `<img>`:
+
+```html
+<link rel="preload" as="image" href="/saltos-logo-dock.webp" type="image/webp" fetchpriority="high" />
+```
+
+O splash mantém o timing e a experiência visual existentes. O dock logo passa a usar `fetchPriority="high"`, `decoding="async"`, `width="384"` e `height="384"`. A duração do vídeo e o momento em que o dock logo aparece não foram alterados; esse timing estrutural do splash pode continuar a limitar o LCP mesmo com a transferência e descoberta do asset otimizadas.
+
+A política dos profile cards foi ajustada para haver apenas um recurso de imagem com prioridade alta no arranque: o dock logo. O primeiro profile card continua eager, mas com `fetchPriority="auto"`; os restantes ficam lazy/low.
+
+Preconnect ao backend não foi implementado neste passe. `VITE_API_URL` contém path (`/api/v1`) e pode não existir em builds locais; usar `%VITE_API_URL%` no HTML arriscaria gerar um valor literal/inválido ou frágil. Não foi criado `VITE_API_ORIGIN` novo.
+
+As imagens dinâmicas de perfil continuam como follow-up. O caso KidG observado pelo Lighthouse usa uma imagem fonte muito maior do que o display real, mas sem variantes servidas pelo backend/R2 não há `srcset` seguro a gerar no frontend. O caminho correto fica para derivatives no upload, resize no backend ou transformação/CDN com URLs suportados oficialmente.
+
 ## Follow-ups Mobile
 
 O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`. O hotfix seguinte, PR #61 -> `dev` e PR #62 -> `main`, moveu o MediaLightbox para `document.body` via portal, reforçou scroll lock para iOS/iPadOS, respeitou safe areas e substituiu definitivamente os favicons/icons restantes pelo branding Saltos. O comportamento final foi validado num iPhone real.
@@ -161,8 +194,8 @@ O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`. O hotfix s
 
 Próximas melhorias devem ser avaliadas separadamente:
 
-- Performance 6.2 focada em image delivery/LCP mobile, começando pelo elemento LCP real e imagens acima da dobra;
-- responsive images reais com `srcset`/`sizes` quando houver benefício mensurável;
+- medir Performance 6.2 após deploy para confirmar impacto real no LCP mobile;
+- responsive images reais com `srcset`/`sizes` quando o backend/CDN disponibilizar variantes de media dinâmicos;
 - WebP/AVIF ou image transformation service apenas se a medição justificar a complexidade;
 - monitorizar Search Console/Core Web Vitals quando existirem dados de campo suficientes;
 - prerender/SSG apenas se Search Console mostrar necessidade;
