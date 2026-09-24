@@ -51,6 +51,39 @@ function storedTheme(): ColorTheme | null {
   }
 }
 
+function ScrollToTop() {
+  const { hash, pathname } = useLocation()
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      if (hash) {
+        const rawId = hash.slice(1)
+        const decodedId = rawId ? safelyDecodeHash(rawId) : ''
+        const target = decodedId ? document.getElementById(decodedId) : null
+
+        if (target) {
+          target.scrollIntoView({ block: 'start', behavior: 'auto' })
+          return
+        }
+      }
+
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [hash, pathname])
+
+  return null
+}
+
+function safelyDecodeHash(value: string) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 function App() {
   const { isSessionReady, logout, session } = useAuth()
   const location = useLocation()
@@ -170,6 +203,7 @@ function App() {
   return (
     <>
       <SeoManager hasProfilesError={profilesError} isProfilesLoading={effectiveProfilesLoading} profiles={profiles} />
+      <ScrollToTop />
       <SplashScreen
         phase={splashPhase}
         onDockingEnd={() => setSplashPhase('done')}

@@ -2950,3 +2950,308 @@
   width: 18px;
   height: 18px;
 }
+
+
+/* Mobile booking details polish. */
+.desktopDetailsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileBookingDetails {
+  display: none;
+}
+
+.mobileDetailsSummary {
+  display: inline-flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--interactive);
+  border-radius: 10px;
+  padding: 9px 13px;
+  color: #ffffff;
+  background: var(--interactive);
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 760;
+  list-style: none;
+}
+
+.mobileDetailsSummary::-webkit-details-marker {
+  display: none;
+}
+
+.mobileDetailsPanel {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--text-primary);
+  background: var(--surface-soft);
+}
+
+.mobileDetailsList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.mobileDetailsList div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.mobileDetailsList dt,
+.mobileDetailsSection > span {
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.mobileDetailsList dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: .84rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mobileDetailsSection {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.mobileDetailsSection p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .84rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.mobileDetailsPanel .counterProposal,
+.mobileDetailsPanel .counterResponse,
+.mobileDetailsPanel .bookingActions,
+.mobileDetailsPanel .cancelSuccess,
+.mobileDetailsPanel .cancelError,
+.mobileDetailsPanel .counterSuccess,
+.mobileDetailsPanel .counterError {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mobileDetailsPanel .counterActions,
+.mobileDetailsPanel .bookingActions {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-content: stretch;
+}
+
+.mobileDetailsPanel .counterActions button,
+.mobileDetailsPanel .cancelRequest {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .bookingTableWrap {
+    overflow-x: visible;
+  }
+
+  .bookingTable,
+  .bookingTable tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .bookingTable tbody {
+    display: grid;
+    gap: 14px;
+  }
+
+  .bookingTable tr {
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    background: var(--surface);
+  }
+
+  .bookingTable th:nth-child(n),
+  .bookingTable td:nth-child(n) {
+    width: auto;
+  }
+
+  .bookingTable td {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .bookingTable td:nth-child(2),
+  .bookingTable td:nth-child(4) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .bookingTable td:nth-child(6) {
+    padding-left: 0;
+  }
+
+  .bookingTable td::before {
+    display: block;
+    color: var(--text-muted);
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .bookingTable td strong,
+  .bookingTable td small {
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .bookingTable td small {
+    line-height: 1.45;
+  }
+
+  .bookingTable td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .status {
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .tableActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 8px;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .desktopDetailsButton {
+    display: none !important;
+  }
+
+  .mobileBookingDetails {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .quickCancelButton {
+    display: none;
+  }
+
+  .modalBackdrop {
+    align-items: center;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .bookingModal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: 16px 14px;
+  }
+
+  .modalHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .modalHeader h3,
+  .modalHeader p,
+  .modalStatusRow,
+  .modalGrid strong,
+  .modalSection p {
+    overflow-wrap: anywhere;
+  }
+
+  .modalStatusRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modalGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalWide {
+    grid-column: auto;
+  }
+
+  .modalFooter,
+  .bookingModal .counterActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .modalDone,
+  .bookingModal .cancelRequest,
+  .bookingModal .counterActions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .requests {
+    padding: 18px 14px;
+  }
+
+  .bookingTable tr {
+    padding: 11px;
+  }
+
+  .mobileDetailsPanel {
+    padding: 10px;
+  }
+
+  .mobileDetailsList div,
+  .mobileDetailsSection {
+    padding: 9px;
+  }
+}
