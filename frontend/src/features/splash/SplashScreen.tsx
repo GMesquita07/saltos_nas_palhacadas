@@ -96,8 +96,12 @@ export function SplashScreen({ phase, onDockingEnd, onDockingStart }: SplashScre
         <img
           alt=""
           className={styles.dockLogo}
-          src="/saltos_logo_redondo.png"
+          decoding="async"
+          fetchPriority="high"
+          height={384}
+          src="/saltos-logo-dock.webp"
           style={dockStyle}
+          width={384}
           onAnimationEnd={onDockingEnd}
         />
       )}
