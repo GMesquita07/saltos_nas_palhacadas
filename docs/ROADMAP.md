@@ -1,6 +1,6 @@
 # Roadmap
 
-Last verified: 2026-09-24.
+Last updated: 2026-09-26.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -13,7 +13,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Brevo DNS verification | DONE | Domínio autenticado em Brevo |
 | DKIM/DMARC final | DONE | Validados |
 | SMTP real | DONE | Brevo SMTP 587 STARTTLS ativo |
-| Teste email recuperação password | DONE | Forgot/reset password validado em produção |
+| Teste email recuperação password | DONE parcial | Fluxo básico validado; expiração efetiva aos 30 min em auditoria/hotfix de segurança pós-lançamento |
 | Teste emails bookings | DONE | Recebido, aceite e cancelamento validados |
 | Scheduler booking reminders | DONE | Job diário 09:00 Europe/Lisbon executado com sucesso |
 | Neon restore drill | DONE | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada |
@@ -26,6 +26,12 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Mudar Pages production branch para `main` | DONE | Production deployment vem de `main` |
 | Verificação final pós-merge | DONE | Domínio, backend health, Turnstile, schedulers e R2 backups validados |
 | Confirmação administrativa .PT | PENDING | Externo; separado de DNS/TLS já funcionais |
+
+## P0 - Segurança pós-lançamento
+
+| Item | Estado | Nota |
+| --- | --- | --- |
+| Hotfix: expiração do token de reposição de palavra-passe | TODO — URGENTE | Relato de link ainda utilizável várias horas depois, apesar do email indicar 30 minutos. Confirmar se o POST de reset efetivamente aceita token expirado (abrir o formulário não prova validade); auditar configuração runtime `PASSWORD_RESET_TOKEN_MINUTES`, persistência de `expires_at`, relógios e validação server-side. Garantir rejeição a partir de 30 minutos, uso único, invalidação ao emitir novo token e mensagem adequada ao utilizador. Testes automatizados de fronteira e E2E em produção com conta de teste, sem divulgar tokens. Tratar antes da Feature 7. |
 
 ## P1 - Depois do Lançamento
 
@@ -44,7 +50,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Favicon branding final | DONE | PR #53/#54; refresh completo em PR #61/#62; seleção do favicon desktop estabilizada em PR #70/#71 |
 | Otimização de media/assets estáticos | DONE | Cache de `/assets/*` na Feature 6; assets críticos WebP/preload em Performance 6.2; media dinâmica responsiva fica como follow-up opcional |
 | Cleanup de media pública órfã | POST-LAUNCH | Requer tracking seguro de ownership/referências antes de apagar objetos R2 |
-| Acessibilidade | TODO | Próxima feature. PageSpeed/Lighthouse atual 96; primeiro problema automático confirmado é contraste do botão `Aceitar` no Cookie Consent, seguido de teclado, focus, formulários, dialogs e leitor de ecrã |
+| Acessibilidade | TODO | Feature 7, a seguir à verificação/correção prioritária do reset de palavra-passe. PageSpeed/Lighthouse atual 96; primeiro problema automático confirmado é contraste do botão `Aceitar` no Cookie Consent, seguido de teclado, focus, formulários, dialogs e leitor de ecrã |
 | Feature 6: Performance & Media | DONE | PR #55 -> `dev`; PR #56 -> `main`; baseline pós-feature 85 mobile / 100 desktop; TBT 0 ms |
 | Mobile UX Polish | DONE | PR #59 -> `dev`; PR #60 -> `main`; scroll/routing, theme toggle, cards, portfolio e booking mobile corrigidos |
 | Mobile lightbox/iOS + branding icons | DONE | PR #61 -> `dev`; PR #62 -> `main`; validado em iPhone; frontend produção `e2bb91cd38b381ec951cae0a6fadf9f4a1055904` |
