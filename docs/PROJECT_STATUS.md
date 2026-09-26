@@ -1,10 +1,10 @@
 # Estado do Projeto
 
-Last verified: 2026-09-24.
+Last updated: 2026-09-26.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media está DONE e foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Performance 6.2 Image Delivery / LCP também está DONE, promovida por PR #68 -> `dev` e PR #69 -> `main`: PageSpeed mobile passou de 85 para 98 e LCP de 4.4 s para 2.3 s, mantendo desktop em 100. O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`; o hotfix do MediaLightbox iOS/iPadOS e branding icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`, com seleção final do favicon desktop corrigida em PR #70/#71. A última release frontend com alterações de runtime é `3e6d64275c2bd10238ae24d5e99f53f18f08ac76`; a validação real em iPhone ficou concluída. O próximo foco funcional/técnico é Feature 7 Accessibility.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media está DONE e foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Performance 6.2 Image Delivery / LCP também está DONE, promovida por PR #68 -> `dev` e PR #69 -> `main`: PageSpeed mobile passou de 85 para 98 e LCP de 4.4 s para 2.3 s, mantendo desktop em 100. O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`; o hotfix do MediaLightbox iOS/iPadOS e branding icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`, com seleção final do favicon desktop corrigida em PR #70/#71. A última release frontend com alterações de runtime é `3e6d64275c2bd10238ae24d5e99f53f18f08ac76`; a validação real em iPhone ficou concluída. O próximo foco é o hotfix/auditoria de segurança da expiração do token de reset de palavra-passe; depois segue a Feature 7 Accessibility.
 
 ## Estado por Área
 
@@ -26,7 +26,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Brevo DNS/auth | DONE | Sim | Sim | Manter DKIM/DMARC saudáveis |
 | SMTP Brevo | DONE | Sim | Sim | Monitorizar entregabilidade |
 | Notificações admin/artista | DONE | Sim | Sim | Usa admins ativos da DB e email privado por perfil |
-| Password reset email real | DONE | Sim | Sim | Canonical URL aponta para `www` |
+| Password reset email real | DONE (fluxo base) | Sim | Fluxo de emissão/entrega validado; expiração em investigação | Link canónico aponta para `www`; relato de utilização após várias horas apesar dos 30 minutos comunicados. Auditar efetiva rejeição do POST após expiração, configuração runtime e testes de fronteira/uso único antes da Feature 7 |
 | Domínio registado | DONE | Sim | Sim pelo setup | DNS/TLS já funcionais; confirmação administrativa .PT separada |
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
 | Redirect apex -> www | DONE | Sim | Sim | 301 preserva query strings |
@@ -81,7 +81,8 @@ Distinção importante:
 - Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`; nova medição PageSpeed: 98 mobile / 100 desktop, LCP 2.3 s / 0.5 s, FCP 1.2 s / 0.3 s e TBT 0 ms; a oportunidade de image delivery caiu de ~656 KiB para ~287 KiB;
 - Mobile UX Polish foi promovido por PR #59 -> `dev` e PR #60 -> `main` e validado em telemóvel;
 - o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; a seleção final do favicon desktop foi corrigida em PR #70 -> `dev` e PR #71 -> `main`;
-- PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada e o próximo foco é Feature 7 Accessibility.
+- PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada;
+- foi reportada possível falha de expiração do token de reposição de palavra-passe (30 minutos no email); a verificação e eventual correção server-side precedem a Feature 7 Accessibility. O backend contém verificações de `expires_at` e `used_at` no código, mas o comportamento em produção precisa de reprodução E2E para distinguir formulário acessível de token realmente aceite.
 
 ## Produção Conhecida
 
