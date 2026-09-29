@@ -2,7 +2,7 @@
 
 Documento-resumo. A documentação detalhada está em [docs/PRODUCTION.md](docs/PRODUCTION.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) e [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Last verified: 2026-09-17.
+Last verified: 2026-09-30.
 
 ## Estado Geral
 
@@ -10,7 +10,7 @@ Last verified: 2026-09-17.
 | --- | --- |
 | Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
 | Backend Google Cloud Run | DONE; health UP; sem ERROR logs recentes |
-| Neon PostgreSQL | DONE |
+| Neon PostgreSQL | DONE; último Flyway operacional confirmado V23; `main` inclui V24/V25 para validação no próximo deploy/backend |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
@@ -20,7 +20,7 @@ Last verified: 2026-09-17.
 | Backups/restore drill | DONE/VALIDATED |
 | CI/PostgreSQL CI/CodeQL final | DONE |
 | Smoke final de produção | DONE |
-| Final merge para `main` | DONE |
+| Final merge para `main` | DONE; PR #82 contém a release Artist media/crop UX em código/main |
 
 ## Checklist Técnico
 
@@ -56,7 +56,7 @@ Last verified: 2026-09-17.
 | FAQ | DONE | SPA interna. |
 | Clear CTA | DONE | Booking visível no header/perfis. |
 | robots.txt | DONE | Bloqueia rotas privadas convencionais e aponta sitemap. |
-| sitemap.xml | Parcial | Só homepage; rotas por perfil ficam para roadmap. |
+| sitemap.xml | DONE | Sitemap enviado no Search Console com 11 URLs descobertas. |
 | Custom 404 | DONE | `frontend/public/404.html`. |
 | Alt text | Parcial | Existe nas principais imagens; validar manualmente. |
 | Analytics | TODO | Só com consentimento e política atualizada. |
@@ -64,15 +64,19 @@ Last verified: 2026-09-17.
 | Social share | DONE técnico | OG/Twitter configurados; validar imagem final. |
 | Favicon/canonical | DONE | Canonical aponta para domínio pretendido. |
 | Cookie consent | DONE técnico | Preferência local para opcionais. |
-| Mobile/accessibility/performance | POST-LAUNCH | Smoke final passou; manter melhorias futuras de UX, acessibilidade e performance. |
+| Mobile/accessibility/performance | POST-LAUNCH | Performance 6.2 validada com 98 mobile / 100 desktop; acessibilidade continua como Feature 7 futura. |
 | Broken links/forms | DONE técnico | Smoke final de produção passou; continuar regressão em mudanças futuras. |
 
 ## Pós-Lançamento Ainda Pendente
 
 1. Acompanhar confirmação administrativa .PT externa.
-2. Submeter/verificar Google Search Console e sitemap.
-3. Planear melhorias visuais/frontend futuras.
-4. Planear otimização futura de media/assets estáticos.
+2. Corrigir UX de link de reset expirado.
+3. Validar/implementar email pessoal/operacional do artista quando existe booking desse artista.
+4. Melhorar UX da área de conta e notificações in-app.
+5. Executar Feature 7 Accessibility.
+6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
+
+Nota operacional: `main` inclui migrations V24/V25, mas a confirmação da sua aplicação em produção deve ser feita apenas no deploy/backend validation. Não atualizar revisão Cloud Run, imagem Docker ou versão Flyway aplicada sem evidência.
 
 ## Render
 

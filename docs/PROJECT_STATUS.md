@@ -1,10 +1,16 @@
 # Estado do Projeto
 
-Last updated: 2026-09-26.
+Last updated: 2026-09-30.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, Flyway validou 23 migrations e produção está em V23. Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media está DONE e foi promovida por PR #55 -> `dev` e PR #56 -> `main`. Performance 6.2 Image Delivery / LCP também está DONE, promovida por PR #68 -> `dev` e PR #69 -> `main`: PageSpeed mobile passou de 85 para 98 e LCP de 4.4 s para 2.3 s, mantendo desktop em 100. O polish mobile foi promovido por PR #59 -> `dev` e PR #60 -> `main`; o hotfix do MediaLightbox iOS/iPadOS e branding icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`, com seleção final do favicon desktop corrigida em PR #70/#71. A última release frontend com alterações de runtime é `3e6d64275c2bd10238ae24d5e99f53f18f08ac76`; a validação real em iPhone ficou concluída. O próximo foco é Feature 7 Accessibility. O link antigo de reset de palavra-passe abre o formulário, mas o backend rejeita a alteração; resta corrigir a apresentação do estado expirado no frontend.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, e o último estado operacional confirmado de Flyway em produção é V23.
+
+Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media e Performance 6.2 Image Delivery / LCP estão DONE; a última medição documentada mantém PageSpeed 98 mobile / 100 desktop.
+
+A alteração de runtime mais recente merged em `main` é a release Artist media/crop UX, promovida por PR #81 (`fix/artist-lightbox-desktop` -> `dev`) e PR #82 (`dev` -> `main`). Esta release inclui melhorias do perfil/artista em desktop, MediaLightbox desktop, hero visual, crop/enquadramento consistente e persistente para avatars/backgrounds/thumbnails/materiais, preview de vídeo, invalidação/cache de portfolio e migrations V24/V25 no código.
+
+Não assumir que V24/V25 já foram aplicadas na base de dados de produção nem que existe nova revisão Cloud Run sem validação operacional posterior. A sequência real de próximos trabalhos é: UX de link de reset expirado; email pessoal/operacional do artista quando existe booking desse artista; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -13,7 +19,9 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Frontend Cloudflare Pages | DONE | Sim, branch `main` | Sim | Monitorização pós-lançamento |
 | Backend Cloud Run | DONE | Sim | Sim | Health UP; monitorização pós-lançamento |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
-| Flyway V1-V23 | DONE | Sim | Sim | Produção validada em V23; V23 adiciona profile hero background |
+| Flyway V1-V23 | DONE | Sim | Sim | Último estado operacional confirmado em produção; V23 adiciona profile hero background |
+| Flyway V24/V25 | DONE em código/main | Não assumido | Pendente em produção | Presentes em `main`; validar aplicação no próximo deploy backend/Flyway antes de marcar produção |
+| Artist media/crop UX | DONE em código/main | Não assumido | Validado em PR; pendente em produção | PR #81/#82 merged; confirmar deploy frontend/backend e Flyway V24/V25 quando aplicável |
 | Flyway V21 profile notification email | DONE | Sim | Sim | Feature 4 notifications/email; PR #27 -> `dev`; PR #29 -> `main` |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |
 | R2 backup Cloud Run Job | DONE | Sim | Sim | Monitorizar Scheduler diário e retenção |
@@ -25,7 +33,7 @@ O lançamento técnico de produção está completo. A stack principal está em 
 | Booking reminder Scheduler | DONE | Sim | Sim | Monitorizar execução diária às 09:00 |
 | Brevo DNS/auth | DONE | Sim | Sim | Manter DKIM/DMARC saudáveis |
 | SMTP Brevo | DONE | Sim | Sim | Monitorizar entregabilidade |
-| Notificações admin/artista | DONE | Sim | Sim | Usa admins ativos da DB e email privado por perfil |
+| Notificações admin/artista | DONE infraestrutura | Sim | Parcial | Infraestrutura em produção; requisito booking -> email pessoal/operacional do artista continua pendente de implementação/validação E2E |
 | Password reset email real | DONE (fluxo base) | Sim | Emissão/entrega validadas; utilizador confirmou rejeição de token antigo pelo backend | Melhorar UX: verificar token ao abrir a rota e mostrar link inválido/expirado em vez do formulário; manter teste do limite exato dos 30 min e uso único |
 | Domínio registado | DONE | Sim | Sim pelo setup | DNS/TLS já funcionais; confirmação administrativa .PT separada |
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
@@ -48,14 +56,16 @@ O lançamento técnico de produção está completo. A stack principal está em 
 
 ## Branches e Release
 
-| Branch | SHA conhecido | Papel |
+| Branch / PR | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | runtime `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` | Production branch; SHA indicado é a última alteração de runtime antes deste housekeeping documental |
-| `dev` | integrado | Branch de integração |
+| `main` | contém PR #82 | Production branch; a release Artist media/crop UX está merged no código, mas produção operacional não deve ser inferida sem validação posterior |
+| `dev` | integrado | Branch de integração; contém PR #81 e receberá este housekeeping |
+| `fix/artist-lightbox-desktop` | integrado | PR #81 -> `dev`; Artist media/crop UX |
+| PR #82 `dev` -> `main` | integrado | Promoveu a release Artist media/crop UX para `main` |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
 | `feat/notifications-and-email` | integrado | Feature 4: notifications/email DONE; PR #27 -> `dev`, PR #29 -> `main` |
 
-Fluxo concluído:
+Fluxo histórico concluído:
 
 ```text
 feat/production-launch
@@ -67,20 +77,19 @@ feat/production-launch
 
 Distinção importante:
 
-- código/imagem backend atualmente em produção: `backend:55056d5`;
-- Cloud Run revision `saltos-backend-00017-88t` serve 100% do tráfego;
-- `/actuator/health` está UP;
+- código/imagem backend atualmente confirmados em produção: `backend:55056d5`;
+- Cloud Run revision confirmada: `saltos-backend-00017-88t`, a servir 100% do tráfego;
+- `/actuator/health` está UP no último estado operacional documentado;
 - Cloudflare Pages production branch é `main`;
-- produção estava em Flyway V22 e aplicou V23; Flyway validou 23 migrations;
-- V23 adiciona `profile.heroBackgroundImageUrl`;
+- último estado operacional confirmado de Flyway em produção: V23;
+- `main` já inclui V24/V25, mas a aplicação dessas migrations em produção fica pendente de deploy/backend validation;
 - Feature 4 notifications/email está DONE e V21 está em produção;
-- Global UI Redesign foi promovido por PR #44 -> `dev` e PR #45 -> `main`, seguido de fixes visuais;
 - Feature 5 SEO / Google está DONE: Search Console configurado, domain property `saltosnaspalhacadas.pt` verificada, sitemap enviado com 11 URLs descobertas, páginas públicas/perfis indexados e ProfilePage reconhecido;
-- favicon branding inicial foi promovido por PR #53 -> `dev` e PR #54 -> `main`;
 - Feature 6 Performance & Media foi promovida por PR #55 -> `dev` e PR #56 -> `main`; PageSpeed inicial pós-Feature 6 mediu 85 mobile e 100 desktop, com TBT 0 ms e LCP mobile 4.4 s;
-- Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`; nova medição PageSpeed: 98 mobile / 100 desktop, LCP 2.3 s / 0.5 s, FCP 1.2 s / 0.3 s e TBT 0 ms; a oportunidade de image delivery caiu de ~656 KiB para ~287 KiB;
+- Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`; nova medição PageSpeed: 98 mobile / 100 desktop, LCP 2.3 s / 0.5 s, FCP 1.2 s / 0.3 s e TBT 0 ms;
 - Mobile UX Polish foi promovido por PR #59 -> `dev` e PR #60 -> `main` e validado em telemóvel;
 - o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; a seleção final do favicon desktop foi corrigida em PR #70 -> `dev` e PR #71 -> `main`;
+- Artist media/crop UX foi promovido por PR #81 -> `dev` e PR #82 -> `main`; inclui desktop profile/media/lightbox/hero/crop/thumbnails e preservação mobile/touch;
 - PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada;
 - o utilizador confirmou que o formulário de reset abre com um link antigo, mas o backend rejeita a submissão. O código verifica `expires_at` e `used_at` no POST; o pendente é UX de pré-validação e mensagem «Link inválido ou expirado» com pedido de novo link. Testes da fronteira dos 30 minutos e uso único continuam recomendados; não há falha de aceitação de token expirado confirmada.
 
@@ -89,7 +98,7 @@ Distinção importante:
 | Componente | Valor operacional documentável |
 | --- | --- |
 | Cloudflare Pages project | `saltos-nas-palhacadas-prod` |
-| Frontend runtime release SHA | `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` (última alteração de runtime antes deste housekeeping documental) |
+| Frontend runtime release SHA | `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` (último runtime validado antes da release Artist media/crop UX; não substituir sem validação posterior) |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
 | Apex | `https://saltosnaspalhacadas.pt` redireciona 301 para `www` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
@@ -98,10 +107,11 @@ Distinção importante:
 | Service | `saltos-backend` |
 | Cloud Run revision | `saltos-backend-00017-88t` |
 | Imagem | `backend:55056d5` |
-| Código de produção | `main` em `55056d5`; revisão Cloud Run `saltos-backend-00017-88t` |
+| Código de produção backend | `main` em `55056d5`; revisão Cloud Run `saltos-backend-00017-88t` |
 | Tráfego | 100% |
 | Health | UP |
 | Recursos Cloud Run | 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero, startup CPU boost |
+| Flyway operacional confirmado | V23; `main` inclui V24/V25 ainda a validar no próximo deploy/backend validation |
 | Neon branch | `production/default` |
 | R2 buckets | `saltos-prod-public`, `saltos-prod-private` |
 | R2 backup bucket | `saltos-prod-backup` |
