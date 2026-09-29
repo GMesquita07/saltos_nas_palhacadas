@@ -16,6 +16,8 @@ export type ApiProfileResponse = {
   profileImageZoom: number | null
   featuredVideoUrl: string | null
   heroBackgroundImageUrl: string | null
+  heroBackgroundImagePosition: string | null
+  heroBackgroundImageZoom: number | null
   notificationEmail: string | null
   displayOrder: number | null
   socialLinks: ApiProfileSocialLinkResponse[] | null
@@ -45,6 +47,8 @@ export type SaveProfileInput = {
   profileImageZoom: number
   featuredVideoUrl: string | null
   heroBackgroundImageUrl: string | null
+  heroBackgroundImagePosition: string
+  heroBackgroundImageZoom: number
   socialLinks: ProfileSocialLinkInput[]
 }
 
@@ -93,6 +97,8 @@ export function toProfile(profile: ApiProfileResponse): AdminManagedProfile {
     imageZoom: profile.profileImageZoom ?? 1,
     featuredVideoUrl: profile.featuredVideoUrl ?? undefined,
     heroBackgroundImageUrl: profile.heroBackgroundImageUrl ?? undefined,
+    heroBackgroundImagePosition: profile.heroBackgroundImagePosition ?? '50% 50%',
+    heroBackgroundImageZoom: profile.heroBackgroundImageZoom ?? 1,
     notificationEmail: profile.notificationEmail ?? '',
     displayOrder: profile.displayOrder ?? 0,
     socialLinks: mapSocialLinks(profile.socialLinks),

@@ -4,8 +4,8 @@ import java.time.LocalDate;
 
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 
-public record PortfolioItemResponse(Long id, String type, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, int displayOrder) {
+public record PortfolioItemResponse(Long id, String type, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, String thumbnailPosition, double thumbnailZoom, int displayOrder) {
     public static PortfolioItemResponse from(PortfolioItem item) {
-        return new PortfolioItemResponse(item.getId(), item.getMediaType().name(), item.getTitle(), item.getLocation(), item.getEventDate(), item.getMediaUrl(), item.getThumbnailUrl(), item.getDisplayOrder());
+        return new PortfolioItemResponse(item.getId(), item.getMediaType().name(), item.getTitle(), item.getLocation(), item.getEventDate(), item.getMediaUrl(), item.getThumbnailUrl(), item.getThumbnailPosition(), item.getThumbnailZoom(), item.getDisplayOrder());
     }
 }

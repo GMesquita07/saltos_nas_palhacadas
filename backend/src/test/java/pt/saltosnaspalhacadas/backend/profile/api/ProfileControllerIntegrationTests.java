@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import pt.saltosnaspalhacadas.backend.auth.JwtService;
+import pt.saltosnaspalhacadas.backend.booking.Booking;
+import pt.saltosnaspalhacadas.backend.booking.BookingEventType;
+import pt.saltosnaspalhacadas.backend.booking.BookingRepository;
+import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
 import pt.saltosnaspalhacadas.backend.portfolio.MediaType;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItem;
 import pt.saltosnaspalhacadas.backend.portfolio.PortfolioItemRepository;
@@ -37,6 +42,7 @@ class ProfileControllerIntegrationTests {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ProfileRepository profileRepository;
+    @Autowired private BookingRepository bookingRepository;
     @Autowired private PortfolioItemRepository portfolioItemRepository;
     @Autowired private JwtService jwtService;
     @Autowired private PasswordEncoder passwords;
@@ -44,6 +50,7 @@ class ProfileControllerIntegrationTests {
 
     @BeforeEach
     void setUp() {
+        bookingRepository.deleteAll();
         portfolioItemRepository.deleteAll();
         profileRepository.deleteAll();
     }
@@ -64,6 +71,36 @@ class ProfileControllerIntegrationTests {
                 .andExpect(header().string("Cache-Control", containsString("max-age=60")))
                 .andExpect(header().string("Cache-Control", containsString("public")))
                 .andExpect(jsonPath("$.slug").value("joao-tomas"));
+    }
+
+    @Test
+    void publicProfilesExposeCompletedAcceptedEventsUntilToday() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Profile profile = profileRepository.save(new Profile("eventos-" + suffix, "DJ Eventos", "DJ", "Descrição", null));
+        Profile otherProfile = profileRepository.save(new Profile("outro-eventos-" + suffix, "DJ Outro", "DJ", "Descrição", null));
+        AppUser customer = users.save(new AppUser(
+                "cliente-eventos-" + suffix + "@example.test",
+                passwords.encode("palavra123"),
+                UserRole.CUSTOMER));
+        LocalDate today = LocalDate.now();
+
+        bookingRepository.save(booking(customer, profile, today.minusDays(10), BookingStatus.ACCEPTED));
+        bookingRepository.save(booking(customer, profile, today, BookingStatus.ACCEPTED));
+        bookingRepository.save(booking(customer, profile, today.plusDays(1), BookingStatus.ACCEPTED));
+        bookingRepository.save(booking(customer, profile, today.minusDays(3), BookingStatus.PENDING));
+        bookingRepository.save(booking(customer, profile, today.minusDays(4), BookingStatus.DECLINED));
+        bookingRepository.save(booking(customer, profile, today.minusDays(5), BookingStatus.COUNTER_PROPOSED));
+        bookingRepository.save(booking(customer, profile, today.minusDays(6), BookingStatus.CANCELLED));
+        bookingRepository.save(booking(customer, otherProfile, today.minusDays(7), BookingStatus.ACCEPTED));
+
+        mockMvc.perform(get("/api/v1/profiles/{slug}", profile.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedEventsCount").value(2));
+
+        mockMvc.perform(get("/api/v1/profiles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.slug == '" + profile.getSlug() + "')].completedEventsCount").value(2))
+                .andExpect(jsonPath("$[?(@.slug == '" + otherProfile.getSlug() + "')].completedEventsCount").value(1));
     }
 
     @Test
@@ -105,6 +142,34 @@ class ProfileControllerIntegrationTests {
     void returnsNotFoundForUnknownProfile() throws Exception {
         mockMvc.perform(get("/api/v1/profiles/desconhecido"))
                 .andExpect(status().isNotFound());
+    }
+
+    private Booking booking(AppUser customer, Profile profile, LocalDate eventDate, BookingStatus status) {
+        Booking booking = new Booking(
+                customer,
+                profile,
+                eventDate,
+                null,
+                null,
+                BookingEventType.BIRTHDAY,
+                null,
+                null,
+                "Lisboa",
+                "Cliente Eventos",
+                customer.getEmail(),
+                "915 123 456",
+                "Evento de teste.",
+                null);
+
+        switch (status) {
+            case ACCEPTED -> booking.accept(eventDate, null, null, null, "Confirmado.");
+            case DECLINED -> booking.decline("Recusado.");
+            case COUNTER_PROPOSED -> booking.counterPropose("Proposta enviada.", null, eventDate.plusDays(1));
+            case CANCELLED -> booking.cancel("Cancelado.");
+            case PENDING -> { }
+        }
+
+        return booking;
     }
 
     @Test

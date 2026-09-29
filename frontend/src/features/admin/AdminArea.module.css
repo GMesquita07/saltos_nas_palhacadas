@@ -530,21 +530,69 @@ button:disabled {
   font-size: 12px;
 }
 
+.pendingCropNotice {
+  display: block;
+  margin-top: -4px;
+  border: 1px solid rgb(245 215 43 / 32%);
+  border-radius: 10px;
+  padding: 9px 11px;
+  color: #d8b91f;
+  background: rgb(245 215 43 / 10%);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
 .thumbnailPreview {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
   align-items: center;
   gap: 14px;
+  overflow: hidden;
   padding: 12px;
   border: 1px solid var(--color-line);
   background: var(--color-surface);
 }
 
-.thumbnailPreview img {
+.heroThumbnailPreview {
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+}
+
+.thumbnailPreviewFrame {
+  display: block;
   width: 120px;
+  overflow: hidden;
   aspect-ratio: 16 / 10;
   border: 1px solid var(--color-line);
+  background: #090c0f;
+}
+
+.thumbnailPreviewFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+}
+
+.profileCardPreview {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.profileCardPreview > span:last-child {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.heroPreviewFrame {
+  width: min(320px, 100%);
+  aspect-ratio: 1240 / 390;
 }
 
 .thumbnailPreview button {
@@ -559,6 +607,73 @@ button:disabled {
 
 .thumbnailPreview button:hover {
   border-color: #9b332c;
+}
+
+.previewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumbnailPreview .adjustPreviewButton {
+  border-color: var(--color-line);
+  color: var(--color-ink);
+}
+
+.thumbnailPreview .adjustPreviewButton:hover {
+  border-color: var(--brand-blue);
+}
+
+.cropDialogBackdrop {
+  position: fixed;
+  z-index: 2147483001;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(3 8 14 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.cropDialog {
+  display: grid;
+  width: min(620px, 100%);
+  max-height: min(88dvh, 760px);
+  overflow: auto;
+  gap: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 38%);
+}
+
+.heroCropDialog {
+  width: min(860px, 100%);
+}
+
+.cropDialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cropDialogActions button {
+  border: 1px solid var(--brand-blue);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--brand-blue);
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 760;
+}
+
+.cropDialogActions .cancelButton {
+  border-color: var(--color-line);
+  color: var(--color-ink);
+  background: transparent;
 }
 
 .formActions {
@@ -848,11 +963,13 @@ button:disabled {
     padding-bottom: 0;
   }
 
-  .thumbnailPreview {
+  .thumbnailPreview,
+  .heroThumbnailPreview {
     grid-template-columns: 1fr;
   }
 
-  .thumbnailPreview img {
+  .thumbnailPreviewFrame,
+  .heroPreviewFrame {
     width: 100%;
   }
 }
@@ -1112,7 +1229,8 @@ button:disabled {
   color: var(--color-muted);
 }
 
-.contentPreview img {
+.contentPreview img,
+.contentPreview video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2311,13 +2429,13 @@ button:disabled {
   background: var(--surface) !important;
 }
 
-:global(html[data-theme='light']) .thumbnailPreview button {
+:global(html[data-theme='light']) .thumbnailPreview button:not(.adjustPreviewButton) {
   border-color: rgb(228 33 34 / 38%) !important;
   color: var(--danger) !important;
   background: var(--danger-soft) !important;
 }
 
-:global(html[data-theme='light']) .thumbnailPreview button:hover:not(:disabled) {
+:global(html[data-theme='light']) .thumbnailPreview button:not(.adjustPreviewButton):hover:not(:disabled) {
   color: #ffffff !important;
   background: var(--danger-hover) !important;
 }
@@ -2352,6 +2470,7 @@ button:disabled {
 .exitButton,
 .socialLinkActions button,
 .thumbnailPreview button,
+.thumbnailPreview .adjustPreviewButton,
 .fileUploadButton,
 .formActions > button {
   min-height: 40px !important;
@@ -2418,7 +2537,7 @@ button:disabled {
 .contentActions .dangerButton,
 .rowActions button:last-child,
 .profileRow button:last-child,
-.thumbnailPreview button {
+.thumbnailPreview button:not(.adjustPreviewButton) {
   border-color: rgb(228 33 34 / 38%) !important;
   color: var(--danger) !important;
   background: var(--danger-soft) !important;
@@ -2428,7 +2547,7 @@ button:disabled {
 .contentActions .dangerButton:hover:not(:disabled),
 .rowActions button:last-child:hover:not(:disabled),
 .profileRow button:last-child:hover:not(:disabled),
-.thumbnailPreview button:hover:not(:disabled) {
+.thumbnailPreview button:not(.adjustPreviewButton):hover:not(:disabled) {
   color: #ffffff !important;
   background: var(--danger-hover) !important;
 }
@@ -2473,7 +2592,8 @@ button:disabled {
   min-width: 0;
 }
 
-.contentPreview img {
+.contentPreview img,
+.contentPreview video {
   display: block;
 }
 
@@ -2513,4 +2633,81 @@ button:disabled {
   .contentActions {
     grid-template-columns: 1fr;
   }
+}
+
+
+.formActionsGroup {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.formActionsGroup .formActions {
+  margin-top: 0;
+}
+
+.formActionNotice {
+  margin: 0;
+  border: 1px solid rgb(34 124 87 / 32%);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #1f6b3e !important;
+  background: rgb(34 124 87 / 12%) !important;
+  font-size: .82rem;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.formActionNotice.error {
+  border-color: rgb(228 33 34 / 34%);
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+}
+
+.formActionNotice.warning {
+  border-color: rgb(245 158 11 / 42%);
+  color: #b45309 !important;
+  background: rgb(245 158 11 / 13%) !important;
+}
+
+.formActions > .cancelButton,
+:global(html[data-theme='light']) .formActions > .cancelButton,
+:global(html[data-theme='dark']) .formActions > .cancelButton {
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  background: #dc2626 !important;
+}
+
+.formActions > .cancelButton:hover:not(:disabled),
+:global(html[data-theme='light']) .formActions > .cancelButton:hover:not(:disabled),
+:global(html[data-theme='dark']) .formActions > .cancelButton:hover:not(:disabled) {
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  background: #b91c1c !important;
+}
+
+.notice.success,
+:global(html[data-theme='light']) .notice.success,
+:global(html[data-theme='dark']) .notice.success {
+  border-color: rgb(34 124 87 / 34%) !important;
+  color: #2c7a47 !important;
+  background: rgb(34 124 87 / 12%) !important;
+}
+
+:global(html[data-theme='dark']) .notice.success,
+:global(html[data-theme='dark']) .formActionNotice {
+  color: #b9efc9 !important;
+  background: rgb(34 124 87 / 18%) !important;
+}
+
+:global(html[data-theme='light']) .pendingCropNotice {
+  border-color: rgb(179 132 0 / 30%) !important;
+  color: #7a5a00 !important;
+  background: rgb(245 215 43 / 16%) !important;
+}
+
+:global(html[data-theme='dark']) .pendingCropNotice {
+  border-color: rgb(245 215 43 / 28%) !important;
+  color: #f4dc59 !important;
+  background: rgb(245 215 43 / 10%) !important;
 }

@@ -105,4 +105,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("status") BookingStatus status,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
+
+
+    @Query("""
+            select booking.profile.id as profileId, count(booking.id) as completedEventsCount
+            from Booking booking
+            where booking.profile.id in :profileIds
+              and booking.status = :status
+              and booking.eventDate <= :today
+            group by booking.profile.id
+            """)
+    List<ProfileCompletedEventCount> countCompletedEventsByProfileIds(
+            @Param("profileIds") java.util.Collection<Long> profileIds,
+            @Param("status") BookingStatus status,
+            @Param("today") LocalDate today);
+
+    long countByProfileIdAndStatusAndEventDateLessThanEqual(
+            Long profileId,
+            BookingStatus status,
+            LocalDate today);
+
+    interface ProfileCompletedEventCount {
+        Long getProfileId();
+        long getCompletedEventsCount();
+    }
+
 }

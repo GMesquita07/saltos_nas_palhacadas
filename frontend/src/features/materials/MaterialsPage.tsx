@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { imageCropStyle } from '../../components/imageCrop'
 import { getMaterials } from '../../services/materialService'
 import type { Material } from '../../types/material'
 import styles from './MaterialsPage.module.css'
@@ -62,7 +63,13 @@ export function MaterialsPage() {
           {materials.map((material) => (
             <article className={styles.card} key={material.id}>
               <figure>
-                <img src={material.imageUrl} alt={material.name} decoding="async" loading="lazy" />
+                <img
+                  src={material.imageUrl}
+                  alt={material.name}
+                  decoding="async"
+                  loading="lazy"
+                  style={imageCropStyle(material.imagePosition, material.imageZoom)}
+                />
                 <figcaption>{material.name}</figcaption>
               </figure>
             </article>

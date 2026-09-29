@@ -40,6 +40,8 @@ test('portfolio edit payload preserves fields and can override publication state
     eventDate: '2026-05-01',
     mediaUrl: 'https://example.test/media.jpg',
     thumbnailUrl: null,
+    thumbnailPosition: '50% 50%',
+    thumbnailZoom: 1,
     published: false,
   })
 })
@@ -53,6 +55,8 @@ function item(id: string, eventDateIso: string, published: boolean): AdminPortfo
     eventDate: '1 de maio de 2026',
     eventDateIso,
     mediaUrl: 'https://example.test/media.jpg',
+    thumbnailPosition: '50% 50%',
+    thumbnailZoom: 1,
     displayOrder: 0,
     published,
   }

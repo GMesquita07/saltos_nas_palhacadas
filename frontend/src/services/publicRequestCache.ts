@@ -18,14 +18,27 @@ export function createPublicRequestCache<T>(load: Loader<T>, options: PublicRequ
   let hasCachedValue = false
   let cachedAt = 0
   let inFlightRequest: Promise<T> | null = null
+  let inFlightIsForceRefresh = false
   let generation = 0
 
   function get(options: PublicRequestOptions = {}) {
-    if (options.force) {
-      invalidate()
+    const force = options.force === true
+
+    if (force) {
+      cachedValue = null
+      hasCachedValue = false
+      cachedAt = 0
+
+      if (inFlightRequest && inFlightIsForceRefresh) {
+        return inFlightRequest
+      }
+
+      generation += 1
+      inFlightRequest = null
+      inFlightIsForceRefresh = false
     }
 
-    if (hasFreshCachedValue()) {
+    if (!force && hasFreshCachedValue()) {
       return Promise.resolve(cachedValue as T)
     }
 
@@ -34,7 +47,7 @@ export function createPublicRequestCache<T>(load: Loader<T>, options: PublicRequ
     }
 
     const requestGeneration = generation
-    const requestOptions: RequestInit = options.force ? { cache: 'reload' } : {}
+    const requestOptions: RequestInit = force ? { cache: 'reload' } : {}
     const request = load(requestOptions)
       .then((value) => {
         if (requestGeneration === generation) {
@@ -47,10 +60,12 @@ export function createPublicRequestCache<T>(load: Loader<T>, options: PublicRequ
       .finally(() => {
         if (inFlightRequest === request) {
           inFlightRequest = null
+          inFlightIsForceRefresh = false
         }
       })
 
     inFlightRequest = request
+    inFlightIsForceRefresh = force
     return request
   }
 
@@ -60,6 +75,7 @@ export function createPublicRequestCache<T>(load: Loader<T>, options: PublicRequ
     hasCachedValue = false
     cachedAt = 0
     inFlightRequest = null
+    inFlightIsForceRefresh = false
   }
 
   function prime(value: T) {
@@ -68,6 +84,7 @@ export function createPublicRequestCache<T>(load: Loader<T>, options: PublicRequ
     hasCachedValue = true
     cachedAt = now()
     inFlightRequest = null
+    inFlightIsForceRefresh = false
   }
 
   function hasFreshCachedValue() {

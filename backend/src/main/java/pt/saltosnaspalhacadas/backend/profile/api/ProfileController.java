@@ -36,18 +36,21 @@ public class ProfileController {
                 .cacheControl(PUBLIC_PROFILE_CACHE)
                 .body(
                         responseLimits.publicList(
-                                profileService.findActiveProfiles()
+                                profileService.findActiveProfilesWithCompletedEvents()
                                         .stream()
-                                        .map(ProfileResponse::from)));
+                                        .map((profile) -> ProfileResponse.from(
+                                                profile.profile(),
+                                                profile.completedEventsCount()))));
     }
 
     @GetMapping("/{slug}")
     ResponseEntity<ProfileResponse> findBySlug(
             @PathVariable String slug) {
+        ProfileService.ProfileWithCompletedEvents profile =
+                profileService.findActiveProfileWithSocialLinksAndCompletedEvents(slug);
+
         return ResponseEntity.ok()
                 .cacheControl(PUBLIC_PROFILE_CACHE)
-                .body(
-                        ProfileResponse.from(
-                                profileService.findActiveProfileWithSocialLinks(slug)));
+                .body(ProfileResponse.from(profile.profile(), profile.completedEventsCount()));
     }
 }
