@@ -1,6 +1,6 @@
 # Arquitetura
 
-Last verified: 2026-09-20.
+Last verified: 2026-09-30.
 
 ## Visão Geral
 
@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- |
 | Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL, Flyway até V22, PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL. O código em `main` inclui Flyway até V25; o último estado operacional confirmado em produção é V23 até nova validação de deploy/backend. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
 | Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |
@@ -107,12 +107,14 @@ Os endpoints públicos de perfis, portfolio e contactos usam cache HTTP pública
 
 O painel admin mantém as rotas `/admin/*`, mas organiza a gestão de conteúdo como backoffice dedicado:
 
-- Perfis: criação/edição, crop/zoom da imagem, vídeo de destaque, links sociais extensíveis, email privado de notificações e ordenação da homepage.
-- Portfolio: endpoint admin próprio para listar itens publicados e ocultos. A ordenação permanece cronológica por `eventDate DESC, id DESC`; não existe ordenação manual de portfolio.
-- Materiais: criação, edição de nome/fotografia, eliminação e ordenação pública.
+- Perfis: criação/edição, crop/posição/zoom da imagem de artista, crop/posição/zoom do hero background, vídeo de destaque, links sociais extensíveis, email privado de notificações e ordenação da homepage.
+- Portfolio: endpoint admin próprio para listar itens publicados e ocultos. A ordenação permanece cronológica por `eventDate DESC, id DESC`; não existe ordenação manual de portfolio. A thumbnail personalizada tem URL, posição e zoom próprios e é usada nos cartões/listas.
+- Materiais: criação, edição de nome/fotografia, crop/posição/zoom da imagem, eliminação e ordenação pública.
 - Contactos: criação, edição, eliminação, ordenação, ocultar/mostrar; endpoints públicos continuam a devolver apenas contactos visíveis.
 
-Não foi necessária nova migration para esta ronda porque a schema existente já inclui `portfolio_items.published`, `contacts.visible`, `materials.display_order`, `profiles.active` e `profile_social_links`.
+O frontend usa renderer/lógica de enquadramento partilhada para que o preview admin/editor e a superfície final tenham a mesma interpretação de posição e zoom. Avatares de artista, hero background, thumbnails de portfolio e fotografias de materiais persistem esses valores nas respetivas entidades.
+
+No portfolio, a media original e a thumbnail continuam conceitos separados: os cartões usam a thumbnail quando existe, enquanto o MediaLightbox abre a media original para preservar fotografia/vídeo, controlos e qualidade do conteúdo.
 
 Uploads públicos de admin podem ser reutilizados por várias entidades e não têm ownership próprio em `media_objects`; por isso, o sistema não faz cleanup automático de R2/public media ao editar ou apagar conteúdo. Essa limpeza fica como follow-up com tracking explícito de ownership/referências.
 
@@ -150,7 +152,7 @@ Os dois maintenance endpoints e o Scheduler do backup R2 foram executados manual
 ## Fluxo de Email
 
 - `EmailService` continua a enviar plain text via Brevo SMTP.
-- `BookingNotificationService` preserva emails de cliente e, na Feature 4 em `feat/notifications-and-email`, adiciona notificações operacionais para o email privado do artista e para admins ativos.
+- `BookingNotificationService` preserva emails de cliente e a infraestrutura de Feature 4 para notificações operacionais está integrada. A validação funcional específica de notificar o email pessoal/operacional do artista em cada booking continua destacada no roadmap.
 - `SiteNotificationService` carrega admins ativos da DB (`ADMIN` + `active=true`), deduplica destinatários case-insensitively e ignora duplicados entre artista/admin.
 - `profiles.notification_email` é privado e usado apenas para notificações relacionadas com o artista; não entra em DTOs públicos, perfil público, portfólio ou frontend público.
 - Falhas de envio são best-effort e não devem reverter bookings, registos ou reviews.
@@ -212,3 +214,6 @@ erDiagram
 | V20 | Remove a feature de partilhas de clientes, dropa `client_content_posts` e restringe `media_objects.purpose` a `PROFILE_AVATAR`. |
 | V21 | Adiciona `profiles.notification_email` nullable, privada, `VARCHAR(254)`. |
 | V22 | Cria `profile_social_links` com `platform` extensível por string, links ativos e `display_order`. |
+| V23 | Adiciona `profiles.hero_background_image_url` para o background do hero do perfil. |
+| V24 | Adiciona `profiles.hero_background_image_position`, `profiles.hero_background_image_zoom`, `portfolio_items.thumbnail_position` e `portfolio_items.thumbnail_zoom`. |
+| V25 | Adiciona `materials.image_position` e `materials.image_zoom`. |
