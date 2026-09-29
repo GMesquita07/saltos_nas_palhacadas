@@ -41,14 +41,6 @@
   pointer-events: none;
 }
 
-.image {
-  width: min(196px, 80%);
-  aspect-ratio: 1;
-  border: 1px solid rgb(35 34 32 / 10%);
-  box-shadow: 0 18px 36px rgb(32 31 27 / 12%);
-  font: 680 40px/1 var(--font-display);
-}
-
 .details {
   align-content: end;
   padding-top: 20px;
@@ -134,10 +126,6 @@
   border-radius: 14px;
 }
 
-.image {
-  box-shadow: 0 16px 34px rgb(0 0 0 / 30%);
-}
-
 .card {
   position: relative;
   display: grid;
@@ -170,27 +158,6 @@
   overflow: hidden;
   background: #090c0f;
   contain: paint;
-}
-
-.image {
-  width: 100%;
-  height: 230px;
-  aspect-ratio: auto;
-  border: 0;
-  border-radius: 0 !important;
-  color: rgb(247 247 243 / 72%);
-  background: #11161b;
-  font: 700 38px/1 var(--font-display, inherit);
-  box-shadow: none;
-  transition: transform var(--ease-slow);
-}
-
-.image > img {
-  border-radius: 0 !important;
-}
-
-.card:hover .image {
-  transform: scale(1.025);
 }
 
 .details {
@@ -255,10 +222,6 @@
   .card {
     min-height: 350px;
   }
-
-  .image {
-    height: 220px;
-  }
 }
 
 :global(html[data-theme='light']) .card {
@@ -301,16 +264,6 @@
   contain: paint !important;
   background: transparent !important;
 }
-.image {
-  width: min(178px, 74%) !important;
-  height: auto !important;
-  aspect-ratio: 1 !important;
-  border: 1px solid rgb(255 255 255 / 20%) !important;
-  border-radius: 50% !important;
-  overflow: hidden !important;
-  background: #e7ded0 !important;
-  font-size: 36px !important;
-}
 .details {
   display: grid !important;
   align-content: end !important;
@@ -331,10 +284,6 @@
 :global(html[data-theme='light']) .card:hover {
   border-color: rgb(22 139 208 / 38%) !important;
   background: #fbfdff !important;
-}
-:global(html[data-theme='light']) .image {
-  border-color: #d3d8dd !important;
-  background: #e9dfcf !important;
 }
 :global(html[data-theme='light']) .details strong { color: #171a1d !important; }
 :global(html[data-theme='light']) .details > span { color: #626970 !important; }
@@ -368,12 +317,6 @@
 :global(html[data-theme='light']) .details b,
 :global(html[data-theme='light']) .card:hover .details b {
   color: #168bd0 !important;
-}
-
-:global(html[data-theme='light']) .image {
-  border-color: #d7dce1 !important;
-  color: #555d64 !important;
-  background: #eadfce !important;
 }
 
 .card:hover,
@@ -448,29 +391,6 @@
 
 .portrait::after {
   display: none !important;
-}
-
-.image,
-:global(html[data-theme='light']) .image,
-:global(html[data-theme='dark']) .image {
-  width: 190px !important;
-  max-width: 78% !important;
-  overflow: hidden !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 50% !important;
-  color: var(--text-muted) !important;
-  background: var(--surface-muted) !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-.card:hover .image,
-.card:focus-visible .image,
-:global(html[data-theme='light']) .card:hover .image,
-:global(html[data-theme='light']) .card:focus-visible .image,
-:global(html[data-theme='dark']) .card:hover .image,
-:global(html[data-theme='dark']) .card:focus-visible .image {
-  transform: none !important;
 }
 
 .details,

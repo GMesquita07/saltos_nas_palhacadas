@@ -1,11 +1,21 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type { SyntheticEvent } from 'react'
 import type { PortfolioItem } from '../../types/portfolio'
+import {
+  mediaDimensionsFromSize,
+  mediaOrientation,
+  shouldUseArtistDesktopPresentation,
+  type MediaDimensions,
+  type MediaLightboxPresentation,
+} from './mediaLightboxPresentation'
+import { videoFirstFrameSource } from './videoPreview'
 import styles from './MediaLightbox.module.css'
 
 type MediaLightboxProps = {
   item: PortfolioItem
   onClose: () => void
+  presentation?: MediaLightboxPresentation
 }
 
 type BodyScrollLockSnapshot = {
@@ -34,11 +44,33 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
-export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
+export function MediaLightbox({ item, onClose, presentation = 'default' }: MediaLightboxProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const onCloseRef = useRef(onClose)
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null)
+  const [loadedMediaDimensions, setLoadedMediaDimensions] = useState<{ mediaUrl: string; dimensions: MediaDimensions } | null>(null)
+  const mediaDimensions = loadedMediaDimensions?.mediaUrl === item.mediaUrl ? loadedMediaDimensions.dimensions : null
+  const isArtistDesktopPresentation = isArtistDesktopLightboxPresentation(presentation)
+  const mediaOrientationName = mediaOrientation(mediaDimensions)
+  const dialogClassName = isArtistDesktopPresentation
+    ? `${styles.dialog} ${styles.artistPortfolioDialog}`
+    : styles.dialog
+  const handleImageLoad = useCallback((event: SyntheticEvent<HTMLImageElement>) => {
+    const dimensions = mediaDimensionsFromSize(
+      event.currentTarget.naturalWidth,
+      event.currentTarget.naturalHeight,
+    )
+    if (dimensions) setLoadedMediaDimensions({ mediaUrl: item.mediaUrl, dimensions })
+  }, [item.mediaUrl])
+
+  const handleVideoMetadata = useCallback((event: SyntheticEvent<HTMLVideoElement>) => {
+    const dimensions = mediaDimensionsFromSize(
+      event.currentTarget.videoWidth,
+      event.currentTarget.videoHeight,
+    )
+    if (dimensions) setLoadedMediaDimensions({ mediaUrl: item.mediaUrl, dimensions })
+  }, [item.mediaUrl])
 
   useEffect(() => {
     onCloseRef.current = onClose
@@ -79,7 +111,8 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
       <div
         aria-labelledby="media-lightbox-title"
         aria-modal="true"
-        className={styles.dialog}
+        className={dialogClassName}
+        data-media-orientation={isArtistDesktopPresentation ? mediaOrientationName : undefined}
         ref={dialogRef}
         role="dialog"
         tabIndex={-1}
@@ -89,11 +122,11 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
         <div className={styles.media}>
           {item.type === 'Vídeo'
             ? (
-              <video controls playsInline preload="metadata" poster={item.thumbnailUrl}>
-                <source src={item.mediaUrl} />
+              <video controls playsInline preload="metadata" poster={item.thumbnailUrl} onLoadedMetadata={handleVideoMetadata}>
+                <source src={item.thumbnailUrl ? item.mediaUrl : videoFirstFrameSource(item.mediaUrl)} />
               </video>
             )
-            : <img src={item.mediaUrl} alt={item.title} decoding="async" />}
+            : <img src={item.mediaUrl} alt={item.title} decoding="async" onLoad={handleImageLoad} />}
         </div>
         <div className={styles.caption}>
           <p>{item.location} · {item.eventDate}</p>
@@ -103,6 +136,18 @@ export function MediaLightbox({ item, onClose }: MediaLightboxProps) {
     </div>,
     document.body,
   )
+}
+
+
+function isArtistDesktopLightboxPresentation(presentation: MediaLightboxPresentation) {
+  if (presentation !== 'artistPortfolio') return false
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+
+  return shouldUseArtistDesktopPresentation(presentation, {
+    maxTouchPoints: navigator.maxTouchPoints ?? 0,
+    hasFinePrimaryPointer: window.matchMedia('(pointer: fine)').matches,
+    hasAnyCoarsePointer: window.matchMedia('(any-pointer: coarse)').matches,
+  })
 }
 
 function lockBodyScroll(): BodyScrollLockSnapshot {

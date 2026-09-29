@@ -64,6 +64,8 @@ class MaterialIntegrationTests {
                                     """.formatted(name)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value(name))
+                    .andExpect(jsonPath("$.imagePosition").value("50% 50%"))
+                    .andExpect(jsonPath("$.imageZoom").value(1.0))
                     .andReturn()
                     .getResponse()
                     .getContentAsString();
@@ -73,7 +75,9 @@ class MaterialIntegrationTests {
 
             mockMvc.perform(get("/api/v1/materials"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[?(@.id == %d)].name".formatted(materialId), contains(name)));
+                    .andExpect(jsonPath("$[?(@.id == %d)].name".formatted(materialId), contains(name)))
+                    .andExpect(jsonPath("$[?(@.id == %d)].imagePosition".formatted(materialId), contains("50% 50%")))
+                    .andExpect(jsonPath("$[?(@.id == %d)].imageZoom".formatted(materialId), contains(1.0)));
 
             mockMvc.perform(delete("/api/v1/admin/materials/{id}", materialId)
                             .header("Authorization", "Bearer " + adminToken))
@@ -133,17 +137,32 @@ class MaterialIntegrationTests {
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
-                                    {"name":"Material atualizado %s","imageUrl":"https://example.test/novo.jpg"}
+                                    {"name":"Material atualizado %s","imageUrl":"https://example.test/novo.jpg","imagePosition":"20%% 80%%","imageZoom":1.75}
                                     """.formatted(suffix)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Material atualizado " + suffix))
                     .andExpect(jsonPath("$.imageUrl").value("https://example.test/novo.jpg"))
+                    .andExpect(jsonPath("$.imagePosition").value("20% 80%"))
+                    .andExpect(jsonPath("$.imageZoom").value(1.75))
                     .andExpect(jsonPath("$.displayOrder").value(42));
 
             mockMvc.perform(get("/api/v1/materials"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[?(@.id == %d && @.name == 'Material atualizado %s' && @.imageUrl == 'https://example.test/novo.jpg')]"
-                            .formatted(material.getId(), suffix)).isNotEmpty());
+                    .andExpect(jsonPath("$[0].id").value(material.getId()))
+                    .andExpect(jsonPath("$[0].name").value("Material atualizado " + suffix))
+                    .andExpect(jsonPath("$[0].imageUrl").value("https://example.test/novo.jpg"))
+                    .andExpect(jsonPath("$[0].imagePosition").value("20% 80%"))
+                    .andExpect(jsonPath("$[0].imageZoom").value(1.75));
+
+            mockMvc.perform(put("/api/v1/admin/materials/{id}", material.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"name":"Material inválido","imageUrl":"https://example.test/novo.jpg","imagePosition":"120% 20%","imageZoom":1}
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Existem campos inválidos. Corrige os campos assinalados."))
+                    .andExpect(jsonPath("$.errors.imagePosition").value("A posição da fotografia é inválida"));
 
             mockMvc.perform(put("/api/v1/admin/materials/{id}", material.getId())
                             .header("Authorization", "Bearer " + adminToken)

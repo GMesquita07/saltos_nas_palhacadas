@@ -1,4 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { ImageCropEditor } from '../../../components/ImageCropEditor'
+import { defaultImageCrop, formatImagePosition, imageCropStyle, parseImageCrop, type ImageCrop } from '../../../components/imageCrop'
 import { uploadFile } from '../../../services/apiClient'
 import { createMaterial, deleteMaterial, getAdminMaterials, reorderMaterials, updateMaterial } from '../../../services/materialService'
 import type { Material } from '../../../types/material'
@@ -13,11 +15,13 @@ type MaterialManagementProps = {
 type MaterialFormState = {
   name: string
   imageUrl: string
+  imageCrop: ImageCrop
 }
 
 const emptyForm = (): MaterialFormState => ({
   name: '',
   imageUrl: '',
+  imageCrop: { ...defaultImageCrop },
 })
 
 export function MaterialManagement({ token, onNotice }: MaterialManagementProps) {
@@ -27,6 +31,7 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -62,8 +67,9 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
     setIsUploading(true)
     try {
       const result = await uploadFile(file, token)
-      setForm((current) => ({ ...current, imageUrl: result.url }))
-      onNotice({ type: 'success', text: 'Fotografia do material carregada.' })
+      setForm((current) => ({ ...current, imageUrl: result.url, imageCrop: { ...defaultImageCrop } }))
+      setIsCropDialogOpen(true)
+      onNotice({ type: 'success', text: 'Fotografia do material carregada. Ajusta a posição e atualiza o material.' })
     } catch (error) {
       onNotice({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível carregar a fotografia.' })
     } finally {
@@ -85,7 +91,12 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
     setIsSaving(true)
     try {
-      const payload = materialToEditPayload(form)
+      const payload = materialToEditPayload({
+        name: form.name,
+        imageUrl: form.imageUrl,
+        imagePosition: formatImagePosition(form.imageCrop),
+        imageZoom: form.imageCrop.zoom,
+      })
       if (editingMaterialId !== null) {
         const updated = await updateMaterial(editingMaterialId, payload, token)
         setMaterials((current) => current.map((item) => item.id === updated.id ? updated : item).sort(sortMaterials))
@@ -106,9 +117,11 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
   function startEditing(material: Material) {
     setEditingMaterialId(material.id)
+    setIsCropDialogOpen(false)
     setForm({
       name: material.name,
       imageUrl: material.imageUrl,
+      imageCrop: parseImageCrop(material.imagePosition, material.imageZoom),
     })
     onNotice({ type: 'success', text: 'A editar o material ' + material.name + '.' })
     window.requestAnimationFrame(() => {
@@ -118,6 +131,7 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
   function cancelEditing() {
     setEditingMaterialId(null)
+    setIsCropDialogOpen(false)
     setForm(emptyForm())
   }
 
@@ -195,7 +209,14 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
           URL da fotografia
           <input
             maxLength={2048}
-            onChange={(event) => setForm((current) => ({ ...current, imageUrl: event.target.value }))}
+            onChange={(event) => {
+              const imageUrl = event.target.value
+              setForm((current) => ({
+                ...current,
+                imageUrl,
+                imageCrop: imageUrl === current.imageUrl ? current.imageCrop : { ...defaultImageCrop },
+              }))
+            }}
             placeholder="https://..."
             required
             type="url"
@@ -205,11 +226,31 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
 
         {form.imageUrl && (
           <div className={styles.preview}>
-            <img src={form.imageUrl} alt={form.name || 'Pré-visualização do material'} />
-            <button type="button" onClick={() => setForm((current) => ({ ...current, imageUrl: '' }))}>
-              Remover fotografia
-            </button>
+            <span className={styles.previewImageFrame}>
+              <img
+                src={form.imageUrl}
+                alt={form.name || 'Pré-visualização do material'}
+                style={imageCropStyle(formatImagePosition(form.imageCrop), form.imageCrop.zoom)}
+              />
+            </span>
+            <div className={styles.previewActions}>
+              <button className={styles.adjustImageButton} type="button" onClick={() => setIsCropDialogOpen(true)}>
+                Ajustar posição
+              </button>
+              <button type="button" onClick={() => setForm((current) => ({ ...current, imageUrl: '', imageCrop: { ...defaultImageCrop } }))}>
+                Remover fotografia
+              </button>
+            </div>
           </div>
+        )}
+
+        {isCropDialogOpen && form.imageUrl && (
+          <MaterialImageCropDialog
+            crop={form.imageCrop}
+            src={form.imageUrl}
+            onClose={() => setIsCropDialogOpen(false)}
+            onSave={(imageCrop) => setForm((current) => ({ ...current, imageCrop }))}
+          />
         )}
 
         <div className={styles.formActions}>
@@ -295,7 +336,13 @@ function MaterialOrderList({
           onDrop={() => dropOn(material.id)}
         >
           <span className={styles.dragHandle} aria-hidden="true">☰</span>
-          <img src={material.imageUrl} alt={material.name} />
+          <span className={styles.rowImageFrame}>
+            <img
+              src={material.imageUrl}
+              alt={material.name}
+              style={imageCropStyle(material.imagePosition, material.imageZoom)}
+            />
+          </span>
           <strong>{index + 1}. {material.name}</strong>
           <div className={styles.rowActions}>
             <button aria-label={`Subir ${material.name}`} disabled={isSaving || index === 0} type="button" onClick={() => moveMaterial(index, -1)}>↑</button>
@@ -305,6 +352,64 @@ function MaterialOrderList({
           </div>
         </article>
       ))}
+    </div>
+  )
+}
+
+function MaterialImageCropDialog({
+  crop,
+  src,
+  onClose,
+  onSave,
+}: {
+  crop: ImageCrop
+  src: string
+  onClose: () => void
+  onSave: (crop: ImageCrop) => void
+}) {
+  const [draftCrop, setDraftCrop] = useState(crop)
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  function saveCrop() {
+    onSave(draftCrop)
+    onClose()
+  }
+
+  return (
+    <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
+      <div
+        aria-label="Ajustar fotografia do material"
+        aria-modal="true"
+        className={styles.cropDialog}
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <ImageCropEditor
+          aspectRatio="16 / 10"
+          comparisonPreviews={[
+            { title: 'Desktop 16:10', aspectRatio: '16 / 10' },
+            { title: 'Mobile 4:3', aspectRatio: '4 / 3' },
+          ]}
+          crop={draftCrop}
+          description="Arrasta a fotografia e ajusta o zoom. A mesma posição é aplicada ao cartão desktop e mobile."
+          shape="landscape"
+          src={src}
+          title="Ajustar fotografia do material"
+          onChange={setDraftCrop}
+        />
+        <div className={styles.cropDialogActions}>
+          <button type="button" onClick={saveCrop}>Guardar enquadramento</button>
+          <button className={styles.cropDialogCancel} type="button" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
     </div>
   )
 }

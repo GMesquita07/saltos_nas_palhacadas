@@ -116,6 +116,69 @@
   transform: translateY(-1px);
 }
 
+@media (min-width: 900px) {
+  .artistPortfolioDialog {
+    --artist-dialog-inline-size: min(1040px, calc(100vw - 96px));
+    --artist-media-max-block-size: min(72dvh, calc(100dvh - 190px), 720px);
+
+    width: var(--artist-dialog-inline-size);
+    max-width: calc(100vw - 96px);
+    max-height: calc(100dvh - 56px);
+    grid-template-rows: minmax(0, auto) auto;
+  }
+
+  .artistPortfolioDialog[data-media-orientation='portrait'] {
+    --artist-dialog-inline-size: min(760px, calc(100vw - 96px));
+  }
+
+  .artistPortfolioDialog[data-media-orientation='square'] {
+    --artist-dialog-inline-size: min(820px, calc(100vw - 96px));
+  }
+
+  .artistPortfolioDialog .media {
+    width: 100%;
+    max-height: var(--artist-media-max-block-size);
+    align-content: center;
+    justify-items: center;
+  }
+
+  .artistPortfolioDialog .media img,
+  .artistPortfolioDialog .media video {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: var(--artist-media-max-block-size);
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .artistPortfolioDialog .caption {
+    padding: 16px 20px;
+  }
+
+  .artistPortfolioDialog .caption h2 {
+    font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  }
+}
+
+@media (min-width: 900px) and (max-height: 760px) {
+  .artistPortfolioDialog {
+    --artist-media-max-block-size: min(68dvh, calc(100dvh - 180px), 560px);
+
+    max-height: calc(100dvh - 48px);
+  }
+
+  .artistPortfolioDialog .caption {
+    padding: 12px 18px;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 620px) {
+  .artistPortfolioDialog {
+    --artist-media-max-block-size: min(64dvh, calc(100dvh - 170px), 440px);
+  }
+}
+
 @media (max-width: 760px) {
   .backdrop {
     padding:

@@ -46,6 +46,12 @@ public class PortfolioItem {
     @Column(name = "thumbnail_url", length = 2048)
     private String thumbnailUrl;
 
+    @Column(name = "thumbnail_position", nullable = false, length = 20)
+    private String thumbnailPosition = "50% 50%";
+
+    @Column(name = "thumbnail_zoom", nullable = false)
+    private double thumbnailZoom = 1.0;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
@@ -61,6 +67,10 @@ public class PortfolioItem {
     protected PortfolioItem() { }
 
     public PortfolioItem(Profile profile, MediaType mediaType, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, int displayOrder, boolean published) {
+        this(profile, mediaType, title, location, eventDate, mediaUrl, thumbnailUrl, "50% 50%", 1.0, displayOrder, published);
+    }
+
+    public PortfolioItem(Profile profile, MediaType mediaType, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, String thumbnailPosition, double thumbnailZoom, int displayOrder, boolean published) {
         this.profile = profile;
         this.mediaType = mediaType;
         this.title = title;
@@ -68,6 +78,8 @@ public class PortfolioItem {
         this.eventDate = eventDate;
         this.mediaUrl = mediaUrl;
         this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailPosition = thumbnailPosition == null ? "50% 50%" : thumbnailPosition;
+        this.thumbnailZoom = normalizeZoom(thumbnailZoom);
         this.displayOrder = displayOrder;
         this.published = published;
     }
@@ -86,11 +98,32 @@ public class PortfolioItem {
     public LocalDate getEventDate() { return eventDate; }
     public String getMediaUrl() { return mediaUrl; }
     public String getThumbnailUrl() { return thumbnailUrl; }
+    public String getThumbnailPosition() { return thumbnailPosition; }
+    public double getThumbnailZoom() { return thumbnailZoom; }
     public int getDisplayOrder() { return displayOrder; }
     public boolean isPublished() { return published; }
 
     public void update(MediaType mediaType, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, boolean published) {
-        this.mediaType = mediaType; this.title = title; this.location = location; this.eventDate = eventDate;
-        this.mediaUrl = mediaUrl; this.thumbnailUrl = thumbnailUrl; this.published = published;
+        update(mediaType, title, location, eventDate, mediaUrl, thumbnailUrl, thumbnailPosition, thumbnailZoom, published);
+    }
+
+    public void update(MediaType mediaType, String title, String location, LocalDate eventDate, String mediaUrl, String thumbnailUrl, String thumbnailPosition, double thumbnailZoom, boolean published) {
+        this.mediaType = mediaType;
+        this.title = title;
+        this.location = location;
+        this.eventDate = eventDate;
+        this.mediaUrl = mediaUrl;
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailPosition = thumbnailPosition == null ? "50% 50%" : thumbnailPosition;
+        this.thumbnailZoom = normalizeZoom(thumbnailZoom);
+        this.published = published;
+    }
+
+    private static double normalizeZoom(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 1.0;
+        }
+
+        return Math.min(3.0, Math.max(1.0, value));
     }
 }

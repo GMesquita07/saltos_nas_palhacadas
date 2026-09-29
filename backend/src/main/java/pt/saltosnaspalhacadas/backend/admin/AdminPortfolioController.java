@@ -96,10 +96,12 @@ public class AdminPortfolioController {
                 nextProfileDisplayOrder(),
                 request.notificationEmail());
 
-        profile.updateHeroBackgroundImageUrl(
+        profile.updateHeroBackgroundImage(
                 PublicUrlValidator.optional(
                         request.heroBackgroundImageUrl(),
-                        "Indica um URL de background válido"));
+                        "Indica um URL de background válido"),
+                defaultImagePosition(request.heroBackgroundImagePosition()),
+                defaultImageZoom(request.heroBackgroundImageZoom()));
 
         socialLinks.replaceSocialLinks(
                 profile,
@@ -178,10 +180,12 @@ public class AdminPortfolioController {
                         "Indica um URL de vídeo válido"),
                 request.notificationEmail());
 
-        profile.updateHeroBackgroundImageUrl(
+        profile.updateHeroBackgroundImage(
                 PublicUrlValidator.optional(
                         request.heroBackgroundImageUrl(),
-                        "Indica um URL de background válido"));
+                        "Indica um URL de background válido"),
+                defaultImagePosition(request.heroBackgroundImagePosition()),
+                defaultImageZoom(request.heroBackgroundImageZoom()));
 
         socialLinks.replaceSocialLinks(
                 profile,
@@ -210,6 +214,8 @@ public class AdminPortfolioController {
                 PublicUrlValidator.optional(
                         request.thumbnailUrl(),
                         "Indica um URL de miniatura válido"),
+                defaultImagePosition(request.thumbnailPosition()),
+                defaultImageZoom(request.thumbnailZoom()),
                 0,
                 isPublishedByDefault(request.published()));
 
@@ -250,6 +256,8 @@ public class AdminPortfolioController {
                 PublicUrlValidator.optional(
                         request.thumbnailUrl(),
                         "Indica um URL de miniatura válido"),
+                defaultImagePosition(request.thumbnailPosition()),
+                defaultImageZoom(request.thumbnailZoom()),
                 request.published() == null
                         ? item.isPublished()
                         : request.published());
@@ -392,6 +400,19 @@ public class AdminPortfolioController {
                     message = "O URL do background é demasiado longo")
             String heroBackgroundImageUrl,
 
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição do background é inválida")
+            String heroBackgroundImagePosition,
+
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo do background é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo do background é 3")
+            Double heroBackgroundImageZoom,
+
             @Email(
                     message = "Indica um email de notificações válido")
             @Size(
@@ -457,6 +478,19 @@ public class AdminPortfolioController {
                     message = "O URL do background é demasiado longo")
             String heroBackgroundImageUrl,
 
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição do background é inválida")
+            String heroBackgroundImagePosition,
+
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo do background é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo do background é 3")
+            Double heroBackgroundImageZoom,
+
             @Email(
                     message = "Indica um email de notificações válido")
             @Size(
@@ -517,6 +551,19 @@ public class AdminPortfolioController {
                     message = "O URL da miniatura é demasiado longo")
             String thumbnailUrl,
 
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição da miniatura é inválida")
+            String thumbnailPosition,
+
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo da miniatura é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo da miniatura é 3")
+            Double thumbnailZoom,
+
             Boolean published) {
     }
 
@@ -549,6 +596,19 @@ public class AdminPortfolioController {
                     max = 2048,
                     message = "O URL da miniatura é demasiado longo")
             String thumbnailUrl,
+
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição da miniatura é inválida")
+            String thumbnailPosition,
+
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo da miniatura é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo da miniatura é 3")
+            Double thumbnailZoom,
 
             Boolean published) {
     }

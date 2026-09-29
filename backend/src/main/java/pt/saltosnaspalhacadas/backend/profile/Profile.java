@@ -51,6 +51,12 @@ public class Profile {
     @Column(name = "hero_background_image_url", length = 2048)
     private String heroBackgroundImageUrl;
 
+    @Column(name = "hero_background_image_position", nullable = false, length = 20)
+    private String heroBackgroundImagePosition = "50% 50%";
+
+    @Column(name = "hero_background_image_zoom", nullable = false)
+    private double heroBackgroundImageZoom = 1.0;
+
     @Column(name = "notification_email", length = 254)
     private String notificationEmail;
 
@@ -240,8 +246,24 @@ public class Profile {
         return heroBackgroundImageUrl;
     }
 
-    public void updateHeroBackgroundImageUrl(String heroBackgroundImageUrl) {
+    public String getHeroBackgroundImagePosition() {
+        return heroBackgroundImagePosition;
+    }
+
+    public double getHeroBackgroundImageZoom() {
+        return heroBackgroundImageZoom;
+    }
+
+    public void updateHeroBackgroundImage(String heroBackgroundImageUrl, String heroBackgroundImagePosition, double heroBackgroundImageZoom) {
         this.heroBackgroundImageUrl = heroBackgroundImageUrl;
+        this.heroBackgroundImagePosition = heroBackgroundImagePosition == null
+                ? "50% 50%"
+                : heroBackgroundImagePosition;
+        this.heroBackgroundImageZoom = normalizeZoom(heroBackgroundImageZoom);
+    }
+
+    public void updateHeroBackgroundImageUrl(String heroBackgroundImageUrl) {
+        updateHeroBackgroundImage(heroBackgroundImageUrl, heroBackgroundImagePosition, heroBackgroundImageZoom);
     }
 
     public String getNotificationEmail() {

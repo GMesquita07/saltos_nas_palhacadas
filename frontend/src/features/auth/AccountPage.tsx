@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { CroppedImage } from '../../components/CroppedImage'
 import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
@@ -6,6 +6,7 @@ import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../compo
 import { uploadUserImage } from '../../services/apiClient'
 import { useAuth } from './AuthContext'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import headerStyles from '../../components/Header/Header.module.css'
 import styles from './AccountPage.module.css'
 
 type AccountPageProps = {
@@ -39,6 +40,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isExportingData, setIsExportingData] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false)
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
@@ -67,6 +69,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
     setForm(emptyForm(session))
     setError(null)
     setNotice(null)
+    setIsCropDialogOpen(false)
     setIsEditing(false)
   }
 
@@ -87,6 +90,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
     try {
       const result = await uploadUserImage(file, session.token)
       setForm((current) => ({ ...current, profileImageUrl: result.url, profileImageMediaId: result.id, imageCrop: { x: 50, y: 50, zoom: 1 } }))
+      setIsCropDialogOpen(true)
       setNotice('Foto carregada. Ajusta o enquadramento e guarda o perfil.')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível carregar a foto.')
@@ -119,6 +123,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
         profileImageZoom: form.imageCrop.zoom,
       })
       setNotice('Perfil atualizado.')
+      setIsCropDialogOpen(false)
       setIsEditing(false)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar o perfil.')
@@ -325,27 +330,32 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
               {avatar}
               <div className={styles.avatarUpload}>
                 <span className={styles.avatarUploadLabel}>Foto de perfil</span>
-                <label className={styles.uploadButton}>
-                  <span>＋ Adicionar foto</span>
-                  <input
-                    accept="image/*"
-                    className={styles.fileInput}
-                    type="file"
-                    onChange={(event) => { void uploadPhoto(event) }}
-                  />
-                </label>
+                <div className={styles.avatarControls}>
+                  <label className={styles.uploadButton}>
+                    <span>＋ Adicionar foto</span>
+                    <input
+                      accept="image/*"
+                      className={styles.fileInput}
+                      type="file"
+                      onChange={(event) => { void uploadPhoto(event) }}
+                    />
+                  </label>
+                  {form.profileImageUrl && resolvedProfileImageUrl && (
+                    <button className={styles.adjustPhotoButton} type="button" onClick={() => setIsCropDialogOpen(true)}>
+                      Ajustar posição
+                    </button>
+                  )}
+                </div>
                 <small>Escolhe uma imagem e ajusta o enquadramento antes de guardar.</small>
               </div>
             </div>
 
-            {form.profileImageUrl && resolvedProfileImageUrl && (
-              <ImageCropEditor
+            {isCropDialogOpen && form.profileImageUrl && resolvedProfileImageUrl && (
+              <AccountImageCropDialog
                 crop={form.imageCrop}
-                description="Arrasta a fotografia e ajusta o zoom para escolher como a tua foto aparece na conta."
-                shape="circle"
                 src={resolvedProfileImageUrl}
-                title="Ajustar foto de perfil"
-                onChange={(imageCrop) => setForm((current) => ({ ...current, imageCrop }))}
+                onClose={() => setIsCropDialogOpen(false)}
+                onSave={(imageCrop) => setForm((current) => ({ ...current, imageCrop }))}
               />
             )}
 
@@ -404,12 +414,93 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
 
             <div className={styles.actions}>
               <button disabled={isSaving} type="submit">{isSaving ? 'A guardar...' : 'Guardar perfil'}</button>
-              <button disabled={isSaving} type="button" onClick={cancelEditing}>Cancelar edição</button>
+              <button className={styles.cancelEditButton} disabled={isSaving} type="button" onClick={cancelEditing}>Cancelar edição</button>
             </div>
           </form>
         )}
       </div>
     </section>
+  )
+}
+
+
+function AccountImageCropDialog({
+  crop,
+  src,
+  onClose,
+  onSave,
+}: {
+  crop: ImageCrop
+  src: string
+  onClose: () => void
+  onSave: (crop: ImageCrop) => void
+}) {
+  const [draftCrop, setDraftCrop] = useState(crop)
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  function saveCrop() {
+    onSave(draftCrop)
+    onClose()
+  }
+
+  return (
+    <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
+      <div
+        aria-label="Ajustar foto de perfil"
+        aria-modal="true"
+        className={styles.cropDialog}
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <ImageCropEditor
+          aspectRatio="1 / 1"
+          comparisonPreviews={[
+            {
+              title: 'Conta',
+              render: ({ imagePosition, src, zoom }) => (
+                <CroppedImage
+                  alt="Pré-visualização da foto na conta"
+                  className={styles.avatar}
+                  position={imagePosition}
+                  src={src}
+                  zoom={zoom}
+                />
+              ),
+            },
+            {
+              title: 'Header',
+              render: ({ imagePosition, src, zoom }) => (
+                <CroppedImage
+                  alt="Pré-visualização da foto no header"
+                  className={headerStyles.accountAvatar}
+                  position={imagePosition}
+                  src={src}
+                  zoom={zoom}
+                />
+              ),
+            },
+          ]}
+          crop={draftCrop}
+          description="Arrasta a fotografia e ajusta o zoom para escolher como a tua foto aparece na conta."
+          shape="circle"
+          src={src}
+          title="Ajustar foto de perfil"
+          onChange={setDraftCrop}
+        />
+        <div className={styles.cropDialogActions}>
+          <button type="button" onClick={saveCrop}>Guardar enquadramento</button>
+          <button className={styles.cropDialogCancel} type="button" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
+    </div>
   )
 }
 

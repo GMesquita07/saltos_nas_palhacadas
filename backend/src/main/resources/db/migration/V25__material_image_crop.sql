@@ -1,0 +1,5 @@
+ALTER TABLE materials
+    ADD COLUMN image_position VARCHAR(20) NOT NULL DEFAULT '50% 50%';
+
+ALTER TABLE materials
+    ADD COLUMN image_zoom DOUBLE PRECISION NOT NULL DEFAULT 1.0;

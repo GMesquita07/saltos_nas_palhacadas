@@ -14,6 +14,8 @@ export type SavePortfolioItemInput = {
   eventDate: string
   mediaUrl: string
   thumbnailUrl: string | null
+  thumbnailPosition: string
+  thumbnailZoom: number
   published: boolean
 }
 

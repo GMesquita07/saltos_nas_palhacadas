@@ -1,5 +1,6 @@
 package pt.saltosnaspalhacadas.backend.admin;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -67,6 +68,53 @@ class AdminEditingIntegrationTests {
     void ensureAdmin() {
         if (users.findByEmailAndActiveTrue(ADMIN_EMAIL).isEmpty()) {
             users.save(new AppUser(ADMIN_EMAIL, passwords.encode("change-me-now"), UserRole.ADMIN));
+        }
+    }
+
+    @Test
+    void adminProfileImageCropIsReturnedByAdminAndPublicApis() throws Exception {
+        String slug = "crop-api-" + UUID.randomUUID().toString().substring(0, 8);
+        Profile profile = profiles.save(new Profile(slug, "Crop antigo", "DJ", "Descrição antiga", null));
+        String token = adminToken();
+
+        try {
+            mockMvc.perform(put("/api/v1/admin/profiles/{slug}", slug)
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Crop atualizado",
+                                      "role":"DJ",
+                                      "description":"Descrição atualizada para crop",
+                                      "profileImageUrl":"https://example.com/artist.jpg",
+                                      "profileImagePosition":"37% 81%",
+                                      "profileImageZoom":1.27,
+                                      "featuredVideoUrl":null,
+                                      "notificationEmail":null
+                                    }
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profileImageUrl").value("https://example.com/artist.jpg"))
+                    .andExpect(jsonPath("$.profileImagePosition").value("37% 81%"))
+                    .andExpect(jsonPath("$.profileImageZoom").value(1.27));
+
+            String publicList = mockMvc.perform(get("/api/v1/profiles"))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            assertTrue(publicList.contains("\"profileImageUrl\":\"https://example.com/artist.jpg\""));
+            assertTrue(publicList.contains("\"profileImagePosition\":\"37% 81%\""));
+            assertTrue(publicList.contains("\"profileImageZoom\":1.27"));
+
+            mockMvc.perform(get("/api/v1/profiles/{slug}", slug))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profileImageUrl").value("https://example.com/artist.jpg"))
+                    .andExpect(jsonPath("$.profileImagePosition").value("37% 81%"))
+                    .andExpect(jsonPath("$.profileImageZoom").value(1.27));
+        } finally {
+            profiles.findById(profile.getId()).ifPresent(profiles::delete);
         }
     }
 

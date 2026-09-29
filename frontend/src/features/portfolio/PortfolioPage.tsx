@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getPortfolioItems } from '../../services/portfolioService'
-import { CroppedImage } from '../../components/CroppedImage'
+import {
+  invalidatePortfolioItemsCache,
+  portfolioInvalidationMatches,
+  portfolioInvalidationStorageKey,
+} from '../../services/portfolioInvalidation'
+import { ArtistProfileImage } from '../../components/ArtistProfileImage'
+import { artistInitials } from '../../components/artistProfileImage'
+import { ProfileHeroBackground } from '../../components/ProfileHeroBackground'
+import { formatImagePosition, parseImageCrop } from '../../components/imageCrop'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import type { Profile } from '../../types/profile'
 import type { PortfolioItem, PortfolioItemType } from '../../types/portfolio'
@@ -24,23 +32,65 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
   const featuredVideo = profile.featuredVideoUrl ? resolveFeaturedVideo(profile.featuredVideoUrl) : null
   const imagePosition = profile.imagePosition ?? '50% 50%'
   const imageZoom = profile.imageZoom ?? 1
+  const heroBackgroundCrop = parseImageCrop(
+    profile.heroBackgroundImageUrl ? profile.heroBackgroundImagePosition : undefined,
+    profile.heroBackgroundImageUrl ? profile.heroBackgroundImageZoom : undefined,
+  )
+  const heroBackgroundPosition = formatImagePosition(heroBackgroundCrop)
 
   useEffect(() => {
     let isCurrent = true
 
-    getPortfolioItems(profile.slug)
-      .then((result) => {
-        if (isCurrent) {
-          setItems(result)
-          setHasError(false)
-        }
-      })
-      .catch(() => {
-        if (isCurrent) setHasError(true)
-      })
+    function loadItems(force = false) {
+      getPortfolioItems(profile.slug, { force })
+        .then((result) => {
+          if (isCurrent) {
+            setItems(result)
+            setHasError(false)
+          }
+        })
+        .catch(() => {
+          if (isCurrent) setHasError(true)
+        })
+    }
+
+    function reloadCurrentPortfolio() {
+      invalidatePortfolioItemsCache(profile.slug, { broadcast: false })
+      loadItems(true)
+    }
+
+    function handlePortfolioChanged(event: Event) {
+      const changedSlug = event instanceof CustomEvent ? (event.detail as { slug?: string } | undefined)?.slug : undefined
+      if (changedSlug && changedSlug !== profile.slug) return
+
+      reloadCurrentPortfolio()
+    }
+
+    function handlePortfolioStorage(event: StorageEvent) {
+      if (event.key !== portfolioInvalidationStorageKey) return
+      if (!portfolioInvalidationMatches(event.newValue, profile.slug)) return
+
+      reloadCurrentPortfolio()
+    }
+
+    function handlePageVisible() {
+      if (document.visibilityState !== 'visible') return
+
+      loadItems(true)
+    }
+
+    loadItems()
+    window.addEventListener('portfolio:changed', handlePortfolioChanged)
+    window.addEventListener('storage', handlePortfolioStorage)
+    window.addEventListener('focus', handlePageVisible)
+    document.addEventListener('visibilitychange', handlePageVisible)
 
     return () => {
       isCurrent = false
+      window.removeEventListener('portfolio:changed', handlePortfolioChanged)
+      window.removeEventListener('storage', handlePortfolioStorage)
+      window.removeEventListener('focus', handlePageVisible)
+      document.removeEventListener('visibilitychange', handlePageVisible)
     }
   }, [profile.slug])
 
@@ -54,16 +104,10 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
     [filteredItems],
   )
 
-  const stats = useMemo(() => {
-    const events = new Set(
-      items.map((item) => `${item.eventDateIso}|${item.location.trim().toLocaleLowerCase('pt-PT')}`),
-    )
-
-    return {
-      contents: items.length,
-      events: events.size,
-    }
-  }, [items])
+  const stats = useMemo(() => ({
+    contents: items.length,
+    events: profile.completedEventsCount ?? 0,
+  }), [items.length, profile.completedEventsCount])
 
   const heroBackdrop = useMemo(
     () => profile.heroBackgroundImageUrl
@@ -98,29 +142,30 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
           id="profile-overview"
         >
           {heroBackdrop && (
-            <div
-              aria-hidden="true"
+            <ProfileHeroBackground
+              ariaHidden
               className={styles.heroBackdrop}
-              style={{ backgroundImage: `url(${JSON.stringify(heroBackdrop)})` }}
+              mutedImage
+              position={heroBackgroundPosition}
+              showProfileOverlay
+              src={heroBackdrop}
+              zoom={heroBackgroundCrop.zoom}
             />
           )}
-          <div className={styles.profileImage}>
-            <CroppedImage
-              alt={'Foto de perfil de ' + profile.name}
-              className={styles.profileImageFrame}
-              fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
-              fetchPriority="high"
-              loading="eager"
-              position={imagePosition}
-              src={profile.imageUrl}
-              zoom={imageZoom}
-            />
-          </div>
+          <ArtistProfileImage
+            alt={'Foto de perfil de ' + profile.name}
+            fallback={artistInitials(profile.name)}
+            fetchPriority="high"
+            loading="eager"
+            position={imagePosition}
+            src={profile.imageUrl}
+            variant="heroResponsive"
+            zoom={imageZoom}
+          />
 
           <div className={styles.heroCopy}>
             <p className={styles.role}>{profile.role}</p>
             <h1>{profile.name}</h1>
-            <p className={styles.heroDescription}>{profile.description}</p>
 
             {profile.socialLinks.length > 0 && (
               <div className={styles.socialLinks} aria-label="Links sociais do perfil">
@@ -156,15 +201,16 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
               {featuredVideo.type === 'youtube'
                 ? (
                   <iframe
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     loading="lazy"
+                    key={profile.slug + '-' + featuredVideo.url}
                     src={featuredVideo.url}
                     title={'Vídeo de destaque de ' + profile.name}
                   />
                 )
                 : (
-                  <video controls playsInline preload="metadata">
+                  <video key={profile.slug + '-' + featuredVideo.url} autoPlay controls muted playsInline preload="metadata">
                     <source src={featuredVideo.url} />
                   </video>
                 )}
@@ -204,11 +250,20 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
 
         <nav className={styles.profileNav} aria-label="Secções do perfil">
           <a href="#profile-overview">Visão geral</a>
+          <a href="#profile-about">Sobre o artista</a>
           <button type="button" onClick={() => selectPortfolioFilter('Todos')}>Eventos</button>
           <button type="button" onClick={() => selectPortfolioFilter('Foto')}>Fotos</button>
           <button type="button" onClick={() => selectPortfolioFilter('Vídeo')}>Vídeos</button>
           <a href="#reviews-title">Avaliações</a>
         </nav>
+
+        <section className={styles.aboutSection} id="profile-about" aria-labelledby="profile-about-title">
+          <div className={styles.aboutHeading}>
+            <p className={styles.sectionKicker}>Sobre</p>
+            <h2 id="profile-about-title">Sobre o artista</h2>
+          </div>
+          <p className={styles.aboutCopy}>{profile.description}</p>
+        </section>
 
         <section className={styles.eventsSection} id="portfolio-events">
           <div className={styles.portfolioHeader}>
@@ -259,7 +314,7 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
         />
 
         {selectedItem && (
-          <MediaLightbox item={selectedItem} onClose={() => setSelectedItem(null)} />
+          <MediaLightbox item={selectedItem} presentation="artistPortfolio" onClose={() => setSelectedItem(null)} />
         )}
       </div>
     </section>
@@ -302,7 +357,15 @@ function groupPortfolioItems(items: PortfolioItem[]) {
 
 function resolveFeaturedVideo(url: string): { type: 'youtube' | 'video'; url: string } {
   const youtubeUrl = toYoutubeEmbedUrl(url)
-  return youtubeUrl ? { type: 'youtube', url: youtubeUrl } : { type: 'video', url }
+  return youtubeUrl ? { type: 'youtube', url: withAutoplay(youtubeUrl) } : { type: 'video', url }
+}
+
+function withAutoplay(value: string) {
+  const url = new URL(value)
+  url.searchParams.set('autoplay', '1')
+  url.searchParams.set('mute', '1')
+  url.searchParams.set('playsinline', '1')
+  return url.toString()
 }
 
 function toYoutubeEmbedUrl(value: string) {

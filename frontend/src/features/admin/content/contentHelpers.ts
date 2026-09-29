@@ -28,6 +28,8 @@ export function portfolioItemToSaveInput(item: AdminPortfolioItem, published = i
     eventDate: item.eventDateIso,
     mediaUrl: item.mediaUrl,
     thumbnailUrl: item.thumbnailUrl ?? null,
+    thumbnailPosition: item.thumbnailPosition ?? '50% 50%',
+    thumbnailZoom: item.thumbnailZoom ?? 1,
     published,
   }
 }

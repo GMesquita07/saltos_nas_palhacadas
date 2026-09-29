@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { imageCropStyle } from '../../components/imageCrop'
 import { useAuth } from '../auth/AuthContext'
 import type { PortfolioItem } from '../../types/portfolio'
+import { videoFirstFrameSource } from './videoPreview'
 import styles from './PortfolioCard.module.css'
 
 export function PortfolioCard({ item, onOpen }: { item: PortfolioItem; onOpen?: (item: PortfolioItem) => void }) {
@@ -87,10 +89,32 @@ function PortfolioPreview({ item }: { item: PortfolioItem }) {
     ? (
       <>
         {item.thumbnailUrl
-          ? <img src={item.thumbnailUrl} alt="" decoding="async" loading="lazy" />
-          : <video muted playsInline preload="none"><source src={item.mediaUrl} /></video>}
+          ? (
+            <img
+              src={item.thumbnailUrl}
+              alt=""
+              decoding="async"
+              loading="lazy"
+              style={imageCropStyle(item.thumbnailPosition, item.thumbnailZoom)}
+            />
+          )
+          : (
+            <video aria-hidden="true" muted playsInline preload="metadata">
+              <source src={videoFirstFrameSource(item.mediaUrl)} />
+            </video>
+          )}
         <span className={styles.playIndicator} aria-hidden="true">▶</span>
       </>
     )
-    : <img src={item.mediaUrl} alt={item.title} decoding="async" loading="lazy" />
+    : (
+      <img
+        src={item.thumbnailUrl?.trim() || item.mediaUrl}
+        alt={item.title}
+        decoding="async"
+        loading="lazy"
+        style={item.thumbnailUrl?.trim()
+          ? imageCropStyle(item.thumbnailPosition, item.thumbnailZoom)
+          : undefined}
+      />
+    )
 }

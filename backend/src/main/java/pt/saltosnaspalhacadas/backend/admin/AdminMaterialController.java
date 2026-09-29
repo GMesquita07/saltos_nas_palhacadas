@@ -6,8 +6,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -56,6 +59,8 @@ public class AdminMaterialController {
         Material material = new Material(
                 request.name().trim(),
                 PublicUrlValidator.required(request.imageUrl(), "Indica um URL de fotografia válido"),
+                defaultImagePosition(request.imagePosition()),
+                defaultImageZoom(request.imageZoom()),
                 displayOrder);
         return MaterialResponse.from(materials.save(material));
     }
@@ -69,7 +74,9 @@ public class AdminMaterialController {
 
         material.update(
                 request.name().trim(),
-                PublicUrlValidator.required(request.imageUrl(), "Indica um URL de fotografia válido"));
+                PublicUrlValidator.required(request.imageUrl(), "Indica um URL de fotografia válido"),
+                defaultImagePosition(request.imagePosition()),
+                defaultImageZoom(request.imageZoom()));
         return MaterialResponse.from(materials.save(material));
     }
 
@@ -110,13 +117,34 @@ public class AdminMaterialController {
         materials.delete(material);
     }
 
+    private static String defaultImagePosition(String value) {
+        return value == null || value.isBlank()
+                ? "50% 50%"
+                : value;
+    }
+
+    private static double defaultImageZoom(Double value) {
+        return value == null ? 1.0 : value;
+    }
+
     record CreateMaterialRequest(
             @NotBlank(message = "O nome do material é obrigatório")
             @Size(max = 140, message = "O nome do material pode ter no máximo 140 caracteres")
             String name,
             @NotBlank(message = "A fotografia do material é obrigatória")
             @Size(max = 2048, message = "A URL da fotografia é demasiado longa")
-            String imageUrl) {
+            String imageUrl,
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição da fotografia é inválida")
+            String imagePosition,
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo da fotografia é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo da fotografia é 3")
+            Double imageZoom) {
     }
 
     record UpdateMaterialRequest(
@@ -125,7 +153,18 @@ public class AdminMaterialController {
             String name,
             @NotBlank(message = "A fotografia do material é obrigatória")
             @Size(max = 2048, message = "A URL da fotografia é demasiado longa")
-            String imageUrl) {
+            String imageUrl,
+            @Pattern(
+                    regexp = "(?:100|[0-9]{1,2})% (?:100|[0-9]{1,2})%",
+                    message = "A posição da fotografia é inválida")
+            String imagePosition,
+            @DecimalMin(
+                    value = "1.0",
+                    message = "O zoom mínimo da fotografia é 1")
+            @DecimalMax(
+                    value = "3.0",
+                    message = "O zoom máximo da fotografia é 3")
+            Double imageZoom) {
     }
 
     record ReorderMaterialsRequest(

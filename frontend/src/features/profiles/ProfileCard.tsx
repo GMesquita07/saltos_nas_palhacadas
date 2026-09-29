@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Profile } from '../../types/profile'
-import { CroppedImage } from '../../components/CroppedImage'
+import { ArtistProfileImage } from '../../components/ArtistProfileImage'
+import { artistInitials } from '../../components/artistProfileImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { profilePath } from '../../navigation/routes'
 import type { ImageLoadingPolicy } from '../../performance/performanceConfig'
@@ -13,16 +14,15 @@ export function ProfileCard({ imageLoading, profile }: { imageLoading?: ImageLoa
   return (
     <Link className={styles.card} to={profilePath(profile.slug)}>
       <span className={styles.portrait}>
-        <CroppedImage
+        <ArtistProfileImage
           alt={'Foto de perfil de ' + profile.name}
-          className={styles.image}
-          shape="circle"
           decoding={imageLoading?.decoding}
-          fallback={profile.name.split(' ').map((name) => name[0]).join('').slice(0, 2)}
+          fallback={artistInitials(profile.name)}
           fetchPriority={imageLoading?.fetchPriority}
           loading={imageLoading?.loading}
           position={imagePosition}
           src={profile.imageUrl}
+          variant="card"
           zoom={imageZoom}
         />
       </span>

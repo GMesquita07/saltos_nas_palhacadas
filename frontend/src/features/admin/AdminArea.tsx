@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { CroppedImage } from '../../components/CroppedImage'
+import { ArtistProfileImage } from '../../components/ArtistProfileImage'
+import { artistInitials } from '../../components/artistProfileImage'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
+import { ProfileHeroBackground } from '../../components/ProfileHeroBackground'
 import { SocialIcon } from '../../components/SocialIcon/SocialIcon'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
-import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
+import { formatImagePosition, imageCropStyle, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { MediaLightbox } from '../portfolio/MediaLightbox'
+import { videoFirstFrameSource } from '../portfolio/videoPreview'
 import type { AdminPage } from '../../navigation/routes'
 import { apiClient, uploadFile } from '../../services/apiClient'
 import {
@@ -29,6 +34,7 @@ import {
   reorderContacts,
   updateContact,
 } from '../../services/contactService'
+import { invalidatePortfolioItemsCache } from '../../services/portfolioInvalidation'
 import { invalidateProfilesCache } from '../../services/profileService'
 import { getAdminReviews, moderateReview } from '../../services/reviewService'
 import type { Booking } from '../../types/booking'
@@ -50,7 +56,7 @@ import {
 import { socialPlatformIcon, socialPlatformLabel, socialPlatformOptions, validateSocialLink } from '../profiles/socialLinks'
 import styles from './AdminArea.module.css'
 
-type Notice = { type: 'success' | 'error'; text: string }
+type Notice = { type: 'success' | 'error' | 'warning'; text: string }
 
 type ProfileFormState = {
   name: string
@@ -60,8 +66,11 @@ type ProfileFormState = {
   notificationEmail: string
   profileImageUrl: string
   imageCrop: ImageCrop
+  profileImageCropDirty: boolean
   featuredVideoUrl: string
   heroBackgroundImageUrl: string
+  heroBackgroundCrop: ImageCrop
+  heroBackgroundCropDirty: boolean
   socialLinks: ProfileSocialLinkFormState[]
 }
 
@@ -79,7 +88,25 @@ type ContentFormState = {
   mediaUrl: string
   mediaType: MediaType | null
   thumbnailUrl: string
+  thumbnailCrop: ImageCrop
   published: boolean
+}
+
+type ImageCropDialogState = {
+  title: string
+  description: string
+  src: string
+  shape: 'landscape' | 'square' | 'circle'
+  aspectRatio?: string
+  comparisonPreviews?: {
+    title: string
+    aspectRatio?: string
+    shape?: 'landscape' | 'square' | 'circle'
+    render?: (props: { alt: string; imagePosition: string; src: string; zoom: number }) => ReactNode
+  }[]
+  crop: ImageCrop
+  previewMode?: 'image' | 'profileHeroBackground'
+  onSave: (crop: ImageCrop) => void
 }
 
 type ContactFormState = {
@@ -106,8 +133,11 @@ const emptyProfileForm = (): ProfileFormState => ({
   notificationEmail: '',
   profileImageUrl: '',
   imageCrop: { x: 50, y: 50, zoom: 1 },
+  profileImageCropDirty: false,
   featuredVideoUrl: '',
   heroBackgroundImageUrl: '',
+  heroBackgroundCrop: { x: 50, y: 50, zoom: 1 },
+  heroBackgroundCropDirty: false,
   socialLinks: [],
 })
 
@@ -119,6 +149,7 @@ const emptyContentForm = (profileSlug = ''): ContentFormState => ({
   mediaUrl: '',
   mediaType: null,
   thumbnailUrl: '',
+  thumbnailCrop: { x: 50, y: 50, zoom: 1 },
   published: true,
 })
 
@@ -148,6 +179,8 @@ export function AdminArea({
   const [contentItems, setContentItems] = useState<AdminPortfolioItem[]>([])
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
+  const [cropDialog, setCropDialog] = useState<ImageCropDialogState | null>(null)
+  const [formActionNotice, setFormActionNotice] = useState<Notice | null>(null)
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm)
   const [editingProfileSlug, setEditingProfileSlug] = useState<string | null>(null)
   const [editingContentId, setEditingContentId] = useState<string | null>(null)
@@ -256,6 +289,16 @@ export function AdminArea({
     }
   }, [token])
 
+  function changeAdminPage(nextPage: AdminPage) {
+    setFormActionNotice(null)
+    onPageChange(nextPage)
+  }
+
+  function notifyPortfolioChanged(slug: string) {
+    invalidatePortfolioItemsCache(slug)
+    window.dispatchEvent(new CustomEvent('portfolio:changed', { detail: { slug } }))
+  }
+
   async function upload(
     event: ChangeEvent<HTMLInputElement>,
     onUploaded: (url: string, file: File) => void,
@@ -295,9 +338,11 @@ export function AdminArea({
   function cancelProfileEditing() {
     setEditingProfileSlug(null)
     setProfileForm(emptyProfileForm())
+    setFormActionNotice(null)
   }
 
   function startProfileEditing(profile: AdminManagedProfile) {
+    setFormActionNotice(null)
     setEditingProfileSlug(profile.slug)
     setProfileForm({
       name: profile.name,
@@ -307,8 +352,11 @@ export function AdminArea({
       notificationEmail: profile.notificationEmail ?? '',
       profileImageUrl: profile.imageUrl ?? '',
       imageCrop: parseImageCrop(profile.imagePosition, profile.imageZoom),
+      profileImageCropDirty: false,
       featuredVideoUrl: profile.featuredVideoUrl ?? '',
       heroBackgroundImageUrl: profile.heroBackgroundImageUrl ?? '',
+      heroBackgroundCrop: parseImageCrop(profile.heroBackgroundImagePosition, profile.heroBackgroundImageZoom),
+      heroBackgroundCropDirty: false,
       socialLinks: profile.socialLinks.map(toProfileSocialLinkForm),
     })
     setNotice({ type: 'success', text: 'A editar o perfil ' + profile.name + '. Altera os campos e seleciona Atualizar perfil.' })
@@ -337,6 +385,8 @@ export function AdminArea({
       profileImageZoom: profileForm.imageCrop.zoom,
       featuredVideoUrl: profileForm.featuredVideoUrl.trim() || null,
       heroBackgroundImageUrl: profileForm.heroBackgroundImageUrl.trim() || null,
+      heroBackgroundImagePosition: formatImagePosition(profileForm.heroBackgroundCrop),
+      heroBackgroundImageZoom: profileForm.heroBackgroundCrop.zoom,
       socialLinks: profileForm.socialLinks.map((link) => ({
         platform: link.platform.trim(),
         label: link.label.trim() || null,
@@ -346,13 +396,13 @@ export function AdminArea({
 
     try {
       let savedProfile: Profile | null = null
+      const successText = editingProfileSlug ? 'Perfil atualizado com sucesso.' : 'Perfil criado com sucesso.'
       if (editingProfileSlug) {
         savedProfile = await updateAdminProfile(editingProfileSlug, payload, token)
-        setNotice({ type: 'success', text: 'Perfil atualizado com sucesso.' })
       } else {
         savedProfile = await createAdminProfile({ ...payload, slug: profileForm.slug.trim() }, token)
-        setNotice({ type: 'success', text: 'Perfil criado com sucesso.' })
       }
+      setNotice({ type: 'success', text: successText })
 
       if (savedProfile) {
         setProfiles((current) => upsertProfile(current, savedProfile))
@@ -364,6 +414,7 @@ export function AdminArea({
       }
       window.dispatchEvent(new Event('profiles:changed'))
       cancelProfileEditing()
+      setFormActionNotice({ type: 'success', text: successText })
     } catch (error) {
       setNotice({
         type: 'error',
@@ -375,6 +426,7 @@ export function AdminArea({
   }
 
   function selectContentProfile(slug: string) {
+    setFormActionNotice(null)
     setEditingContentId(null)
     setContentForm(emptyContentForm(slug))
     void refreshContentItems(slug)
@@ -383,9 +435,11 @@ export function AdminArea({
   function cancelContentEditing() {
     setEditingContentId(null)
     setContentForm(emptyContentForm(contentForm.profileSlug))
+    setFormActionNotice(null)
   }
 
   function startContentEditing(item: AdminPortfolioItem) {
+    setFormActionNotice(null)
     setEditingContentId(item.id)
     setContentForm({
       profileSlug: contentForm.profileSlug,
@@ -395,6 +449,7 @@ export function AdminArea({
       mediaUrl: item.mediaUrl,
       mediaType: item.type === 'Vídeo' ? 'VIDEO' : 'PHOTO',
       thumbnailUrl: item.thumbnailUrl ?? '',
+      thumbnailCrop: parseImageCrop(item.thumbnailPosition, item.thumbnailZoom),
       published: item.published,
     })
     setNotice({ type: 'success', text: 'A editar o conteúdo ' + item.title + '. Podes substituir o ficheiro ou alterar os restantes campos.' })
@@ -420,21 +475,26 @@ export function AdminArea({
       eventDate: contentForm.eventDate,
       mediaUrl: contentForm.mediaUrl,
       thumbnailUrl: contentForm.thumbnailUrl.trim() || null,
+      thumbnailPosition: formatImagePosition(contentForm.thumbnailCrop),
+      thumbnailZoom: contentForm.thumbnailCrop.zoom,
       published: contentForm.published,
     }
 
     try {
+      const successText = editingContentId
+        ? 'Conteúdo atualizado com sucesso.'
+        : contentForm.published ? 'Conteúdo publicado com sucesso.' : 'Conteúdo guardado como oculto.'
       if (editingContentId) {
         await updateAdminPortfolioItem(contentForm.profileSlug, editingContentId, payload, token)
-        setNotice({ type: 'success', text: 'Conteúdo atualizado com sucesso.' })
       } else {
         await createAdminPortfolioItem(contentForm.profileSlug, payload, token)
-        setNotice({ type: 'success', text: contentForm.published ? 'Conteúdo publicado com sucesso.' : 'Conteúdo guardado como oculto.' })
       }
+      setNotice({ type: 'success', text: successText })
 
       await refreshContentItems(contentForm.profileSlug)
-      window.dispatchEvent(new Event('portfolio:changed'))
+      notifyPortfolioChanged(contentForm.profileSlug)
       cancelContentEditing()
+      setFormActionNotice({ type: 'success', text: successText })
     } catch (error) {
       setNotice({
         type: 'error',
@@ -448,9 +508,11 @@ export function AdminArea({
   function cancelContactEditing() {
     setEditingContactId(null)
     setContactForm(emptyContactForm())
+    setFormActionNotice(null)
   }
 
   function startContactEditing(contact: Contact) {
+    setFormActionNotice(null)
     setEditingContactId(contact.id)
     setContactForm({
       label: contact.label,
@@ -482,18 +544,19 @@ export function AdminArea({
     }
 
     try {
+      const successText = editingContactId !== null ? 'Contacto atualizado com sucesso.' : 'Contacto adicionado com sucesso.'
       if (editingContactId !== null) {
         await updateContact(editingContactId, payload, token)
-        setNotice({ type: 'success', text: 'Contacto atualizado com sucesso.' })
       } else {
         await createContact(payload, token)
-        setNotice({ type: 'success', text: 'Contacto adicionado com sucesso.' })
       }
+      setNotice({ type: 'success', text: successText })
 
       invalidateContactsCache()
       await refreshContacts()
       window.dispatchEvent(new Event('contacts:changed'))
       cancelContactEditing()
+      setFormActionNotice({ type: 'success', text: successText })
     } catch (error) {
       setNotice({
         type: 'error',
@@ -539,7 +602,7 @@ export function AdminArea({
     try {
       await deleteAdminPortfolioItem(contentForm.profileSlug, item.id, token)
       await refreshContentItems(contentForm.profileSlug)
-      window.dispatchEvent(new Event('portfolio:changed'))
+      notifyPortfolioChanged(contentForm.profileSlug)
 
       if (editingContentId === item.id) cancelContentEditing()
       setNotice({ type: 'success', text: 'Conteúdo apagado com sucesso.' })
@@ -563,7 +626,7 @@ export function AdminArea({
         published: togglePortfolioPublication(item),
       }, token)
       await refreshContentItems(contentForm.profileSlug)
-      window.dispatchEvent(new Event('portfolio:changed'))
+      notifyPortfolioChanged(contentForm.profileSlug)
       setNotice({ type: 'success', text: !item.published ? 'Conteúdo publicado.' : 'Conteúdo ocultado.' })
     } catch (error) {
       setNotice({
@@ -714,13 +777,13 @@ export function AdminArea({
           <h1>Administração</h1>
         </div>
         <nav className={styles.tabs} aria-label="Secções de administração">
-          <Tab active={page === 'dashboard'} onClick={() => onPageChange('dashboard')}>Resumo</Tab>
-          <Tab active={page === 'profile'} onClick={() => onPageChange('profile')}>Perfis</Tab>
-          <Tab active={page === 'content'} onClick={() => onPageChange('content')}>Conteúdo</Tab>
-          <Tab active={page === 'contacts'} onClick={() => onPageChange('contacts')}>Contactos</Tab>
-          <Tab active={page === 'materials'} onClick={() => onPageChange('materials')}>Materiais</Tab>
-          <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => onPageChange('reviews')}>Avaliações</Tab>
-          <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => onPageChange('bookings')}>Agendamentos</Tab>
+          <Tab active={page === 'dashboard'} onClick={() => changeAdminPage('dashboard')}>Resumo</Tab>
+          <Tab active={page === 'profile'} onClick={() => changeAdminPage('profile')}>Perfis</Tab>
+          <Tab active={page === 'content'} onClick={() => changeAdminPage('content')}>Conteúdo</Tab>
+          <Tab active={page === 'contacts'} onClick={() => changeAdminPage('contacts')}>Contactos</Tab>
+          <Tab active={page === 'materials'} onClick={() => changeAdminPage('materials')}>Materiais</Tab>
+          <Tab active={page === 'reviews'} badge={reviews.filter((review) => !review.published).length} onClick={() => changeAdminPage('reviews')}>Avaliações</Tab>
+          <Tab active={page === 'bookings'} badge={adminBookings.filter((booking) => booking.status === 'PENDING').length} onClick={() => changeAdminPage('bookings')}>Agendamentos</Tab>
         </nav>
         <button className={styles.exitButton} type="button" onClick={onExit}>
           <NavIcon name="arrow-left" />
@@ -747,7 +810,7 @@ export function AdminArea({
             isLoading={isDashboardLoading}
             profiles={profiles}
             reviews={reviews}
-            onNavigate={onPageChange}
+            onNavigate={changeAdminPage}
             onRefresh={refreshDashboard}
           />
         )}
@@ -764,11 +827,15 @@ export function AdminArea({
             onEdit={startProfileEditing}
             onDelete={deleteProfile}
             onReorder={reorderProfileStack}
+            onOpenCropEditor={setCropDialog}
+            actionNotice={formActionNotice}
+            onDraftNotice={setFormActionNotice}
             onUpload={(event) => upload(event, (url) => {
-              setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 } }))
+              setProfileForm((current) => ({ ...current, profileImageUrl: url, imageCrop: { x: 50, y: 50, zoom: 1 }, profileImageCropDirty: true }))
+              setFormActionNotice({ type: 'warning', text: 'Fotografia alterada — clica em "' + (editingProfileSlug ? 'Atualizar perfil' : 'Criar perfil') + '" para publicar.' })
             })}
             onHeroBackgroundUpload={(event) => upload(event, (url) => {
-              setProfileForm((current) => ({ ...current, heroBackgroundImageUrl: url }))
+              setProfileForm((current) => ({ ...current, heroBackgroundImageUrl: url, heroBackgroundCrop: { x: 50, y: 50, zoom: 1 }, heroBackgroundCropDirty: true }))
             }, { imagesOnly: true })}
             onFeaturedVideoUpload={(event) => upload(event, (url) => {
               setProfileForm((current) => ({ ...current, featuredVideoUrl: url }))
@@ -792,6 +859,8 @@ export function AdminArea({
             onDelete={deleteContent}
             onPreview={setSelectedPreviewItem}
             onToggleVisibility={toggleContentVisibility}
+            onOpenCropEditor={setCropDialog}
+            actionNotice={formActionNotice}
             onUpload={(event) => upload(event, (url, file) => {
               setContentForm((current) => ({
                 ...current,
@@ -800,7 +869,7 @@ export function AdminArea({
               }))
             })}
             onThumbnailUpload={(event) => upload(event, (url) => {
-              setContentForm((current) => ({ ...current, thumbnailUrl: url }))
+              setContentForm((current) => ({ ...current, thumbnailUrl: url, thumbnailCrop: { x: 50, y: 50, zoom: 1 } }))
             }, { imagesOnly: true })}
           />
         )}
@@ -818,6 +887,7 @@ export function AdminArea({
             onDelete={deleteContact}
             onReorder={reorderContactStack}
             onToggleVisibility={toggleContactVisibility}
+            actionNotice={formActionNotice}
           />
         )}
 
@@ -841,6 +911,12 @@ export function AdminArea({
       </div>
 
       {selectedPreviewItem && <MediaLightbox item={selectedPreviewItem} onClose={() => setSelectedPreviewItem(null)} />}
+      {cropDialog && (
+        <ImageCropDialog
+          dialog={cropDialog}
+          onClose={() => setCropDialog(null)}
+        />
+      )}
     </section>
   )
 }
@@ -1029,6 +1105,9 @@ function ProfileManagement({
   onEdit,
   onDelete,
   onReorder,
+  onOpenCropEditor,
+  actionNotice,
+  onDraftNotice,
   onUpload,
   onHeroBackgroundUpload,
   onFeaturedVideoUpload,
@@ -1043,10 +1122,87 @@ function ProfileManagement({
   onEdit: (profile: Profile) => void
   onDelete: (profile: Profile) => Promise<void>
   onReorder: (profileSlugs: string[]) => Promise<void>
+  onOpenCropEditor: (dialog: ImageCropDialogState) => void
+  actionNotice: Notice | null
+  onDraftNotice: (notice: Notice) => void
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onHeroBackgroundUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onFeaturedVideoUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
+  function openProfileImageCrop() {
+    if (!form.profileImageUrl) return
+
+    onOpenCropEditor({
+      title: 'Ajustar foto de perfil',
+      description: 'Arrasta a fotografia e ajusta o zoom. Este enquadramento é usado no avatar circular do perfil.',
+      src: form.profileImageUrl,
+      shape: 'circle',
+      comparisonPreviews: [
+        {
+          title: 'Cartão da homepage',
+          render: ({ imagePosition, src, zoom }) => (
+            <ArtistProfileImage
+              alt="Pré-visualização da foto no cartão público"
+              fallback={artistInitials(form.name)}
+              position={imagePosition}
+              src={src}
+              variant="card"
+              zoom={zoom}
+            />
+          ),
+        },
+        {
+          title: 'Perfil desktop',
+          render: ({ imagePosition, src, zoom }) => (
+            <ArtistProfileImage
+              alt="Pré-visualização da foto no perfil desktop"
+              fallback={artistInitials(form.name)}
+              position={imagePosition}
+              src={src}
+              variant="heroDesktop"
+              zoom={zoom}
+            />
+          ),
+        },
+        {
+          title: 'Perfil mobile',
+          render: ({ imagePosition, src, zoom }) => (
+            <ArtistProfileImage
+              alt="Pré-visualização da foto no perfil mobile"
+              fallback={artistInitials(form.name)}
+              position={imagePosition}
+              src={src}
+              variant="heroMobile"
+              zoom={zoom}
+            />
+          ),
+        },
+      ],
+      crop: form.imageCrop,
+      onSave: (imageCrop) => {
+        onChange((current) => ({ ...current, imageCrop, profileImageCropDirty: true }))
+        onDraftNotice({
+          type: 'warning',
+          text: 'Enquadramento alterado — clica em "' + (isEditing ? 'Atualizar perfil' : 'Criar perfil') + '" para publicar.',
+        })
+      },
+    })
+  }
+
+  function openHeroBackgroundCrop() {
+    if (!form.heroBackgroundImageUrl) return
+
+    onOpenCropEditor({
+      title: 'Ajustar background do perfil',
+      description: 'Arrasta a imagem e ajusta o zoom para escolher o enquadramento do topo do perfil.',
+      src: form.heroBackgroundImageUrl,
+      shape: 'landscape',
+      previewMode: 'profileHeroBackground',
+      crop: form.heroBackgroundCrop,
+      onSave: (heroBackgroundCrop) => onChange((current) => ({ ...current, heroBackgroundCrop, heroBackgroundCropDirty: true })),
+    })
+  }
+
   return (
     <div className={styles.page}>
       <form id="profile-editor" onSubmit={(event) => { void onSubmit(event) }}>
@@ -1157,14 +1313,31 @@ function ProfileManagement({
         </label>
 
         {form.profileImageUrl && (
-          <ImageCropEditor
-            crop={form.imageCrop}
-            description="Arrasta a fotografia e ajusta o zoom. Esta pré-visualização usa o mesmo recorte circular que aparece na homepage."
-            shape="circle"
-            src={form.profileImageUrl}
-            title="Ajustar foto de perfil"
-            onChange={(imageCrop) => onChange((current) => ({ ...current, imageCrop }))}
-          />
+          <div className={styles.thumbnailPreview}>
+            <div className={styles.profileCardPreview}>
+              <ArtistProfileImage
+                alt="Pré-visualização da foto no cartão público"
+                fallback={artistInitials(form.name)}
+                position={formatImagePosition(form.imageCrop)}
+                previewScale={0.56}
+                src={form.profileImageUrl}
+                variant="card"
+                zoom={form.imageCrop.zoom}
+              />
+              <span>Pré-visualização do cartão</span>
+            </div>
+            <div className={styles.previewActions}>
+              <button className={styles.adjustPreviewButton} type="button" onClick={openProfileImageCrop}>
+                Ajustar posição
+              </button>
+              <button type="button" onClick={() => {
+                onChange((current) => ({ ...current, profileImageUrl: '', imageCrop: { x: 50, y: 50, zoom: 1 }, profileImageCropDirty: true }))
+                onDraftNotice({ type: 'warning', text: 'Fotografia removida — clica em "' + (isEditing ? 'Atualizar perfil' : 'Criar perfil') + '" para publicar.' })
+              }}>
+                Remover fotografia
+              </button>
+            </div>
+          </div>
         )}
         </fieldset>
 
@@ -1188,7 +1361,7 @@ function ProfileManagement({
             URL do background
             <input
               maxLength={2048}
-              onChange={(event) => onChange((current) => ({ ...current, heroBackgroundImageUrl: event.target.value }))}
+              onChange={(event) => onChange((current) => ({ ...current, heroBackgroundImageUrl: event.target.value, heroBackgroundCropDirty: true }))}
               placeholder="https://..."
               type="url"
               value={form.heroBackgroundImageUrl}
@@ -1196,12 +1369,31 @@ function ProfileManagement({
           </label>
 
           {form.heroBackgroundImageUrl && (
-            <div className={styles.thumbnailPreview}>
-              <img src={form.heroBackgroundImageUrl} alt="Pré-visualização do background do perfil" />
-              <button type="button" onClick={() => onChange((current) => ({ ...current, heroBackgroundImageUrl: '' }))}>
-                Remover background
-              </button>
+            <div className={[styles.thumbnailPreview, styles.heroThumbnailPreview].join(' ')}>
+              <ProfileHeroBackground
+                alt="Pré-visualização do background do perfil"
+                className={[styles.thumbnailPreviewFrame, styles.heroPreviewFrame].join(' ')}
+                mutedImage
+                position={formatImagePosition(form.heroBackgroundCrop)}
+                showProfileOverlay
+                src={form.heroBackgroundImageUrl}
+                zoom={form.heroBackgroundCrop.zoom}
+              />
+              <div className={styles.previewActions}>
+                <button className={styles.adjustPreviewButton} type="button" onClick={openHeroBackgroundCrop}>
+                  Ajustar posição
+                </button>
+                <button type="button" onClick={() => onChange((current) => ({ ...current, heroBackgroundImageUrl: '', heroBackgroundCrop: { x: 50, y: 50, zoom: 1 }, heroBackgroundCropDirty: true }))}>
+                  Remover background
+                </button>
+              </div>
             </div>
+          )}
+
+          {form.heroBackgroundCropDirty && (
+            <small className={styles.pendingCropNotice}>
+              Enquadramento alterado. Clica em Atualizar perfil para guardar no perfil público.
+            </small>
           )}
 
           <small className={styles.fieldHint}>
@@ -1252,6 +1444,7 @@ function ProfileManagement({
           isSaving={isSaving}
           createLabel="Criar perfil"
           updateLabel="Atualizar perfil"
+          actionNotice={actionNotice}
           onCancel={onCancel}
         />
       </form>
@@ -1457,6 +1650,8 @@ function ContentManagement({
   onDelete,
   onPreview,
   onToggleVisibility,
+  onOpenCropEditor,
+  actionNotice,
   onUpload,
   onThumbnailUpload,
 }: {
@@ -1474,9 +1669,29 @@ function ContentManagement({
   onDelete: (item: AdminPortfolioItem) => Promise<void>
   onPreview: (item: PortfolioItem) => void
   onToggleVisibility: (item: AdminPortfolioItem) => Promise<void>
+  onOpenCropEditor: (dialog: ImageCropDialogState) => void
+  actionNotice: Notice | null
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   onThumbnailUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
+  function openThumbnailCrop() {
+    if (!form.thumbnailUrl) return
+
+    onOpenCropEditor({
+      title: 'Ajustar miniatura do conteúdo',
+      description: 'Arrasta a imagem e ajusta o zoom para escolher a capa que aparece nos cartões do portfólio.',
+      src: form.thumbnailUrl,
+      shape: 'landscape',
+      aspectRatio: '16 / 10',
+      comparisonPreviews: [
+        { title: 'Cartão desktop 16:10', aspectRatio: '16 / 10' },
+        { title: 'Cartão mobile 4:3', aspectRatio: '4 / 3' },
+      ],
+      crop: form.thumbnailCrop,
+      onSave: (thumbnailCrop) => onChange((current) => ({ ...current, thumbnailCrop })),
+    })
+  }
+
   return (
     <div className={styles.page}>
       <form id="content-editor" className={styles.editorCard} onSubmit={(event) => { void onSubmit(event) }}>
@@ -1597,13 +1812,25 @@ function ContentManagement({
 
         {form.thumbnailUrl && (
           <div className={styles.thumbnailPreview}>
-            <img src={form.thumbnailUrl} alt="Pré-visualização da miniatura" />
-            <button
-              type="button"
-              onClick={() => onChange((current) => ({ ...current, thumbnailUrl: '' }))}
-            >
-              Remover miniatura
-            </button>
+            <CroppedImage
+              alt="Pré-visualização da miniatura"
+              className={styles.thumbnailPreviewFrame}
+              position={formatImagePosition(form.thumbnailCrop)}
+              shape="square"
+              src={form.thumbnailUrl}
+              zoom={form.thumbnailCrop.zoom}
+            />
+            <div className={styles.previewActions}>
+              <button className={styles.adjustPreviewButton} type="button" onClick={openThumbnailCrop}>
+                Ajustar posição
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange((current) => ({ ...current, thumbnailUrl: '', thumbnailCrop: { x: 50, y: 50, zoom: 1 } }))}
+              >
+                Remover miniatura
+              </button>
+            </div>
           </div>
         )}
 
@@ -1612,6 +1839,7 @@ function ContentManagement({
           isSaving={isSaving}
           createLabel={form.published ? 'Publicar conteúdo' : 'Guardar oculto'}
           updateLabel="Atualizar conteúdo"
+          actionNotice={actionNotice}
           onCancel={onCancel}
         />
       </form>
@@ -1641,9 +1869,15 @@ function ContentManagement({
                   onClick={() => onPreview(item)}
                 >
                   {item.thumbnailUrl || item.type === 'Foto' ? (
-                    <img src={item.thumbnailUrl ?? item.mediaUrl} alt="" />
+                    <img
+                      src={item.thumbnailUrl ?? item.mediaUrl}
+                      alt=""
+                      style={item.thumbnailUrl ? imageCropStyle(item.thumbnailPosition, item.thumbnailZoom) : undefined}
+                    />
                   ) : (
-                    <span>Vídeo</span>
+                    <video aria-hidden="true" muted playsInline preload="metadata">
+                      <source src={videoFirstFrameSource(item.mediaUrl)} />
+                    </video>
                   )}
                   {item.type === 'Vídeo' && <span className={styles.videoMarker}>▶</span>}
                 </button>
@@ -1682,6 +1916,7 @@ function ContactManagement({
   onDelete,
   onReorder,
   onToggleVisibility,
+  actionNotice,
 }: {
   form: ContactFormState
   isEditing: boolean
@@ -1694,6 +1929,7 @@ function ContactManagement({
   onDelete: (contact: Contact) => Promise<void>
   onReorder: (contactIds: number[]) => Promise<void>
   onToggleVisibility: (contact: Contact) => Promise<void>
+  actionNotice: Notice | null
 }) {
   const field = contactField(form.type)
 
@@ -1763,6 +1999,7 @@ function ContactManagement({
           isSaving={isSaving}
           createLabel="Adicionar contacto"
           updateLabel="Atualizar contacto"
+          actionNotice={actionNotice}
           onCancel={onCancel}
         />
       </form>
@@ -1945,28 +2182,89 @@ function FormHeading({
   )
 }
 
+function ImageCropDialog({
+  dialog,
+  onClose,
+}: {
+  dialog: ImageCropDialogState
+  onClose: () => void
+}) {
+  const [draftCrop, setDraftCrop] = useState(dialog.crop)
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  function saveCrop() {
+    dialog.onSave(draftCrop)
+    onClose()
+  }
+
+  return (
+    <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
+      <div
+        aria-label={dialog.title}
+        aria-modal="true"
+        className={[styles.cropDialog, dialog.previewMode === 'profileHeroBackground' ? styles.heroCropDialog : ''].filter(Boolean).join(' ')}
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <ImageCropEditor
+          crop={draftCrop}
+          description={dialog.description}
+          aspectRatio={dialog.aspectRatio}
+          comparisonPreviews={dialog.comparisonPreviews}
+          previewMode={dialog.previewMode}
+          shape={dialog.shape}
+          src={dialog.src}
+          title={dialog.title}
+          onChange={setDraftCrop}
+        />
+        <div className={styles.cropDialogActions}>
+          <button type="button" onClick={saveCrop}>Aplicar enquadramento</button>
+          <button className={styles.cancelButton} type="button" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function FormActions({
   isEditing,
   isSaving,
   createLabel,
   updateLabel,
+  actionNotice,
   onCancel,
 }: {
   isEditing: boolean
   isSaving: boolean
   createLabel: string
   updateLabel: string
+  actionNotice?: Notice | null
   onCancel: () => void
 }) {
   return (
-    <div className={styles.formActions}>
-      <button disabled={isSaving} type="submit">
-        {isSaving ? 'A guardar...' : isEditing ? updateLabel : createLabel}
-      </button>
-      {isEditing && (
-        <button className={styles.cancelButton} disabled={isSaving} type="button" onClick={onCancel}>
-          Cancelar edição
+    <div className={styles.formActionsGroup}>
+      <div className={styles.formActions}>
+        <button disabled={isSaving} type="submit">
+          {isSaving ? 'A guardar...' : isEditing ? updateLabel : createLabel}
         </button>
+        {isEditing && (
+          <button className={styles.cancelButton} disabled={isSaving} type="button" onClick={onCancel}>
+            Cancelar edição
+          </button>
+        )}
+      </div>
+      {actionNotice && (
+        <p className={[styles.formActionNotice, styles[actionNotice.type]].join(' ')} role={actionNotice.type === 'error' ? 'alert' : 'status'}>
+          {actionNotice.text}
+        </p>
       )}
     </div>
   )
