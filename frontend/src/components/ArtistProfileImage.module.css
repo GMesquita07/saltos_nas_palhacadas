@@ -1,0 +1,83 @@
+.root {
+  --artist-profile-image-size: 152px;
+  --artist-profile-image-layout-size: var(--artist-profile-image-size);
+  --artist-profile-image-scale: 1;
+  --artist-profile-image-border: rgb(255 255 255 / 18%);
+  --artist-profile-image-background: #e8ded0;
+  --artist-profile-image-color: var(--color-muted);
+  --artist-profile-image-shadow: 0 18px 40px rgb(0 0 0 / 32%);
+  --artist-profile-image-font-size: 38px;
+
+  display: inline-grid;
+  width: var(--artist-profile-image-layout-size);
+  place-items: start;
+  aspect-ratio: 1;
+  vertical-align: middle;
+}
+
+.surface {
+  display: block;
+  width: var(--artist-profile-image-size);
+  aspect-ratio: 1;
+  transform: scale(var(--artist-profile-image-scale));
+  transform-origin: top left;
+}
+
+.frame {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--artist-profile-image-border);
+  color: var(--artist-profile-image-color);
+  background: var(--artist-profile-image-background);
+  box-shadow: var(--artist-profile-image-shadow);
+  font: 700 var(--artist-profile-image-font-size) / 1 var(--font-display, inherit);
+}
+
+.card {
+  --artist-profile-image-size: 190px;
+  --artist-profile-image-border: var(--border);
+  --artist-profile-image-background: var(--surface-muted);
+  --artist-profile-image-color: var(--text-muted);
+  --artist-profile-image-shadow: none;
+  --artist-profile-image-font-size: 36px;
+}
+
+.heroDesktop,
+.heroResponsive {
+  --artist-profile-image-size: 152px;
+}
+
+.heroMobile {
+  --artist-profile-image-size: 82px;
+  --artist-profile-image-font-size: 24px;
+}
+
+@media (max-width: 1020px) {
+  .heroResponsive {
+    --artist-profile-image-size: 118px;
+    --artist-profile-image-font-size: 32px;
+  }
+}
+
+@media (max-width: 760px) {
+  .heroResponsive {
+    --artist-profile-image-size: 82px;
+    --artist-profile-image-font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroResponsive {
+    --artist-profile-image-size: 96px;
+    --artist-profile-image-font-size: 28px;
+  }
+}
+
+:global(html[data-theme='light']) .heroDesktop,
+:global(html[data-theme='light']) .heroMobile,
+:global(html[data-theme='light']) .heroResponsive {
+  --artist-profile-image-border: var(--border-strong);
+  --artist-profile-image-background: #e8ded0;
+  --artist-profile-image-color: var(--text-muted);
+  --artist-profile-image-shadow: 0 18px 42px rgb(24 31 37 / 14%);
+}

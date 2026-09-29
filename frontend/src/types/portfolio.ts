@@ -10,6 +10,8 @@ export type PortfolioItem = {
   eventDateIso: string
   mediaUrl: string
   thumbnailUrl?: string
+  thumbnailPosition?: string
+  thumbnailZoom?: number
 }
 
 export type AdminPortfolioItem = PortfolioItem & {

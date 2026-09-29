@@ -1,13 +1,17 @@
 import { apiClient } from './apiClient'
+import { mapMaterial, type ApiMaterial } from './materialMapper'
 import type { CreateMaterialInput, Material, UpdateMaterialInput } from '../types/material'
 
-export function getMaterials() {
-  return apiClient<Material[]>('/materials', { cache: 'no-store' })
+export async function getMaterials() {
+  const materials = await apiClient<ApiMaterial[]>('/materials', { cache: 'no-store' })
+  return materials.map(mapMaterial)
 }
 
-export function getAdminMaterials(token: string) {
-  return apiClient<Material[]>('/admin/materials', { cache: 'no-store' }, token)
+export async function getAdminMaterials(token: string) {
+  const materials = await apiClient<ApiMaterial[]>('/admin/materials', { cache: 'no-store' }, token)
+  return materials.map(mapMaterial)
 }
+
 
 export function createMaterial(input: CreateMaterialInput, token: string) {
   return apiClient<Material>('/admin/materials', {

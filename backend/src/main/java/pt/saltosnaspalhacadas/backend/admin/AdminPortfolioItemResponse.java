@@ -12,6 +12,8 @@ public record AdminPortfolioItemResponse(
         LocalDate eventDate,
         String mediaUrl,
         String thumbnailUrl,
+        String thumbnailPosition,
+        double thumbnailZoom,
         int displayOrder,
         boolean published) {
 
@@ -24,6 +26,8 @@ public record AdminPortfolioItemResponse(
                 item.getEventDate(),
                 item.getMediaUrl(),
                 item.getThumbnailUrl(),
+                item.getThumbnailPosition(),
+                item.getThumbnailZoom(),
                 item.getDisplayOrder(),
                 item.isPublished());
     }

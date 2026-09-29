@@ -79,6 +79,25 @@ test('force refresh bypasses memory cache and asks fetch to reload HTTP cache', 
   assert.equal(calls.length, 2)
 })
 
+test('deduplicates concurrent force refreshes after invalidation', async () => {
+  const forced = deferred<string>()
+  const calls: RequestInit[] = []
+  const cache = createPublicRequestCache<string>((options) => {
+    calls.push(options)
+    return forced.promise
+  })
+
+  const firstForced = cache.get({ force: true })
+  const secondForced = cache.get({ force: true })
+
+  assert.equal(firstForced, secondForced)
+  assert.deepEqual(calls, [{ cache: 'reload' }])
+
+  forced.resolve('fresh')
+  assert.equal(await firstForced, 'fresh')
+  assert.equal(await cache.get(), 'fresh')
+})
+
 test('stale request cannot repopulate cache after force refresh', async () => {
   const stale = deferred<string>()
   const fresh = deferred<string>()

@@ -49,33 +49,26 @@
 
 .heroBackdrop {
   position: absolute;
-  z-index: -3;
+  z-index: -2;
   inset: 0;
-  background-position: center 38%;
-  background-repeat: no-repeat;
-  background-size: cover;
-  filter: saturate(.82) contrast(1.08);
-  opacity: .72;
-  transform: scale(1.025);
   pointer-events: none;
 }
 
 .hero::after {
   position: absolute;
-  z-index: -2;
+  z-index: -1;
   inset: 0;
   background:
     linear-gradient(
       90deg,
-      rgb(4 7 9 / 97%) 0%,
-      rgb(4 7 9 / 93%) 20%,
-      rgb(4 8 11 / 84%) 36%,
-      rgb(4 8 11 / 68%) 52%,
-      rgb(4 8 11 / 48%) 68%,
-      rgb(4 8 11 / 34%) 84%,
-      rgb(4 8 11 / 42%) 100%
+      rgb(4 8 12 / 92%) 0%,
+      rgb(4 8 12 / 86%) 34%,
+      rgb(4 8 12 / 58%) 56%,
+      rgb(4 8 12 / 20%) 78%,
+      rgb(4 8 12 / 12%) 100%
     ),
-    linear-gradient(180deg, rgb(0 0 0 / 6%), rgb(0 0 0 / 42%));
+    linear-gradient(180deg, rgb(0 0 0 / 2%), rgb(0 0 0 / 18%));
+  pointer-events: none;
   content: '';
 }
 
@@ -92,50 +85,41 @@
   pointer-events: none;
 }
 
-.profileImage {
-  display: grid;
-  width: 152px;
-  place-items: center;
-  aspect-ratio: 1;
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
-
-.profileImageFrame {
-  width: 100%;
-  height: 100%;
-  border: 1px solid rgb(255 255 255 / 18%);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 32%);
-}
-
-.heroCopy { min-width: 0; }
 
 .role {
-  margin: 0 0 10px;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  margin: 0 0 12px;
+  border: 1px solid rgb(134 207 245 / 32%);
+  border-radius: var(--radius-pill);
+  padding: 5px 9px;
   color: #86cff5;
-  font-size: .74rem;
-  font-weight: 820;
-  letter-spacing: .18em;
+  background: rgb(22 139 208 / 16%);
+  font-size: .82rem;
+  font-weight: 840;
+  letter-spacing: .16em;
+  line-height: 1;
   text-transform: uppercase;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 32%);
 }
 
 .hero h1 {
   margin: 0;
-  color: white;
+  color: #ffffff;
   font-size: clamp(3.1rem, 5.4vw, 5.2rem);
   line-height: .96;
   letter-spacing: -.055em;
-  background: linear-gradient(90deg, #fff 0%, #fff 48%, #86cff5 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+  text-shadow: 0 3px 22px rgb(0 0 0 / 46%);
 }
 
-.heroDescription {
-  max-width: 590px;
-  margin: 18px 0 0;
-  color: rgb(247 247 243 / 76%);
-  font-size: .98rem;
-  line-height: 1.72;
-}
 
 .socialLinks {
   display: flex;
@@ -362,6 +346,33 @@
 
 .profileNav a:first-child { color: #a9dcf6; }
 
+.aboutSection {
+  display: grid;
+  grid-template-columns: minmax(160px, .34fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin: -22px 0 52px;
+  padding: 30px 0 34px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.aboutHeading h2 {
+  margin: 0;
+  color: white;
+  font-size: clamp(1.9rem, 3vw, 2.55rem);
+  letter-spacing: -.035em;
+}
+
+.aboutCopy {
+  max-width: 860px;
+  margin: 0;
+  color: rgb(247 247 243 / 72%);
+  font-size: clamp(1rem, 1.25vw, 1.16rem);
+  line-height: 1.78;
+}
+
+.aboutSection,
 .eventsSection,
 .profileExperience :global(#reviews-title) {
   scroll-margin-top: 154px;
@@ -474,8 +485,6 @@
     grid-template-columns: 118px minmax(0, 1fr);
   }
 
-  .profileImage { width: 118px; }
-
   .featuredVideo {
     grid-column: 1 / -1;
     width: 100%;
@@ -495,8 +504,6 @@
     gap: 17px;
     padding: 22px;
   }
-
-  .profileImage { width: 82px; }
 
   .hero h1 { font-size: clamp(2.15rem, 11vw, 3.25rem); }
 
@@ -525,6 +532,18 @@
   .profileNav a,
   .profileNav button { flex: 0 0 auto; }
 
+  .aboutSection {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: -18px 0 42px;
+    padding: 24px 0 28px;
+  }
+
+  .aboutCopy {
+    font-size: 1rem;
+    line-height: 1.72;
+  }
+
   .portfolioHeader {
     align-items: flex-start;
     flex-direction: column;
@@ -536,8 +555,6 @@
 @media (max-width: 480px) {
   .hero,
   .heroWithVideo { grid-template-columns: 1fr; }
-
-  .profileImage { width: 96px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -549,13 +566,11 @@
   .socialLink { transition: none; }
 }
 :global(html[data-theme='light']) .back,
-:global(html[data-theme='light']) .heroCopy > p:last-of-type,
 :global(html[data-theme='light']) .feedback { color: #626970 !important; }
 :global(html[data-theme='light']) .hero {
   border-color: #dfe3e8 !important;
   box-shadow: 0 20px 52px rgb(26 33 39 / 8%) !important;
 }
-:global(html[data-theme='light']) .hero h1,
 :global(html[data-theme='light']) .portfolioHeader h2,
 :global(html[data-theme='light']) .monthGroup h3 { color: #171a1d !important; }
 :global(html[data-theme='light']) .socialLink {
@@ -590,28 +605,12 @@
   box-shadow: 0 22px 56px rgb(26 33 39 / 10%) !important;
 }
 
-:global(html[data-theme='light']) .hero::before {
-  background:
-    linear-gradient(
-      90deg,
-      rgb(255 255 255 / 94%) 0%,
-      rgb(255 255 255 / 88%) 38%,
-      rgb(255 255 255 / 54%) 68%,
-      rgb(255 255 255 / 18%) 100%
-    ) !important;
-}
 
-:global(html[data-theme='light']) .hero h1,
-:global(html[data-theme='light']) .heroCopy h1,
 :global(html[data-theme='light']) .portfolioHeader h2,
 :global(html[data-theme='light']) .monthGroup h3 {
   color: #171a1d !important;
 }
 
-:global(html[data-theme='light']) .heroCopy > p,
-:global(html[data-theme='light']) .heroCopy > p:last-of-type {
-  color: #4f5860 !important;
-}
 
 :global(html[data-theme='light']) .socialLink {
   border-color: #d7dce1 !important;
@@ -682,20 +681,6 @@
   background-color: #ffffff !important;
 }
 
-:global(html[data-theme='light']) .hero::before {
-  background:
-    linear-gradient(
-      90deg,
-      rgb(255 255 255 / 94%) 0%,
-      rgb(255 255 255 / 87%) 40%,
-      rgb(255 255 255 / 58%) 70%,
-      rgb(255 255 255 / 24%) 100%
-    ) !important;
-}
-
-:global(html[data-theme='light']) .heroCopy > p {
-  color: #4d565e !important;
-}
 
 :global(html[data-theme='light']) .stats,
 :global(html[data-theme='light']) .statsBar,
@@ -735,24 +720,13 @@
   background-color: #05090c !important;
 }
 
-.hero::before,
-:global(html[data-theme='light']) .hero::before,
-:global(html[data-theme='dark']) .hero::before {
-  background: linear-gradient(90deg, rgb(5 9 12 / 88%), rgb(5 9 12 / 70%), rgb(5 9 12 / 32%)) !important;
-}
 
 .hero h1,
 .heroCopy h1,
-.heroCopy > p,
-.heroCopy > p:last-of-type,
 :global(html[data-theme='light']) .hero h1,
 :global(html[data-theme='light']) .heroCopy h1,
-:global(html[data-theme='light']) .heroCopy > p,
-:global(html[data-theme='light']) .heroCopy > p:last-of-type,
 :global(html[data-theme='dark']) .hero h1,
-:global(html[data-theme='dark']) .heroCopy h1,
-:global(html[data-theme='dark']) .heroCopy > p,
-:global(html[data-theme='dark']) .heroCopy > p:last-of-type {
+:global(html[data-theme='dark']) .heroCopy h1 {
   color: #ffffff !important;
 }
 
@@ -824,38 +798,12 @@
   box-shadow: var(--shadow-md) !important;
 }
 
-:global(html[data-theme='light']) .heroBackdrop {
-  filter: saturate(1.12) contrast(1.08) brightness(.98);
-  opacity: .82;
-}
 
-:global(html[data-theme='light']) .hero::after {
-  background:
-    linear-gradient(
-      90deg,
-      rgb(255 255 255 / 80%) 0%,
-      rgb(255 255 255 / 74%) 20%,
-      rgb(255 255 255 / 62%) 36%,
-      rgb(255 255 255 / 46%) 52%,
-      rgb(255 255 255 / 30%) 68%,
-      rgb(255 255 255 / 18%) 84%,
-      rgb(255 255 255 / 26%) 100%
-    ),
-    linear-gradient(180deg, rgb(245 247 249 / 6%), rgb(245 247 249 / 20%)) !important;
-}
 
 :global(html[data-theme='light']) .heroGlow {
   background: rgb(22 139 208 / 10%) !important;
 }
 
-:global(html[data-theme='light']) .profileImageFrame {
-  border-color: var(--border-strong) !important;
-  color: var(--text-muted) !important;
-  background: #e8ded0 !important;
-  box-shadow: 0 18px 42px rgb(24 31 37 / 14%) !important;
-}
-
-:global(html[data-theme='light']) .role,
 :global(html[data-theme='light']) .hero :global(.eyebrow),
 :global(html[data-theme='light']) .sectionKicker {
   color: var(--interactive-hover) !important;
@@ -863,16 +811,11 @@
 
 :global(html[data-theme='light']) .hero h1,
 :global(html[data-theme='light']) .heroCopy h1 {
-  color: var(--text-primary) !important;
+  color: #ffffff !important;
   background: none !important;
-  -webkit-text-fill-color: currentColor !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
-:global(html[data-theme='light']) .heroCopy > p,
-:global(html[data-theme='light']) .heroCopy > p:last-of-type,
-:global(html[data-theme='light']) .heroDescription {
-  color: var(--text-secondary) !important;
-}
 
 :global(html[data-theme='light']) .socialLink {
   border-color: var(--border) !important;
@@ -971,4 +914,33 @@
 
 .back:hover svg {
   transform: translateX(-2px);
+}
+
+
+.aboutSection,
+:global(html[data-theme='dark']) .aboutSection {
+  border-color: rgb(255 255 255 / 10%) !important;
+}
+
+.aboutHeading h2,
+:global(html[data-theme='dark']) .aboutHeading h2 {
+  color: #ffffff !important;
+}
+
+.aboutCopy,
+:global(html[data-theme='dark']) .aboutCopy {
+  color: rgb(247 247 243 / 72%) !important;
+}
+
+
+:global(html[data-theme='light']) .aboutSection {
+  border-color: var(--border) !important;
+}
+
+:global(html[data-theme='light']) .aboutHeading h2 {
+  color: var(--text-primary) !important;
+}
+
+:global(html[data-theme='light']) .aboutCopy {
+  color: var(--text-secondary) !important;
 }

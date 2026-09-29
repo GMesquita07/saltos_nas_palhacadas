@@ -989,3 +989,130 @@
 .back:hover svg {
   transform: translateX(-2px);
 }
+
+.avatarControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adjustPhotoButton {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.adjustPhotoButton:hover:not(:disabled) {
+  border-color: var(--interactive);
+  color: var(--interactive-hover);
+  background: var(--interactive-soft);
+}
+
+.uploadButton,
+:global(html[data-theme='light']) .uploadButton,
+:global(html[data-theme='dark']) .uploadButton {
+  border-color: var(--interactive) !important;
+  color: #ffffff !important;
+  background: var(--interactive) !important;
+}
+
+.uploadButton span,
+:global(html[data-theme='light']) .uploadButton span,
+:global(html[data-theme='dark']) .uploadButton span {
+  color: #ffffff !important;
+}
+
+.uploadButton:hover,
+.uploadButton:focus-within,
+:global(html[data-theme='light']) .uploadButton:hover,
+:global(html[data-theme='light']) .uploadButton:focus-within,
+:global(html[data-theme='dark']) .uploadButton:hover,
+:global(html[data-theme='dark']) .uploadButton:focus-within {
+  border-color: var(--interactive-hover) !important;
+  color: #ffffff !important;
+  background: var(--interactive-hover) !important;
+}
+
+.actions .cancelEditButton,
+:global(html[data-theme='light']) .actions .cancelEditButton,
+:global(html[data-theme='dark']) .actions .cancelEditButton {
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  background: #dc2626 !important;
+}
+
+.actions .cancelEditButton:hover:not(:disabled),
+:global(html[data-theme='light']) .actions .cancelEditButton:hover:not(:disabled),
+:global(html[data-theme='dark']) .actions .cancelEditButton:hover:not(:disabled) {
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  background: #b91c1c !important;
+}
+
+.cropDialogBackdrop {
+  position: fixed;
+  z-index: 2147483001;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(3 8 14 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.cropDialog {
+  display: grid;
+  width: min(620px, 100%);
+  max-height: min(88dvh, 760px);
+  overflow: auto;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  color: var(--text-primary);
+  background: var(--surface);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 38%);
+}
+
+.cropDialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cropDialogActions button {
+  min-height: 40px;
+  border: 1px solid var(--interactive);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--interactive);
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 760;
+}
+
+.cropDialogActions button:hover:not(:disabled) {
+  border-color: var(--interactive-hover);
+  background: var(--interactive-hover);
+}
+
+.cropDialogActions .cropDialogCancel {
+  border-color: var(--border);
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+}
+
+.cropDialogActions .cropDialogCancel:hover:not(:disabled) {
+  border-color: var(--interactive);
+  color: var(--interactive-hover);
+  background: var(--interactive-soft);
+}
