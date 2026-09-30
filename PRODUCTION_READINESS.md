@@ -9,8 +9,8 @@ Last verified: 2026-09-30.
 | Área | Estado |
 | --- | --- |
 | Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
-| Backend Google Cloud Run | DONE; health UP; sem ERROR logs recentes |
-| Neon PostgreSQL | DONE; último Flyway operacional confirmado V23; `main` inclui V24/V25 para validação no próximo deploy/backend |
+| Backend Google Cloud Run | DONE; health UP; rollout validado |
+| Neon PostgreSQL | DONE; Flyway V25 operacionalmente confirmado com 25 migrations validadas |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
@@ -20,7 +20,7 @@ Last verified: 2026-09-30.
 | Backups/restore drill | DONE/VALIDATED |
 | CI/PostgreSQL CI/CodeQL final | DONE |
 | Smoke final de produção | DONE |
-| Final merge para `main` | DONE; PR #82 contém a release Artist media/crop UX em código/main |
+| Final merge para `main` | DONE; Artist media/crop UX validada em produção em 2026-09-30 |
 
 ## Checklist Técnico
 
@@ -76,7 +76,7 @@ Last verified: 2026-09-30.
 5. Executar Feature 7 Accessibility.
 6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
 
-Nota operacional: `main` inclui migrations V24/V25, mas a confirmação da sua aplicação em produção deve ser feita apenas no deploy/backend validation. Não atualizar revisão Cloud Run, imagem Docker ou versão Flyway aplicada sem evidência.
+Nota operacional: V25 está confirmado em produção. A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não documentar essa revisão como tendo executado V24/V25.
 
 ## Render
 

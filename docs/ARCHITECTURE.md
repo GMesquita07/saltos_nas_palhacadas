@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- |
 | Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL. O código em `main` inclui Flyway até V25; o último estado operacional confirmado em produção é V23 até nova validação de deploy/backend. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL. Código e produção estão confirmados até Flyway V25, com 25 migrations validadas. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
 | Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |

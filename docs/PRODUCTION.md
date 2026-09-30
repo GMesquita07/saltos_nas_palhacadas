@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-09-23.
+Last verified: 2026-09-30.
 
 ## Arquitetura Real
 
@@ -46,9 +46,11 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | GCP project | `saltos-prod-gmesquita` |
 | Região | `europe-west1` |
 | Cloud Run service | `saltos-backend` |
-| Imagem/código da aplicação | `backend:55056d5` |
-| Revisão atual | `saltos-backend-00017-88t` |
+| Imagem/código da aplicação | `backend:ea3eddf` |
+| Revisão atual | `saltos-backend-00019-jzp` |
 | Tráfego | 100% nesta revisão |
+| Cloud Build | `34c3f97c-14b0-42bc-99f5-a5ddc9ed4281` |
+| Image digest | `sha256:537486d2e2c12f59039383052944d0326cf0c21531a84c4a912063b4a55f14fb` |
 | Scaling | scale-to-zero enabled, max 2 |
 | CPU/memória | 1 CPU, 1 GiB |
 | Concurrency | 80 |
@@ -56,7 +58,7 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | Billing | request-based |
 | Health | `/actuator/health` |
 
-O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00017-88t` serve 100% do tráfego. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
+O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00019-jzp` serve 100% do tráfego. O primeiro pedido manual de health durante o rollout devolveu um HTTP 503 transitório antes da readiness; pedidos seguintes devolveram UP. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
 
 - `spring.jpa.hibernate.ddl-auto=validate`
 - `app.security.hsts.enabled=true` por default
@@ -73,11 +75,11 @@ O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-
 | Database | `neondb` |
 | Região | AWS Frankfurt / `eu-central-1` |
 | SSL | Obrigatório |
-| Schema | Flyway V23 |
+| Schema | Flyway V25 |
 | PITR/history observado no plano atual | 6 horas |
 | Snapshot manual durável | `pre-launch-2026-09-16` |
 
-Flyway validou 23 migrations. Produção estava em V22 e aplicou V23, cuja alteração é `add profile hero background`; produção está agora em Flyway V23.
+Flyway validou 25 migrations. A versão atual do schema `public` é 25 e o schema está up to date, sem migrations pendentes. V24/V25 estão operacionalmente presentes em produção; a revisão `saltos-backend-00019-jzp` apenas confirmou a base já em V25 e não deve ser documentada como a revisão que aplicou V24/V25.
 
 Não documentar passwords, connection strings completas ou hosts privados.
 
@@ -263,18 +265,19 @@ Concluído:
 
 - Feature 4 notifications/email DONE: PR #27 -> `dev`, PR #29 -> `main`;
 - Global UI Redesign: PR #44 -> `dev`, PR #45 -> `main`, seguido de fixes visuais posteriores;
-- backend de produção atualizado para `main` em `55056d5`, imagem `backend:55056d5`, revisão `saltos-backend-00017-88t`;
-- Flyway em produção validado até V23;
+- backend de produção atualizado para source release `ea3eddf`, imagem `backend:ea3eddf`, revisão `saltos-backend-00019-jzp`;
+- Flyway em produção validado até V25, com 25 migrations confirmadas e schema `public` up to date;
 - CI, PostgreSQL CI e CodeQL passaram na release final `main`;
 - Cloudflare Pages production deployment vem de `main`;
 - produção manual smoke testing passou;
 - Turnstile funciona em produção;
-- R2 automated backup executions sucederam.
+- R2 automated backup executions sucederam;
+- Artist media/crop UX está em produção e validada: `/api/v1/profiles` devolve `heroBackgroundImagePosition`/`heroBackgroundImageZoom`, `/api/v1/profiles/dj-kidg/portfolio` devolve `thumbnailPosition`/`thumbnailZoom`, e `/api/v1/materials` respondeu com sucesso com `[]` por existirem 0 materiais.
 
 Ainda pós-lançamento:
 
 - confirmação administrativa .PT externa;
-- Google Search Console ainda não configurado; submeter sitemap;
+- Search Console e sitemap concluídos; continuar monitorização de indexação;
 - melhorias visuais/frontend futuras;
 - otimização futura de media/assets estáticos.
 

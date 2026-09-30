@@ -4,24 +4,23 @@ Last updated: 2026-09-30.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00017-88t` serve 100% do tráfego com imagem `backend:55056d5`, e o último estado operacional confirmado de Flyway em produção é V23.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o apex redireciona com HTTP 301 para `www`, o backend está UP, a revisão Cloud Run `saltos-backend-00019-jzp` serve 100% do tráfego com imagem `backend:ea3eddf`, e Flyway confirmou produção em V25 com 25 migrations validadas.
 
 Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media e Performance 6.2 Image Delivery / LCP estão DONE; a última medição documentada mantém PageSpeed 98 mobile / 100 desktop.
 
-A alteração de runtime mais recente merged em `main` é a release Artist media/crop UX, promovida por PR #81 (`fix/artist-lightbox-desktop` -> `dev`) e PR #82 (`dev` -> `main`). Esta release inclui melhorias do perfil/artista em desktop, MediaLightbox desktop, hero visual, crop/enquadramento consistente e persistente para avatars/backgrounds/thumbnails/materiais, preview de vídeo, invalidação/cache de portfolio e migrations V24/V25 no código.
+A alteração de runtime mais recente em produção é a release Artist media/crop UX, com source release `ea3eddf`. Esta release inclui melhorias do perfil/artista em desktop, MediaLightbox desktop, hero visual, crop/enquadramento consistente e persistente para avatars/backgrounds/thumbnails/materiais, preview de vídeo, invalidação/cache de portfolio e migrations V24/V25 operacionalmente confirmadas.
 
-Não assumir que V24/V25 já foram aplicadas na base de dados de produção nem que existe nova revisão Cloud Run sem validação operacional posterior. A sequência real de próximos trabalhos é: UX de link de reset expirado; email pessoal/operacional do artista quando existe booking desse artista; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não há evidência de que tenha sido essa revisão a executar V24/V25. A sequência real de próximos trabalhos mantém-se: UX de link de reset expirado; email pessoal/operacional do artista quando existe booking desse artista; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
 | Área | Estado | Produção? | Validado? | Próximo passo |
 | --- | --- | --- | --- | --- |
 | Frontend Cloudflare Pages | DONE | Sim, branch `main` | Sim | Monitorização pós-lançamento |
-| Backend Cloud Run | DONE | Sim | Sim | Health UP; monitorização pós-lançamento |
+| Backend Cloud Run | DONE | Sim | Sim | Revisão `saltos-backend-00019-jzp` com health UP; monitorização pós-lançamento |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
-| Flyway V1-V23 | DONE | Sim | Sim | Último estado operacional confirmado em produção; V23 adiciona profile hero background |
-| Flyway V24/V25 | DONE em código/main | Não assumido | Pendente em produção | Presentes em `main`; validar aplicação no próximo deploy backend/Flyway antes de marcar produção |
-| Artist media/crop UX | DONE em código/main | Não assumido | Validado em PR; pendente em produção | PR #81/#82 merged; confirmar deploy frontend/backend e Flyway V24/V25 quando aplicável |
+| Flyway V1-V25 | DONE | Sim | Sim | Produção confirmada em V25; 25 migrations validadas e schema `public` up to date |
+| Artist media/crop UX | DONE | Sim | Sim | Release em produção validada; campos de hero background e thumbnail confirmados; `/materials` respondeu com sucesso mas atualmente não existem materiais publicados |
 | Flyway V21 profile notification email | DONE | Sim | Sim | Feature 4 notifications/email; PR #27 -> `dev`; PR #29 -> `main` |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |
 | R2 backup Cloud Run Job | DONE | Sim | Sim | Monitorizar Scheduler diário e retenção |
@@ -58,8 +57,8 @@ Não assumir que V24/V25 já foram aplicadas na base de dados de produção nem 
 
 | Branch / PR | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | contém PR #82 | Production branch; a release Artist media/crop UX está merged no código, mas produção operacional não deve ser inferida sem validação posterior |
-| `dev` | integrado | Branch de integração; contém PR #81 e receberá este housekeeping |
+| `main` | `ea3eddf` | Source release em produção; Artist media/crop UX operacionalmente validada |
+| `dev` | integrado | Branch de integração |
 | `fix/artist-lightbox-desktop` | integrado | PR #81 -> `dev`; Artist media/crop UX |
 | PR #82 `dev` -> `main` | integrado | Promoveu a release Artist media/crop UX para `main` |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
@@ -77,19 +76,21 @@ feat/production-launch
 
 Distinção importante:
 
-- código/imagem backend atualmente confirmados em produção: `backend:55056d5`;
-- Cloud Run revision confirmada: `saltos-backend-00017-88t`, a servir 100% do tráfego;
-- `/actuator/health` está UP no último estado operacional documentado;
+- source release atualmente confirmada em produção: `ea3eddf`;
+- imagem backend atualmente confirmada em produção: `backend:ea3eddf`;
+- image digest imutável: `sha256:537486d2e2c12f59039383052944d0326cf0c21531a84c4a912063b4a55f14fb`;
+- Cloud Run revision confirmada: `saltos-backend-00019-jzp`, a servir 100% do tráfego;
+- `/actuator/health` está UP; houve um HTTP 503 no primeiro pedido manual durante startup/rollout antes da prontidão, seguido de health UP;
 - Cloudflare Pages production branch é `main`;
-- último estado operacional confirmado de Flyway em produção: V23;
-- `main` já inclui V24/V25, mas a aplicação dessas migrations em produção fica pendente de deploy/backend validation;
+- Flyway em produção: 25 migrations validadas, schema `public` na versão 25 e up to date;
+- a revisão 00019 validou a base já em V25; não documentar como tendo executado V24/V25;
 - Feature 4 notifications/email está DONE e V21 está em produção;
 - Feature 5 SEO / Google está DONE: Search Console configurado, domain property `saltosnaspalhacadas.pt` verificada, sitemap enviado com 11 URLs descobertas, páginas públicas/perfis indexados e ProfilePage reconhecido;
 - Feature 6 Performance & Media foi promovida por PR #55 -> `dev` e PR #56 -> `main`; PageSpeed inicial pós-Feature 6 mediu 85 mobile e 100 desktop, com TBT 0 ms e LCP mobile 4.4 s;
 - Performance 6.2 Image Delivery / LCP foi promovida por PR #68 -> `dev` e PR #69 -> `main`; nova medição PageSpeed: 98 mobile / 100 desktop, LCP 2.3 s / 0.5 s, FCP 1.2 s / 0.3 s e TBT 0 ms;
 - Mobile UX Polish foi promovido por PR #59 -> `dev` e PR #60 -> `main` e validado em telemóvel;
 - o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; a seleção final do favicon desktop foi corrigida em PR #70 -> `dev` e PR #71 -> `main`;
-- Artist media/crop UX foi promovido por PR #81 -> `dev` e PR #82 -> `main`; inclui desktop profile/media/lightbox/hero/crop/thumbnails e preservação mobile/touch;
+- Artist media/crop UX foi promovido por PR #81 -> `dev` e PR #82 -> `main` e validado em produção em 2026-09-30; inclui desktop profile/media/lightbox/hero/crop/thumbnails e preservação mobile/touch; campos públicos de hero/portfolio confirmados e endpoint `/materials` validado com resposta vazia por existirem 0 materiais;
 - PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada;
 - o utilizador confirmou que o formulário de reset abre com um link antigo, mas o backend rejeita a submissão. O código verifica `expires_at` e `used_at` no POST; o pendente é UX de pré-validação e mensagem «Link inválido ou expirado» com pedido de novo link. Testes da fronteira dos 30 minutos e uso único continuam recomendados; não há falha de aceitação de token expirado confirmada.
 
@@ -98,20 +99,22 @@ Distinção importante:
 | Componente | Valor operacional documentável |
 | --- | --- |
 | Cloudflare Pages project | `saltos-nas-palhacadas-prod` |
-| Frontend runtime release SHA | `3e6d64275c2bd10238ae24d5e99f53f18f08ac76` (último runtime validado antes da release Artist media/crop UX; não substituir sem validação posterior) |
+| Source release | `ea3eddf` |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
 | Apex | `https://saltosnaspalhacadas.pt` redireciona 301 para `www` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
 | Cloud Run project | `saltos-prod-gmesquita` |
 | Região Cloud Run | `europe-west1` |
 | Service | `saltos-backend` |
-| Cloud Run revision | `saltos-backend-00017-88t` |
-| Imagem | `backend:55056d5` |
-| Código de produção backend | `main` em `55056d5`; revisão Cloud Run `saltos-backend-00017-88t` |
+| Cloud Run revision | `saltos-backend-00019-jzp` |
+| Imagem | `backend:ea3eddf` |
+| Código de produção backend | `main` em `ea3eddf`; revisão Cloud Run `saltos-backend-00019-jzp` |
 | Tráfego | 100% |
-| Health | UP |
+| Health | UP; primeiro pedido manual durante rollout devolveu 503 transitório antes da prontidão |
 | Recursos Cloud Run | 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero, startup CPU boost |
-| Flyway operacional confirmado | V23; `main` inclui V24/V25 ainda a validar no próximo deploy/backend validation |
+| Flyway operacional confirmado | V25; 25 migrations validadas, schema `public` up to date |
+| Cloud Build backend | `34c3f97c-14b0-42bc-99f5-a5ddc9ed4281` |
+| Image digest | `sha256:537486d2e2c12f59039383052944d0326cf0c21531a84c4a912063b4a55f14fb` |
 | Neon branch | `production/default` |
 | R2 buckets | `saltos-prod-public`, `saltos-prod-private` |
 | R2 backup bucket | `saltos-prod-backup` |
