@@ -60,5 +60,5 @@ Last verified: 2026-09-30.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
-- A base de dados está documentada no código até Flyway V25; produção operacional continua documentada separadamente como último estado validado.
+- A base de dados está documentada no código e operacionalmente confirmada em produção até Flyway V25.
 - Uploads públicos feitos pelo admin ainda não têm ownership persistente em `media_objects`; limpeza automática de media pública órfã/R2 fica como follow-up para evitar apagar URLs reutilizados.
