@@ -69,7 +69,7 @@ Validações de produção reportadas em 2026-09-16:
 | Turnstile | Admin login no domínio oficial validado; hostname production funciona |
 | Email Brevo | Forgot/reset password, booking recebido, booking aceite e booking cancelado validados |
 | Scheduler cleanup | Execução manual de `private-media-cleanup` sucedeu |
-| Scheduler reminders | Execução manual de `booking-reminders` sucedeu |
+| Scheduler reminders | Execução manual pós-release de `booking-reminders` entregou cliente/artista; segunda execução não duplicou emails |
 | Neon restore | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada; dados/Flyway inspecionados; branch temporária apagada |
 | R2 backup | Execução manual e via Scheduler sucederam; `rclone check` com 0 diferenças; restore de PNG validado |
 | Domínio | `www` live com HTTPS; apex 301 para `www` preserva query strings |
@@ -139,9 +139,9 @@ Validação final da release `main`:
 - GitHub Actions em `/`
 - periodicidade semanal
 
-## Reset Link UX: Validação Local
+## Reset Link UX: Validação Local + Produção
 
-Branch `fix/password-reset-expired-link-ux`, 2026-10-04; sem deploy ou teste de email real nesta tarefa.
+Implementação iniciada em 2026-10-04 e promovida por PR #89/#90. Em 2026-10-05 o endpoint de pré-validação respondeu 400 genérico a token inválido em produção e o domínio oficial mostrou «Link inválido ou expirado» sem expor o formulário, com CTA «Pedir novo link».
 
 Resultados locais: `./mvnw test` passou (132 testes, 0 falhas/erros/skips); `npm test` passou (87 testes, 0 falhas/skips); `npm run lint`, `npm run build` e `git diff --check` passaram.
 
@@ -149,9 +149,9 @@ Resultados locais: `./mvnw test` passou (132 testes, 0 falhas/erros/skips); `npm
 - `PasswordResetTokenTests`: instantes fixos antes/em/depois de `expiresAt`, com validade de 30 minutos; sem sleeps.
 - Frontend Node: contrato do endpoint e AbortSignal, HTTP 400 vs 429/503/rede/cancelamento, formulário e submissão só após validação, CTA pela rota existente, invalidação na submissão final e preservação de erros de campo em `ApiError`.
 - Regressão mantém contratos de forgot/reset e testes de headers Turnstile e routing legacy.
-- QA manual ainda necessário: desktop/mobile, light/dark, email real, retry e navegação durante pedido pendente. Não foi instalado browser/framework de testes adicional.
+- QA manual pós-release confirmou o caminho de token inválido no desktop/dark. Mobile/light, retry de falha transitória e navegação durante pedido pendente não foram repetidos nesta release; o fluxo base de email real já tinha sido validado anteriormente.
 
-## Reminders Cliente/Artista: Validação Local
+## Reminders Cliente/Artista: Validação Local + Produção
 
 Extensão da mesma branch, 2026-10-04. A implementação/testes de reset acima foram preservados.
 
@@ -159,8 +159,8 @@ Extensão da mesma branch, 2026-10-04. A implementação/testes de reset acima f
 - Casos adicionais: emails null/blank, ambos ausentes, cliente histórico já notificado, estados não aceites, limites hoje/+5, evento passado/+6, reagendamento, reaceitação e contraproposta. Reaplicar aceitação sem alterar data/horário não reinicia reminders.
 - `BookingReminderServiceTests` usa `Clock` fixo às 23:30 UTC no verão para comprovar o dia seguinte em `Europe/Lisbon`; sem sleeps. `EmailServiceTests` confirma que modo desativado/sem host não sinaliza sucesso.
 - `BookingIntegrationTests` mantém o percurso público/admin; email é mockado explicitamente e a janela do reminder foi isolada de outras fixtures. `MaintenanceControllerTests` preserva proteção da chave e contrato `processed`.
-- Suite Maven: **157 testes, 0 falhas, 0 erros, 0 ignorados; BUILD SUCCESS**. Flyway V26 aplicada no H2 de testes e schema validado; PostgreSQL CI ainda não executado nesta tarefa.
+- Suite Maven: **157 testes, 0 falhas, 0 erros, 0 ignorados; BUILD SUCCESS**. Flyway V26 aplicada no H2 de testes; PostgreSQL CI passou no PR #89 e no release PR #90 após retry de uma falha externa de download do Maven.
 - Frontend: **87 testes passaram**; lint e build passaram. A build usa sitemap estático quando não há URL absoluta da API configurada; não consultou produção.
 - `git diff --check`: passou. Sem novas dependências ou alterações às migrations históricas.
 
-Não foi enviado email real. O procedimento E2E de deploy/V26, Scheduler, SMTP/Brevo, duas mailboxes e reexecução está em [OPERATIONS.md](OPERATIONS.md#validar-reminders-clienteartista-após-deploy). Sucesso de SMTP é distinto de entrega final. Crash entre envio e commit continua a poder causar reenvio.
+Em produção, um booking de teste aceite dentro da janela foi processado por execução manual do Scheduler: o utilizador confirmou receção nas mailboxes de cliente e artista; uma segunda execução manual não gerou novos emails. A inspeção direta dos timestamps na BD não foi realizada nesta validação e o trigger automático das 09:00 não foi revalidado após a release. Sucesso SMTP continua distinto de entrega final; crash entre envio e commit pode causar reenvio.
