@@ -55,7 +55,7 @@ public class EmailService {
 
         if (!enabled || host.isBlank()) {
             log.info("Email preparado para {} com assunto '{}'", maskEmail(to), sanitizeHeader(subject));
-            return true;
+            return false;
         }
 
         try {

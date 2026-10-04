@@ -138,3 +138,29 @@ Validação final da release `main`:
 - Maven em `/backend`
 - GitHub Actions em `/`
 - periodicidade semanal
+
+## Reset Link UX: Validação Local
+
+Branch `fix/password-reset-expired-link-ux`, 2026-10-04; sem deploy ou teste de email real nesta tarefa.
+
+Resultados locais: `./mvnw test` passou (132 testes, 0 falhas/erros/skips); `npm test` passou (87 testes, 0 falhas/skips); `npm run lint`, `npm run build` e `git diff --check` passaram.
+
+- Backend: pré-validação pública 204/400, sem consumo, token inexistente/expirado/usado/conta inativa, input incompleto/malformado, nova emissão, POST final independente, reuso, race após pré-validação, rate limiting e ausência de Turnstile.
+- `PasswordResetTokenTests`: instantes fixos antes/em/depois de `expiresAt`, com validade de 30 minutos; sem sleeps.
+- Frontend Node: contrato do endpoint e AbortSignal, HTTP 400 vs 429/503/rede/cancelamento, formulário e submissão só após validação, CTA pela rota existente, invalidação na submissão final e preservação de erros de campo em `ApiError`.
+- Regressão mantém contratos de forgot/reset e testes de headers Turnstile e routing legacy.
+- QA manual ainda necessário: desktop/mobile, light/dark, email real, retry e navegação durante pedido pendente. Não foi instalado browser/framework de testes adicional.
+
+## Reminders Cliente/Artista: Validação Local
+
+Extensão da mesma branch, 2026-10-04. A implementação/testes de reset acima foram preservados.
+
+- `BookingReminderDeliveryIntegrationTests` usa a query e os serviços reais até `EmailService` mockado: destinatários, assuntos/corpos, timestamps persistidos, ambos com sucesso, falhas independentes, retry a +4 dias, múltiplos bookings e execução sobreposta sem duplicar.
+- Casos adicionais: emails null/blank, ambos ausentes, cliente histórico já notificado, estados não aceites, limites hoje/+5, evento passado/+6, reagendamento, reaceitação e contraproposta. Reaplicar aceitação sem alterar data/horário não reinicia reminders.
+- `BookingReminderServiceTests` usa `Clock` fixo às 23:30 UTC no verão para comprovar o dia seguinte em `Europe/Lisbon`; sem sleeps. `EmailServiceTests` confirma que modo desativado/sem host não sinaliza sucesso.
+- `BookingIntegrationTests` mantém o percurso público/admin; email é mockado explicitamente e a janela do reminder foi isolada de outras fixtures. `MaintenanceControllerTests` preserva proteção da chave e contrato `processed`.
+- Suite Maven: **157 testes, 0 falhas, 0 erros, 0 ignorados; BUILD SUCCESS**. Flyway V26 aplicada no H2 de testes e schema validado; PostgreSQL CI ainda não executado nesta tarefa.
+- Frontend: **87 testes passaram**; lint e build passaram. A build usa sitemap estático quando não há URL absoluta da API configurada; não consultou produção.
+- `git diff --check`: passou. Sem novas dependências ou alterações às migrations históricas.
+
+Não foi enviado email real. O procedimento E2E de deploy/V26, Scheduler, SMTP/Brevo, duas mailboxes e reexecução está em [OPERATIONS.md](OPERATIONS.md#validar-reminders-clienteartista-após-deploy). Sucesso de SMTP é distinto de entrega final. Crash entre envio e commit continua a poder causar reenvio.

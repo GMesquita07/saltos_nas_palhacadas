@@ -30,7 +30,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/media/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/support-chat").permitAll()
                         .requestMatchers(HttpMethod.POST, "/internal/maintenance/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/reset-password/validate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/media").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/profiles/*/reviews").authenticated()
                         .requestMatchers("/api/v1/auth/me/**", "/api/v1/auth/me", "/api/v1/favorites/**", "/api/v1/bookings/**").authenticated()

@@ -1,5 +1,5 @@
-import { apiClient } from './apiClient'
-import { turnstileHeaders } from './turnstileHeaders'
+import { apiClient } from './apiClient.ts'
+import { turnstileHeaders } from './turnstileHeaders.ts'
 import type { AuthSession, AuthUser, UserRole } from '../types/auth'
 
 type TokenResponse = {
@@ -87,6 +87,14 @@ export function forgotPassword(email: string, turnstileToken?: string): Promise<
     method: 'POST',
     headers: turnstileHeaders(turnstileToken),
     body: JSON.stringify({ email }),
+  })
+}
+
+export function validatePasswordResetToken(token: string, options: Pick<RequestInit, 'signal'> = {}): Promise<void> {
+  return apiClient<void>('/auth/reset-password/validate', {
+    method: 'POST',
+    signal: options.signal,
+    body: JSON.stringify({ token }),
   })
 }
 

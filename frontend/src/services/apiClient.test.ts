@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { validateUploadFileSize } from './apiClient.ts'
+import { ApiError, apiClient, validateUploadFileSize } from './apiClient.ts'
 
 const mib = 1024 * 1024
 
@@ -30,3 +30,38 @@ test('rejects videos over 30 MiB', () => {
 function file(type: string, size: number): Pick<File, 'size' | 'type'> {
   return { size, type }
 }
+
+test('HTTP failures retain status and remain compatible with Error consumers', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ detail: 'Link indisponível' }), { status: 400 }))
+  await assert.rejects(apiClient('/auth/reset-password/validate'), (error: unknown) => {
+    assert.ok(error instanceof Error)
+    assert.ok(error instanceof ApiError)
+    assert.equal(error.status, 400)
+    assert.equal(error.message, 'Link indisponível')
+    assert.deepEqual(error.fieldErrors, {})
+    return true
+  })
+})
+
+test('field validation errors remain distinguishable from token rejection', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({
+    detail: 'Campos inválidos', errors: { newPassword: 'Password demasiado longa' },
+  }), { status: 400 }))
+  await assert.rejects(apiClient('/auth/reset-password'), (error: unknown) => {
+    assert.ok(error instanceof ApiError)
+    assert.equal(error.message, 'Password demasiado longa')
+    assert.deepEqual(error.fieldErrors, { newPassword: 'Password demasiado longa' })
+    return true
+  })
+})
+
+test('401 keeps the existing login message and HTTP status', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 401 }))
+  await assert.rejects(apiClient('/auth/login'), { status: 401, message: 'Email ou palavra-passe inválidos.' })
+})
+
+test('network failures are not converted to HTTP token errors', async (t) => {
+  const failure = new TypeError('fetch failed')
+  t.mock.method(globalThis, 'fetch', async () => { throw failure })
+  await assert.rejects(apiClient('/auth/reset-password/validate'), (error) => error === failure)
+})

@@ -14,7 +14,8 @@ Last verified: 2026-09-30.
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
-| Booking reminder Scheduler | DONE/VALIDATED |
+| Booking reminder Scheduler | Invocação DONE/VALIDATED; entrega real do reminder E2E pendente |
+| Reminders cliente/artista | IN PROGRESS; V26 e implementação locais, sem deploy; entrega real de ambos ainda pendente |
 | Domínio final | DONE técnico; confirmação administrativa .PT pendente |
 | Brevo/SMTP | DONE/VALIDATED |
 | Backups/restore drill | DONE/VALIDATED |
@@ -70,7 +71,7 @@ Last verified: 2026-09-30.
 ## Pós-Lançamento Ainda Pendente
 
 1. Acompanhar confirmação administrativa .PT externa.
-2. Corrigir UX de link de reset expirado.
+2. Rever e promover a UX de link de reset expirado e os reminders cliente/artista (V26), implementados localmente em 2026-10-04; deploy e validação E2E em produção ainda pendentes.
 3. Validar/implementar email pessoal/operacional do artista quando existe booking desse artista.
 4. Melhorar UX da área de conta e notificações in-app.
 5. Executar Feature 7 Accessibility.

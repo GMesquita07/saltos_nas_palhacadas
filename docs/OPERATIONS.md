@@ -50,6 +50,21 @@ Verificações:
 - O backup usa OAuth para invocar o Cloud Run Job.
 - Execuções manuais dos três jobs foram validadas.
 
+### Validar Reminders Cliente/Artista Após Deploy
+
+A invocação do Scheduler foi confirmada historicamente; a receção dos reminders cliente/artista ainda não. A implementação V26 está apenas na branch local em 2026-10-04. Procedimento pendente, não executado nesta tarefa:
+
+1. Confirmar source/imagem/revisão efetivamente promovidos, health UP e Flyway V26 aplicada/validada. Manter cron Spring `-`, Scheduler às 09:00 `Europe/Lisbon` e `X-Maintenance-Key` sem divulgar a chave.
+2. Com destinatários de teste autorizados, criar/aceitar um booking dentro da janela de hoje a +5 dias e configurar `contactEmail` e `profile.notificationEmail`. Confirmar que SMTP está ativo. Não reutilizar emails de clientes reais para testes.
+3. Executar o job autorizado e verificar separadamente: resposta `processed`, logs SMTP/Brevo, `reminder_sent_at` e `artist_reminder_sent_at`, receção nas duas mailboxes (incluindo spam), assunto, horário e dados do booking. `processed` conta bookings com pelo menos um envio aceite, não destinatários nem entrega final.
+4. Executar novamente e confirmar ausência de novos emails e timestamps inalterados. Confirmar também o trigger automático das 09:00; execução manual não o substitui.
+5. Em ambiente controlado, simular falha de um destinatário; confirmar que o outro não recebe duplicados e que o pendente é tentado novamente no dia seguinte, sem ultrapassar o dia do evento. Validar reaceitação/reagendamento e exclusão de cancelados/recusados/pendentes/contrapropostos.
+6. Só depois registar a validação real e a evidência de ambos os destinatários; não inferir entrega pelo sucesso do endpoint.
+
+V26 não preenche retroativamente o timestamp do artista: bookings aceites na janela com cliente já notificado podem enviar apenas ao artista após deploy. Falhas são tentadas nas próximas execuções; destinatários sem email não geram trabalho recorrente. Se um email for configurado posteriormente dentro da janela, torna-se elegível.
+
+Limitações: sucesso SMTP não comprova entrega na mailbox. Um crash entre envio e commit pode provocar duplicado, porque SMTP não é transacional com a BD. O bloqueio por booking é mantido durante os envios; a duração do job depende do SMTP. Não repetir manualmente jobs de envio sem verificar os registos persistidos.
+
 ## Turnstile
 
 Verificar:
