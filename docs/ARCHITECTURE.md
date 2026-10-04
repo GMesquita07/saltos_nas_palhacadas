@@ -153,7 +153,7 @@ Os dois maintenance endpoints e o Scheduler do backup R2 foram executados manual
 
 ### Reminders Cliente/Artista (Produção V26)
 
-Alteração de 2026-10-04, sem deploy: bookings `ACCEPTED` entre hoje e hoje + `days-before` (5 por defeito) são selecionados quando há pelo menos um destinatário configurado ainda pendente. O dia atual é calculado em `Europe/Lisbon`. Eventos anteriores a hoje ficam excluídos, mesmo que haja falhas por recuperar.
+Desde a release de 2026-10-05, bookings `ACCEPTED` entre hoje e hoje + `days-before` (5 por defeito) são selecionados quando há pelo menos um destinatário configurado ainda pendente. O dia atual é calculado em `Europe/Lisbon`. Eventos anteriores a hoje ficam excluídos, mesmo que haja falhas por recuperar.
 
 `reminder_sent_at` mantém a semântica histórica de envio ao cliente; V26 acrescenta `artist_reminder_sent_at`. Cada destinatário é enviado e marcado independentemente, apenas após sucesso de `sendBestEffort`. SMTP desativado/sem host devolve falso, sem confirmar envio simulado. Aceitar/reaceitar ou alterar data/horário reinicia ambos os timestamps; reaplicar uma aceitação sem alterar o horário mantém o tracking. Aceitar contraproposta reinicia ambos.
 
