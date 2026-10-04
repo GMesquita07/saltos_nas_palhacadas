@@ -2,7 +2,7 @@
 
 Documento-resumo. A documentação detalhada está em [docs/PRODUCTION.md](docs/PRODUCTION.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) e [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Last verified: 2026-09-30.
+Last verified: 2026-10-05.
 
 ## Estado Geral
 
@@ -10,18 +10,18 @@ Last verified: 2026-09-30.
 | --- | --- |
 | Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
 | Backend Google Cloud Run | DONE; health UP; rollout validado |
-| Neon PostgreSQL | DONE; Flyway V25 operacionalmente confirmado com 25 migrations validadas |
+| Neon PostgreSQL | DONE; Flyway V26 confirmado com 26 migrations validadas |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
-| Booking reminder Scheduler | Invocação DONE/VALIDATED; entrega real do reminder E2E pendente |
-| Reminders cliente/artista | IN PROGRESS; V26 e implementação locais, sem deploy; entrega real de ambos ainda pendente |
+| Booking reminder Scheduler | DONE/VALIDATED; execução manual pós-release e E2E cliente/artista validados; próximo trigger automático 09:00 fica para monitorização operacional |
+| Reminders cliente/artista | DONE/VALIDATED; V26 em produção, receção nas duas mailboxes confirmada e segunda execução sem duplicados |
 | Domínio final | DONE técnico; confirmação administrativa .PT pendente |
 | Brevo/SMTP | DONE/VALIDATED |
 | Backups/restore drill | DONE/VALIDATED |
 | CI/PostgreSQL CI/CodeQL final | DONE |
 | Smoke final de produção | DONE |
-| Final merge para `main` | DONE; Artist media/crop UX validada em produção em 2026-09-30 |
+| Final merge para `main` | DONE; release password-reset + booking reminders promovida por PR #90 e validada em produção em 2026-10-05 |
 
 ## Checklist Técnico
 
@@ -71,13 +71,13 @@ Last verified: 2026-09-30.
 ## Pós-Lançamento Ainda Pendente
 
 1. Acompanhar confirmação administrativa .PT externa.
-2. Rever e promover a UX de link de reset expirado e os reminders cliente/artista (V26), implementados localmente em 2026-10-04; deploy e validação E2E em produção ainda pendentes.
+2. Monitorizar o próximo trigger automático das 09:00 Europe/Lisbon do Scheduler de booking reminders; a execução manual pós-release e a entrega cliente/artista já foram validadas.
 3. Validar/implementar email pessoal/operacional do artista quando existe booking desse artista.
 4. Melhorar UX da área de conta e notificações in-app.
 5. Executar Feature 7 Accessibility.
 6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
 
-Nota operacional: V25 está confirmado em produção. A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não documentar essa revisão como tendo executado V24/V25.
+Nota operacional: V26 está confirmada em produção. A revisão `saltos-backend-00020-ln5` migrou o schema de V25 para V26; a revisão atual `saltos-backend-00021-5mv` validou 26 migrations e encontrou o schema já em V26.
 
 ## Render
 
