@@ -10,7 +10,7 @@ Feature 5 SEO / Google está DONE: Search Console configurado, domain property v
 
 A alteração de runtime mais recente em produção é a release `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`, que acrescenta pré-validação/UX de password reset e reminders independentes de cliente/artista. O Cloud Build `874171bf-c557-4b22-aa92-6cb270e04d74` produziu a imagem `backend:dd872aa`; a revisão `saltos-backend-00020-ln5` aplicou V26 e a revisão atual `00021-5mv` validou o schema já em V26.
 
-A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O trigger automático das 09:00 continua a ser monitorizado separadamente. A sequência real de próximos trabalhos mantém, como item separado, o email pessoal/operacional do artista no fluxo geral de bookings; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. O trigger automático das 09:00 continua a ser monitorizado separadamente. A sequência real de próximos trabalhos é: UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -32,7 +32,7 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | Booking reminder Scheduler | DONE | Sim | Execução manual pós-release + entrega E2E validadas | Manter 09:00 Europe/Lisbon e cron Spring prod desativado com `-`; monitorizar próximo trigger automático |
 | Brevo DNS/auth | DONE | Sim | Sim | Manter DKIM/DMARC saudáveis |
 | SMTP Brevo | DONE | Sim | Sim | Monitorizar entregabilidade |
-| Notificações admin/artista | DONE infraestrutura | Sim | Parcial | Infraestrutura em produção; requisito booking -> email pessoal/operacional do artista continua pendente de implementação/validação E2E |
+| Notificações admin/artista | DONE | Sim | Sim | Novo booking -> `profile.notificationEmail` do artista validado em produção; manter monitorização de entregabilidade |
 | Password reset email real | DONE | Sim | Fluxo base, pré-validação e UX de link inválido/expirado validados em produção | POST final continua autoritativo; testes cobrem fronteira de expiração, uso único e nova emissão |
 | Domínio registado | DONE | Sim | Sim pelo setup | DNS/TLS já funcionais; confirmação administrativa .PT separada |
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
