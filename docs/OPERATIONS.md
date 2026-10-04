@@ -52,7 +52,7 @@ Verificações:
 
 ### Validar Reminders Cliente/Artista Após Deploy
 
-A invocação do Scheduler foi confirmada historicamente; a receção dos reminders cliente/artista ainda não. A implementação V26 está apenas na branch local em 2026-10-04. Procedimento pendente, não executado nesta tarefa:
+Estado validado em produção em 2026-10-05: V26 aplicada, backend healthy, execução manual do Scheduler com receção dos reminders de cliente e artista em mailboxes de teste e segunda execução sem duplicados. O trigger automático das 09:00 Europe/Lisbon não foi revalidado após esta release e continua a ser monitorizado separadamente. Para futuras releases, repetir o procedimento:
 
 1. Confirmar source/imagem/revisão efetivamente promovidos, health UP e Flyway V26 aplicada/validada. Manter cron Spring `-`, Scheduler às 09:00 `Europe/Lisbon` e `X-Maintenance-Key` sem divulgar a chave.
 2. Com destinatários de teste autorizados, criar/aceitar um booking dentro da janela de hoje a +5 dias e configurar `contactEmail` e `profile.notificationEmail`. Confirmar que SMTP está ativo. Não reutilizar emails de clientes reais para testes.
@@ -118,7 +118,7 @@ Ativo e validado:
 - DKIM e DMARC validados;
 - Cloud Run usa Brevo SMTP na porta 587 com STARTTLS;
 - sender: `Saltos nas Palhaçadas <no-reply@saltosnaspalhacadas.pt>`;
-- forgot/reset password, booking recebido, booking aceite e booking cancelado foram testados end-to-end em produção.
+- forgot/reset password, UX de link de reset inválido/expirado, booking recebido/aceite/cancelado e reminders cliente/artista foram testados end-to-end em produção; a segunda execução manual dos reminders não gerou duplicados.
 
 Monitorizar falhas SMTP e entregabilidade. Não escrever SMTP password em logs ou documentação.
 
