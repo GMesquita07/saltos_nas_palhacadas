@@ -1,6 +1,6 @@
 # Estado do Projeto
 
-Last updated: 2026-09-30.
+Last updated: 2026-10-04. Estado operacional de produção confirmado em 2026-09-30; alterações locais abaixo não implicam deploy.
 
 ## Resumo
 
@@ -10,7 +10,7 @@ Feature 5 SEO / Google está DONE: Search Console configurado, domain property v
 
 A alteração de runtime mais recente em produção é a release Artist media/crop UX, com source release `ea3eddf`. Esta release inclui melhorias do perfil/artista em desktop, MediaLightbox desktop, hero visual, crop/enquadramento consistente e persistente para avatars/backgrounds/thumbnails/materiais, preview de vídeo, invalidação/cache de portfolio e migrations V24/V25 operacionalmente confirmadas.
 
-A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não há evidência de que tenha sido essa revisão a executar V24/V25. A sequência real de próximos trabalhos mantém-se: UX de link de reset expirado; email pessoal/operacional do artista quando existe booking desse artista; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não há evidência de que tenha sido essa revisão a executar V24/V25. A produção continua confirmada apenas até V25; V26 ainda é local. A sequência real de próximos trabalhos é: rever, promover e validar a UX de password reset e os reminders cliente/artista, ambos implementados localmente e ainda a aguardar essas etapas, incluindo validação E2E dos reminders em produção; validar/implementar, como item separado, o email pessoal/operacional do artista no fluxo geral de bookings; UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -28,12 +28,12 @@ A revisão `saltos-backend-00019-jzp` validou o schema já em V25; não há evid
 | Turnstile | DONE | Sim | Sim | Manter hostname oficial em allowlist |
 | CSP Turnstile | DONE | Sim | Sim | Manter `challenges.cloudflare.com` em script/frame |
 | Cleanup Scheduler | DONE | Sim | Sim | Monitorizar execuções diárias |
-| Booking reminders internos | DONE local/dev | Não em prod | Sim em testes | Manter cron prod desativado com `-` |
-| Booking reminder Scheduler | DONE | Sim | Sim | Monitorizar execução diária às 09:00 |
+| Booking reminders cliente/artista | IN PROGRESS | Nova versão não | Testes locais; entrega real pendente | V26, tracking independente, janela de retry de hoje a +5 dias; rever, promover e validar ambas as mailboxes |
+| Booking reminder Scheduler | DONE | Sim | Invocação validada; entrega de email E2E pendente | Manter 09:00 Europe/Lisbon e cron Spring prod desativado com `-` |
 | Brevo DNS/auth | DONE | Sim | Sim | Manter DKIM/DMARC saudáveis |
 | SMTP Brevo | DONE | Sim | Sim | Monitorizar entregabilidade |
 | Notificações admin/artista | DONE infraestrutura | Sim | Parcial | Infraestrutura em produção; requisito booking -> email pessoal/operacional do artista continua pendente de implementação/validação E2E |
-| Password reset email real | DONE (fluxo base) | Sim | Emissão/entrega validadas; utilizador confirmou rejeição de token antigo pelo backend | Melhorar UX: verificar token ao abrir a rota e mostrar link inválido/expirado em vez do formulário; manter teste do limite exato dos 30 min e uso único |
+| Password reset email real | DONE (fluxo base) | Sim | Emissão/entrega validadas; utilizador confirmou rejeição de token antigo pelo backend | Pré-validação e UX de link inválido implementadas na branch local; testes da fronteira de expiração, uso único e nova emissão adicionados. Aguardar revisão, deploy e validação E2E |
 | Domínio registado | DONE | Sim | Sim pelo setup | DNS/TLS já funcionais; confirmação administrativa .PT separada |
 | Domínio `www` HTTPS | DONE | Sim | Sim | QA final antes da release |
 | Redirect apex -> www | DONE | Sim | Sim | 301 preserva query strings |
@@ -92,9 +92,11 @@ Distinção importante:
 - o hotfix do MediaLightbox iOS/iPadOS e refresh completo dos favicons/icons foi promovido por PR #61 -> `dev` e PR #62 -> `main`; a seleção final do favicon desktop foi corrigida em PR #70 -> `dev` e PR #71 -> `main`;
 - Artist media/crop UX foi promovido por PR #81 -> `dev` e PR #82 -> `main` e validado em produção em 2026-09-30; inclui desktop profile/media/lightbox/hero/crop/thumbnails e preservação mobile/touch; campos públicos de hero/portfolio confirmados e endpoint `/materials` validado com resposta vazia por existirem 0 materiais;
 - PageSpeed ainda não apresenta dados de campo/CrUX suficientes; Performance 6.2 fica fechada;
-- o utilizador confirmou que o formulário de reset abre com um link antigo, mas o backend rejeita a submissão. O código verifica `expires_at` e `used_at` no POST; o pendente é UX de pré-validação e mensagem «Link inválido ou expirado» com pedido de novo link. Testes da fronteira dos 30 minutos e uso único continuam recomendados; não há falha de aceitação de token expirado confirmada.
+- a branch local `fix/password-reset-expired-link-ux` implementa pré-validação pública do token, estados de loading/invalid/error, retry e pedido de novo link. A validação final continua obrigatória, sem consumo na pré-validação. Testes cobrem expiração exata, uso único, conta inativa, nova emissão e rejeição após pré-validação. Sem commit/deploy ou validação desta UX em produção; não havia falha conhecida de aceitação de token expirado.
 
 ## Produção Conhecida
+
+Extensão local de 2026-10-04: reminders de cliente e artista passam a ter timestamps separados e retry independente. `V26__artist_booking_reminders.sql` ainda não foi aplicada em produção. A revisão, imagem e schema abaixo continuam a representar a última verificação operacional; não comprovam deploy desta branch nem entrega dos novos reminders.
 
 | Componente | Valor operacional documentável |
 | --- | --- |

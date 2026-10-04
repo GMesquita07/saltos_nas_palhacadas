@@ -13,6 +13,16 @@ Last verified: 2026-09-18.
 
 Limitação conhecida: o JWT ainda não usa cookies `HttpOnly`. Se a arquitetura mudar para cookies, será necessário configurar `Secure`, `HttpOnly`, `SameSite`, rotação de sessão e proteção CSRF.
 
+## Recuperação de Palavra-passe
+
+Implementação local de 2026-10-04 em `fix/password-reset-expired-link-ux`, ainda sem deploy:
+
+- `POST /api/v1/auth/reset-password/validate` é público e usa o mesmo bucket `auth` de rate limiting por IP; recebe `{token}` no body, nunca na query do backend.
+- Resposta 204 para token utilizável; 400 genérico para inexistente/expirado/usado/conta inativa/input inválido, sem identidade ou motivo individual.
+- Pré-validação read-only não consome o token e serve apenas a UX. O POST final transacional repete a mesma regra antes de alterar a password e marcar uso.
+- SHA-256, single-use, invalidação por nova emissão, BCrypt e duração configurável (30 minutos por defeito) preservados. `now == expiresAt` já é inválido.
+- Forgot-password mantém resposta neutra; tokens raw não são registados em logs. Falhas de rede não são apresentadas como links inválidos.
+
 ## Autorização
 
 - `SecurityConfig` define uma API stateless.
@@ -21,6 +31,7 @@ Limitação conhecida: o JWT ainda não usa cookies `HttpOnly`. Se a arquitetura
 - `/api/v1/auth/me`, favoritos, bookings e media privada exigem sessão.
 - Media privada valida owner ou `ADMIN` antes de consultar/devolver objetos geridos.
 - Falhas de autorização em media privada devolvem `404` para não revelar existência de objetos de outros utilizadores.
+- Reminders cliente/artista (V26 local, sem deploy) mantêm `POST /internal/maintenance/booking-reminders` protegido por `X-Maintenance-Key`. O email operacional usa apenas `profile.notificationEmail`, sem o expor em DTOs públicos; inclui os contactos e detalhes do booking necessários ao artista. Não há novo endpoint público nem alteração de secrets/Scheduler.
 
 ## Bot Protection
 
@@ -30,7 +41,7 @@ Turnstile está implementado e validado nos fluxos:
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/forgot-password`
 
-Não protege `reset-password`.
+Não protege `reset-password`; a pré-validação local de reset também não exige Turnstile.
 
 O backend valida por Siteverify:
 

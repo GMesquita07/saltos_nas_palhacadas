@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -31,6 +32,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaService;
@@ -53,6 +55,8 @@ class AuthAndAdminIntegrationTests {
     @Autowired private ManagedMediaService mediaService;
     @Autowired private PasswordResetTokenRepository passwordResetTokens;
     @MockitoBean private EmailService emailService;
+    @Value("${app.auth.rate-limit-per-minute}")
+    private int authRateLimit;
 
     @BeforeEach
     void ensureAdmin() {
@@ -187,6 +191,176 @@ class AuthAndAdminIntegrationTests {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"token\":\"%s\",\"newPassword\":\"outra-password\"}".formatted(rawToken)))
                     .andExpect(status().isBadRequest());
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void resetPasswordPrevalidationAcceptsValidTokenWithoutConsumingIt() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = createCustomer("prevalid-" + suffix);
+        String rawToken = "prevalidation-token-" + suffix;
+        passwordResetTokens.save(new PasswordResetToken(customer, tokenHash(rawToken), Instant.now().plusSeconds(900)));
+
+        try {
+            validateResetToken(rawToken, "198.51.100.11")
+                    .andExpect(status().isNoContent());
+
+            PasswordResetToken persistedToken = passwordResetTokens.findByTokenHash(tokenHash(rawToken)).orElseThrow();
+            assertThat(persistedToken.getUsedAt()).isNull();
+
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .header("X-Forwarded-For", "198.51.100.12")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"token\":\"%s\",\"newPassword\":\"password-nova\"}".formatted(rawToken)))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .header("X-Forwarded-For", "198.51.100.13")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"%s\",\"password\":\"password-nova\"}".formatted(customer.getEmail())))
+                    .andExpect(status().isOk());
+
+            validateResetToken(rawToken, "198.51.100.14")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void resetPasswordPrevalidationRejectsUnusableTokensWithGenericBadRequest() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser expiredUser = createCustomer("expired-" + suffix);
+        AppUser usedUser = createCustomer("used-" + suffix);
+        AppUser inactiveUser = createCustomer("inactive-" + suffix);
+        String expiredToken = "expired-token-" + suffix;
+        String usedToken = "used-token-" + suffix;
+        String inactiveToken = "inactive-token-" + suffix;
+
+        PasswordResetToken usedResetToken = new PasswordResetToken(usedUser, tokenHash(usedToken), Instant.now().plusSeconds(900));
+        usedResetToken.markUsed(Instant.now());
+        passwordResetTokens.save(new PasswordResetToken(expiredUser, tokenHash(expiredToken), Instant.now().minusSeconds(1)));
+        passwordResetTokens.save(usedResetToken);
+        passwordResetTokens.save(new PasswordResetToken(inactiveUser, tokenHash(inactiveToken), Instant.now().plusSeconds(900)));
+        inactiveUser.anonymizeForDeletion("deleted-" + suffix + "@example.test", passwords.encode("disabled-password"));
+        users.save(inactiveUser);
+
+        try {
+            validateResetToken("missing-token-" + suffix, "198.51.100.21")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            validateResetToken(expiredToken, "198.51.100.22")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            validateResetToken(usedToken, "198.51.100.23")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            validateResetToken(inactiveToken, "198.51.100.24")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            validateResetToken("   ", "198.51.100.25")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            validateResetToken("x".repeat(201), "198.51.100.26")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            for (String rejectedToken : new String[] {expiredToken, usedToken, inactiveToken}) {
+                mockMvc.perform(post("/api/v1/auth/reset-password")
+                                .header("X-Forwarded-For", "198.51.100.27")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {"token":"%s","newPassword":"password-nova"}
+                                        """.formatted(rejectedToken)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+            }
+        } finally {
+            passwordResetTokens.deleteAllByUserId(expiredUser.getId());
+            passwordResetTokens.deleteAllByUserId(usedUser.getId());
+            passwordResetTokens.deleteAllByUserId(inactiveUser.getId());
+            users.deleteById(expiredUser.getId());
+            users.deleteById(usedUser.getId());
+            users.deleteById(inactiveUser.getId());
+        }
+    }
+
+    @Test
+    void forgotPasswordInvalidatesPreviousResetToken() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        AppUser customer = createCustomer("replace-" + suffix);
+        String oldToken = "old-token-" + suffix;
+        passwordResetTokens.save(new PasswordResetToken(customer, tokenHash(oldToken), Instant.now().plusSeconds(900)));
+
+        try {
+            mockMvc.perform(post("/api/v1/auth/forgot-password")
+                            .header("X-Forwarded-For", "198.51.100.31")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"%s\"}".formatted(customer.getEmail())))
+                    .andExpect(status().isNoContent());
+
+            assertThat(passwordResetTokens.findByTokenHash(tokenHash(oldToken))).isEmpty();
+            validateResetToken(oldToken, "198.51.100.32")
+                    .andExpect(status().isBadRequest());
+        } finally {
+            passwordResetTokens.deleteAllByUserId(customer.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void resetPasswordFinalStillRejectsInvalidTokenWithoutPrevalidation() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .header("X-Forwarded-For", "198.51.100.41")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"not-a-token\",\"newPassword\":\"password-nova\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O link de recuperação é inválido ou já expirou"));
+    }
+
+    @Test
+    void resetPrevalidationUsesAuthRateLimit() throws Exception {
+        assertThat(authRateLimit).isPositive();
+        for (int request = 0; request < authRateLimit; request++) {
+            validateResetToken("missing-rate-limit-token", "198.51.100.71")
+                    .andExpect(status().isBadRequest());
+        }
+        validateResetToken("missing-rate-limit-token", "198.51.100.71")
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void resetPrevalidationRejectsMissingAndMalformedInput() throws Exception {
+        for (String body : new String[] {"{}", "{\"token\":null}", "{\"token\":{}}", "{", "null"}) {
+            mockMvc.perform(post("/api/v1/auth/reset-password/validate")
+                            .header("X-Forwarded-For", "198.51.100.51")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void finalResetRechecksTokenUsedAfterPrevalidation() throws Exception {
+        AppUser customer = createCustomer("race-" + UUID.randomUUID().toString().substring(0, 8));
+        String rawToken = "race-token-" + UUID.randomUUID();
+        PasswordResetToken token = passwordResetTokens.save(new PasswordResetToken(customer, tokenHash(rawToken), Instant.now().plusSeconds(900)));
+        try {
+            validateResetToken(rawToken, "198.51.100.61").andExpect(status().isNoContent());
+            token.markUsed(Instant.now());
+            passwordResetTokens.save(token);
+            mockMvc.perform(post("/api/v1/auth/reset-password")
+                            .header("X-Forwarded-For", "198.51.100.62")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"token":"%s","newPassword":"password-nova"}
+                                    """.formatted(rawToken)))
+                    .andExpect(status().isBadRequest());
+            assertThat(passwords.matches("password-antiga", users.findById(customer.getId()).orElseThrow().getPasswordHash())).isTrue();
         } finally {
             passwordResetTokens.deleteAllByUserId(customer.getId());
             users.deleteById(customer.getId());
@@ -383,6 +557,25 @@ class AuthAndAdminIntegrationTests {
                 .andExpect(header().string("Cache-Control", containsString("max-age=60")))
                 .andExpect(header().string("Cache-Control", containsString("public")))
                 .andExpect(jsonPath("$[0].value").value("ola@example.test"));
+    }
+
+    private AppUser createCustomer(String prefix) {
+        return users.save(new AppUser(
+                prefix + "@example.test",
+                prefix.replace('-', '.'),
+                "Cliente",
+                "Reset",
+                "912345678",
+                null,
+                passwords.encode("password-antiga"),
+                UserRole.CUSTOMER));
+    }
+
+    private ResultActions validateResetToken(String rawToken, String clientIp) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/reset-password/validate")
+                .header("X-Forwarded-For", clientIp)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"token\":\"%s\"}".formatted(rawToken)));
     }
 
     private UploadedAvatar uploadAvatar(String token, String filename, String contentType) throws Exception {

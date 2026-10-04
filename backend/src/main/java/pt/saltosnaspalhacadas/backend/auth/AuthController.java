@@ -47,6 +47,8 @@ import pt.saltosnaspalhacadas.backend.user.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String INVALID_RESET_LINK_MESSAGE = "O link de recuperação é inválido ou já expirou";
+    private static final int MAX_RESET_TOKEN_LENGTH = 200;
 
     private final AppUserRepository users;
     private final PasswordResetTokenRepository passwordResetTokens;
@@ -146,18 +148,21 @@ public class AuthController {
         });
     }
 
+    @PostMapping("/reset-password/validate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional(readOnly = true)
+    void validateResetPasswordToken(HttpServletRequest servletRequest, @RequestBody ResetPasswordValidationRequest request) {
+        assertAuthAllowed(servletRequest);
+        findUsableResetToken(request.token(), Instant.now());
+    }
+
     @PostMapping("/reset-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
     void resetPassword(HttpServletRequest servletRequest, @Valid @RequestBody ResetPasswordRequest request) {
         assertAuthAllowed(servletRequest);
-        PasswordResetToken resetToken = passwordResetTokens.findByTokenHashAndUsedAtIsNull(tokenHash(request.token()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou"));
-
         Instant now = Instant.now();
-        if (!resetToken.isUsable(now) || !resetToken.getUser().isActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O link de recuperação é inválido ou já expirou");
-        }
+        PasswordResetToken resetToken = findUsableResetToken(request.token(), now);
 
         AppUser user = resetToken.getUser();
         user.changePassword(passwords.encode(request.newPassword()));
@@ -299,6 +304,35 @@ public class AuthController {
 
         return users.findByEmailAndActiveTrue(normalizeEmail(authentication.getName()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A sessão já não é válida"));
+    }
+
+    private PasswordResetToken findUsableResetToken(String rawToken, Instant now) {
+        String normalizedToken = normalizeResetToken(rawToken);
+        PasswordResetToken resetToken = passwordResetTokens.findByTokenHash(tokenHash(normalizedToken))
+                .orElseThrow(AuthController::invalidResetLink);
+
+        if (!resetToken.isUsable(now) || !resetToken.getUser().isActive()) {
+            throw invalidResetLink();
+        }
+
+        return resetToken;
+    }
+
+    private static String normalizeResetToken(String rawToken) {
+        if (rawToken == null || rawToken.length() > MAX_RESET_TOKEN_LENGTH) {
+            throw invalidResetLink();
+        }
+
+        String normalizedToken = rawToken.trim();
+        if (normalizedToken.isBlank()) {
+            throw invalidResetLink();
+        }
+
+        return normalizedToken;
+    }
+
+    private static ResponseStatusException invalidResetLink() {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, INVALID_RESET_LINK_MESSAGE);
     }
 
     private static String defaultImagePosition(String value) {
@@ -455,12 +489,13 @@ public class AuthController {
     }
 
     record ResetPasswordRequest(
-            @NotBlank(message = "O token de recuperação é obrigatório")
-            @Size(max = 200, message = "O token de recuperação é inválido")
             String token,
             @NotBlank(message = "A nova palavra-passe é obrigatória")
             @Size(min = 8, max = 128, message = "A palavra-passe deve ter entre 8 e 128 caracteres")
             String newPassword) {
+    }
+
+    record ResetPasswordValidationRequest(String token) {
     }
 
     record ChangePasswordRequest(

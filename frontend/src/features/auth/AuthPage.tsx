@@ -1,10 +1,22 @@
-import { useCallback, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from './AuthContext'
-import { forgotPassword, resetPassword } from '../../services/authService'
+import { forgotPassword, resetPassword, validatePasswordResetToken } from '../../services/authService'
 import type { AuthSession } from '../../types/auth'
 import { Turnstile, type TurnstileHandle } from './Turnstile'
 import type { AuthMode } from './authTypes'
 import { canSubmitProtectedAuth, protectedAuthRequiresSiteKey, turnstileActionForMode } from './turnstileAuth'
+import {
+  canSubmitResetPassword,
+  classifyResetPasswordSubmitFailure,
+  classifyResetTokenValidationFailure,
+  initialResetTokenValidationState,
+  invalidResetLinkMessage,
+  invalidResetLinkTitle,
+  resetLinkValidationErrorMessage,
+  resetRecoveryMode,
+  shouldShowResetPasswordForm,
+  type ResetTokenValidationState,
+} from './resetPasswordUx'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import styles from './AuthPage.module.css'
 
@@ -31,6 +43,8 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [resetToken, setResetToken] = useState(initialResetToken ?? '')
+  const [resetValidationState, setResetValidationState] = useState<ResetTokenValidationState>(() => initialResetTokenValidationState(initialResetToken ? 'reset' : initialMode, initialResetToken))
+  const [resetValidationAttempt, setResetValidationAttempt] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(initialNotice ?? null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -45,7 +59,10 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
   const turnstileConfigError = protectedAuthRequiresSiteKey(mode, isProduction, turnstileSiteKey)
     ? 'A proteção anti-bot não está configurada. Contacta a equipa Saltos nas Palhaçadas.'
     : null
-  const isSubmitDisabled = isSubmitting || !canSubmitProtectedAuth(mode, turnstileSiteKey, turnstileToken, isProduction)
+  const canShowResetForm = !isResettingPassword || shouldShowResetPasswordForm(resetValidationState)
+  const isSubmitDisabled = isSubmitting
+    || !canSubmitProtectedAuth(mode, turnstileSiteKey, turnstileToken, isProduction)
+    || (isResettingPassword && !canSubmitResetPassword(resetValidationState, isSubmitting))
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken(null)
@@ -62,6 +79,36 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
     setError('A validação anti-bot expirou. Confirma novamente antes de continuar.')
   }, [])
 
+  useEffect(() => {
+    const normalizedToken = resetToken.trim()
+    if (!isResettingPassword || !normalizedToken) return
+
+    const controller = new AbortController()
+
+    validatePasswordResetToken(normalizedToken, { signal: controller.signal })
+      .then(() => {
+        if (!controller.signal.aborted) setResetValidationState('valid')
+      })
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted) return
+        const failure = classifyResetTokenValidationFailure(reason)
+        if (failure === 'cancelled') return
+        setResetValidationState(failure)
+      })
+
+    return () => controller.abort()
+  }, [isResettingPassword, resetToken, resetValidationAttempt])
+
+  function requestNewResetLink() {
+    changeMode(resetRecoveryMode())
+  }
+
+  function retryResetTokenValidation() {
+    setResetValidationState('validating')
+    setError(null)
+    setResetValidationAttempt((attempt) => attempt + 1)
+  }
+
   function changeMode(nextMode: AuthMode) {
     setMode(nextMode)
     setError(null)
@@ -73,6 +120,8 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
     setPhone('')
     setPassword('')
     setPasswordConfirmation('')
+    setResetToken('')
+    setResetValidationState(initialResetTokenValidationState(nextMode))
     onModeChange(nextMode)
   }
 
@@ -111,18 +160,23 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
       return
     }
 
-    if (isResettingPassword && !resetToken.trim()) {
-      setError('O link de recuperação está incompleto.')
+    if (isResettingPassword && resetValidationState !== 'valid') {
+      setError(resetValidationState === 'error' ? resetLinkValidationErrorMessage : invalidResetLinkMessage)
       return
     }
 
-    if (!password) {
+    if (!password || (isResettingPassword && !password.trim())) {
       setError('Indica a tua palavra-passe.')
       return
     }
 
     if (isResettingPassword && password.length < 8) {
       setError('A nova palavra-passe tem de ter pelo menos 8 caracteres.')
+      return
+    }
+
+    if (isResettingPassword && password.length > 128) {
+      setError('A nova palavra-passe pode ter no máximo 128 caracteres.')
       return
     }
 
@@ -143,7 +197,13 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
         setMode('login')
         onModeChange('login', 'Palavra-passe atualizada. Já podes entrar.')
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar a palavra-passe.')
+        if (classifyResetPasswordSubmitFailure(reason) === 'invalid') {
+          setPassword('')
+          setPasswordConfirmation('')
+          setResetValidationState('invalid')
+          return
+        }
+        setError('Não foi possível atualizar a palavra-passe. Tenta novamente.')
       } finally {
         setIsSubmitting(false)
       }
@@ -212,9 +272,9 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
       <div className={styles.panel}>
         <p className="eyebrow">Conta Saltos nas Palhaçadas</p>
         <h1>{pageTitle(mode)}</h1>
-        <p className={styles.intro}>
+        {canShowResetForm && <p className={styles.intro}>
           {pageIntro(mode)}
-        </p>
+        </p>}
 
         {!isRecoveringPassword && !isResettingPassword && (
           <div className={styles.modeSwitch} aria-label="Tipo de autenticação">
@@ -290,18 +350,16 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
               </label>
             </>
           )}
-          {isResettingPassword && !initialResetToken && (
-            <label>
-              Código de recuperação
-              <input
-                autoComplete="off"
-                onChange={(event) => setResetToken(event.target.value)}
-                required
-                value={resetToken}
-              />
-            </label>
+          {isResettingPassword && resetValidationState === 'validating' && (
+            <p className={styles.status} role="status">A validar link de recuperação...</p>
           )}
-          {!isRecoveringPassword && (
+          {isResettingPassword && resetValidationState === 'invalid' && (
+            <ResetLinkUnavailable onRequestNewLink={requestNewResetLink} />
+          )}
+          {isResettingPassword && resetValidationState === 'error' && (
+            <ResetLinkValidationError onRequestNewLink={requestNewResetLink} onRetry={retryResetTokenValidation} />
+          )}
+          {canShowResetForm && !isRecoveringPassword && (
             <label>
               {isResettingPassword ? 'Nova palavra-passe' : 'Palavra-passe'}
               <input
@@ -314,7 +372,7 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
               {(isRegistering || isResettingPassword) && <small>Usa pelo menos 8 caracteres.</small>}
             </label>
           )}
-          {(isRegistering || isResettingPassword) && (
+          {canShowResetForm && (isRegistering || isResettingPassword) && (
             <label>
               Confirmar palavra-passe
               <input
@@ -326,7 +384,7 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
               />
             </label>
           )}
-          {turnstileAction && hasTurnstileSiteKey && (
+          {canShowResetForm && turnstileAction && hasTurnstileSiteKey && (
             <Turnstile
               action={turnstileAction}
               className={styles.turnstile}
@@ -340,9 +398,11 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
           {notice && <p className={styles.success} role="status">{notice}</p>}
           {turnstileConfigError && <p className={styles.error} role="alert">{turnstileConfigError}</p>}
           {error && <p className={styles.error} role="alert">{error}</p>}
-          <button disabled={isSubmitDisabled} type="submit">
-            {isSubmitting ? 'A processar...' : submitLabel(mode)}
-          </button>
+          {canShowResetForm && (
+            <button disabled={isSubmitDisabled} type="submit">
+              {isSubmitting ? 'A processar...' : submitLabel(mode)}
+            </button>
+          )}
           {!isRegistering && !isRecoveringPassword && !isResettingPassword && (
             <button className={styles.textButton} type="button" onClick={() => changeMode('forgot')}>Esqueci-me da palavra-passe</button>
           )}
@@ -352,6 +412,29 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
         </form>
       </div>
     </section>
+  )
+}
+
+function ResetLinkUnavailable({ onRequestNewLink }: { onRequestNewLink: () => void }) {
+  return (
+    <div className={styles.resetState} role="alert">
+      <h2>{invalidResetLinkTitle}</h2>
+      <p>{invalidResetLinkMessage}</p>
+      <button type="button" onClick={onRequestNewLink}>Pedir novo link</button>
+    </div>
+  )
+}
+
+function ResetLinkValidationError({ onRequestNewLink, onRetry }: { onRequestNewLink: () => void; onRetry: () => void }) {
+  return (
+    <div className={styles.resetState} role="status">
+      <h2>Não foi possível validar o link</h2>
+      <p>{resetLinkValidationErrorMessage}</p>
+      <div className={styles.resetActions}>
+        <button type="button" onClick={onRetry}>Tentar novamente</button>
+        <button className={styles.textButton} type="button" onClick={onRequestNewLink}>Pedir novo link</button>
+      </div>
+    </div>
   )
 }
 

@@ -20,6 +20,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import pt.saltosnaspalhacadas.backend.notification.EmailService;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import pt.saltosnaspalhacadas.backend.auth.JwtService;
 import pt.saltosnaspalhacadas.backend.profile.Profile;
@@ -54,8 +58,12 @@ class BookingIntegrationTests {
     @Autowired
     private PasswordEncoder passwords;
 
+    @MockitoBean
+    private EmailService emailService;
+
     @BeforeEach
     void ensureAdmin() {
+        when(emailService.send(anyString(), anyString(), anyString())).thenReturn(true);
         if (users.findByEmailAndActiveTrue("admin@example.test").isEmpty()) {
             users.save(new AppUser("admin@example.test", passwords.encode("change-me-now"), UserRole.ADMIN));
         }
@@ -351,7 +359,8 @@ class BookingIntegrationTests {
     @Test
     void acceptedBookingsReceiveOneReminderFiveDaysBeforeTheEvent() throws Exception {
         TestData data = createTestData();
-        LocalDate today = LocalDate.now();
+        // Keep this window separate from other integration fixtures in the shared test database.
+        LocalDate today = LocalDate.now().plusDays(100);
         LocalDate eventDate = today.plusDays(5);
 
         try {

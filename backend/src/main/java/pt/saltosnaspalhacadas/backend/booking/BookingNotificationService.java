@@ -111,6 +111,37 @@ public class BookingNotificationService {
         return siteNotifications.sendBestEffort("booking-reminder", booking.getContactEmail(), subject, body);
     }
 
+    public boolean sendArtistEventReminder(Booking booking) {
+        String recipient = booking.getProfile().getNotificationEmail();
+        if (recipient == null || recipient.isBlank()) {
+            return false;
+        }
+        String subject = "Saltos nas Palhaçadas: lembrete de evento #%d".formatted(booking.getId());
+        String body = """
+                Lembrete operacional do próximo evento confirmado.
+
+                Pedido: #%d
+                Artista: %s
+                Data: %s%s
+                Tipo de evento: %s
+                Local: %s
+                Cliente: %s
+                Email: %s
+                Telemóvel: %s
+                Descrição: %s
+                Notas: %s
+
+                Contacta a equipa se precisares de confirmar algum detalhe.
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getId(), booking.getProfile().getName(),
+                DATE_FORMATTER.format(booking.getEventDate()), formatSchedule(booking),
+                formatEventType(booking), blankFallback(booking.getLocation()),
+                booking.getContactName(), blankFallback(booking.getContactEmail()),
+                booking.getContactPhone(), booking.getDescription(), blankFallback(booking.getNotes()));
+        return siteNotifications.sendBestEffort("booking-reminder-artist", recipient, subject, body);
+    }
+
     private void sendAccepted(Booking booking) {
         sendCustomer(booking, "Pedido de agendamento aceite", """
                 Olá %s,

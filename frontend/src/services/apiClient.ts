@@ -3,17 +3,29 @@ const mib = 1024 * 1024
 const maxImageUploadSize = 10 * mib
 const maxVideoUploadSize = 30 * mib
 
+export class ApiError extends Error {
+  readonly status: number
+  readonly fieldErrors: Record<string, string>
+
+  constructor(message: string, status: number, fieldErrors: Record<string, string> = {}) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.fieldErrors = fieldErrors
+  }
+}
+
 export async function apiClient<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers } })
   if (!response.ok) {
     const body = await response.text()
     const detail = parseError(body)
     if (response.status === 401) {
-      throw new Error(path === '/auth/login'
+      throw new ApiError(path === '/auth/login'
         ? 'Email ou palavra-passe inválidos.'
-        : 'A tua sessão terminou. Inicia sessão novamente.')
+        : 'A tua sessão terminou. Inicia sessão novamente.', response.status)
     }
-    throw new Error(detail || `Não foi possível concluir a operação (${response.status}).`)
+    throw new ApiError(detail || `Não foi possível concluir a operação (${response.status}).`, response.status, parseFieldErrors(body))
   }
   if (response.status === 204) return undefined as T
   const body = await response.text()
@@ -72,4 +84,12 @@ function parseError(body: string) {
     const fieldErrors = error.errors ? Object.values(error.errors).filter(Boolean) : []
     return fieldErrors.join(' ') || error.detail || error.message || error.title
   } catch { return body || undefined }
+}
+
+function parseFieldErrors(body: string): Record<string, string> {
+  try {
+    const errors: unknown = JSON.parse(body)?.errors
+    if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return {}
+    return Object.fromEntries(Object.entries(errors).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+  } catch { return {} }
 }
