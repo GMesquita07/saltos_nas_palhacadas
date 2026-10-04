@@ -13,9 +13,9 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Brevo DNS verification | DONE | Domínio autenticado em Brevo |
 | DKIM/DMARC final | DONE | Validados |
 | SMTP real | DONE | Brevo SMTP 587 STARTTLS ativo |
-| Teste email recuperação password | DONE (fluxo base) | Emissão/entrega e rejeição de token antigo confirmadas; a branch local da UX de reset acrescenta teste determinístico da fronteira exata de 30 min |
+| Teste email recuperação password | DONE | Fluxo base + UX de link inválido/expirado em produção; fronteira exata de 30 min coberta por teste determinístico |
 | Teste emails bookings | DONE | Recebido, aceite e cancelamento validados |
-| Scheduler booking reminders | DONE | Invocação do job diário 09:00 Europe/Lisbon validada; entrega do reminder às mailboxes não comprovada por este teste |
+| Scheduler booking reminders | DONE | Job existente preservado; execução manual pós-release entregou cliente/artista e segunda execução não duplicou; monitorizar próximo trigger automático das 09:00 |
 | Neon restore drill | DONE | Snapshot `pre-launch-2026-09-16` restaurado em branch isolada |
 | R2 backup e restore drill | DONE | Backup Scheduler, Cloud Run Job, rclone check e restore PNG validados |
 | Artifact Registry cleanup policy | DONE | Ativa: delete >30 dias, keep pelo menos 5 versões |
@@ -46,8 +46,8 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Mobile lightbox/iOS + branding icons | DONE | PR #61 -> `dev`; PR #62 -> `main`; validado em iPhone; frontend produção `e2bb91cd38b381ec951cae0a6fadf9f4a1055904` |
 | Performance 6.2: image delivery/LCP mobile | DONE | PR #68 -> `dev`; PR #69 -> `main`; mobile 85 -> 98, LCP 4.4 s -> 2.3 s, image waste ~656 -> ~287 KiB; desktop mantém 100 |
 | Desktop UX: vista dos conteúdos por artista | DONE | PR #81 -> `dev`; PR #82 -> `main`; produção validada em 2026-09-30. Concluiu apresentação desktop do perfil/media, lightbox desktop, hero visual, enquadramento/crop persistente, thumbnails e preservação intencional do comportamento mobile/touch/iPad. |
-| UX: link de recuperação expirado | IN PROGRESS | Pré-validação server-side, formulário condicionado, «Link inválido ou expirado», «Pedir novo link» e retry de rede implementados. POST final autoritativo; testes de fronteira, reuso e nova emissão. Aguardar revisão, deploy e validação E2E. |
-| Reminders 5 dias: cliente e artista | IN PROGRESS | Implementação local com V26, tracking e retries independentes até ao dia do evento. Scheduler existente preservado. Aguardar deploy e comprovar entrega cliente/artista em mailboxes reais. |
+| UX: link de recuperação expirado | DONE | Pré-validação server-side, formulário condicionado, «Link inválido ou expirado», «Pedir novo link» e retry implementados; POST final autoritativo. Promovido por PR #89/#90 e validado no domínio oficial em 2026-10-05. |
+| Reminders 5 dias: cliente e artista | DONE | V26 em produção, tracking/retries independentes até ao dia do evento; execução manual confirmou ambas as mailboxes e segunda execução sem duplicados. |
 | Email pessoal do artista em bookings | TODO | Sempre que um cliente fizer um booking para um artista, esse artista deve receber uma notificação no respetivo email pessoal/operacional. Não confundir com a infraestrutura de notificações existente; é um requisito funcional de booking a validar/implementar. |
 | UX da área de conta + notificações in-app | TODO | Melhorar a área pessoal do cliente e desenhar zona de notificações in-site. |
 | Feature 7: Acessibilidade | TODO | PageSpeed/Lighthouse atual 96; primeiro problema automático confirmado é contraste do botão `Aceitar` no Cookie Consent, seguido de teclado, focus, formulários, dialogs e leitor de ecrã. |
