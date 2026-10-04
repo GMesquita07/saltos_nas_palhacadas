@@ -23,7 +23,7 @@ Last verified: 2026-10-05.
 | Decisões/counter-proposals | Cliente/Admin | `BookingPage`, admin | `BookingController`, `AdminBookingController` | `booking_requests` | Brevo SMTP | DONE |
 | Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
 | Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService`, `SiteNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED; Feature 4 DONE |
-| Notificações admin/artista | Admin/Backend | `AdminArea` | `SiteNotificationService`, `BookingNotificationService`, `AdminPortfolioController` | `profiles.notification_email`, `app_users` | Brevo SMTP | DONE - infraestrutura Feature 4; envio específico de cada booking para o artista permanece TODO/validação E2E |
+| Notificações admin/artista | Admin/Backend | `AdminArea` | `SiteNotificationService`, `BookingNotificationService`, `AdminPortfolioController` | `profiles.notification_email`, `app_users` | Brevo SMTP | DONE/VALIDATED; novo booking envia para o email operacional do artista e admins ativos, com E2E confirmado em produção |
 | Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `reminder_sent_at` cliente + `artist_reminder_sent_at` artista (V26) | Scheduler + SMTP | DONE/VALIDATED em produção; duas mailboxes confirmadas e segunda execução sem duplicados |
 | Upload/admin content management | Admin | `AdminArea`, `MaterialManagement`, crop editors/previews | `MediaController`, `MediaStorage` | R2/local + posição/zoom nas entidades editáveis | R2 em prod | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |

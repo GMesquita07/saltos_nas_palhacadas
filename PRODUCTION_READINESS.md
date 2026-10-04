@@ -72,7 +72,7 @@ Last verified: 2026-10-05.
 
 1. Acompanhar confirmação administrativa .PT externa.
 2. Monitorizar o próximo trigger automático das 09:00 Europe/Lisbon do Scheduler de booking reminders; a execução manual pós-release e a entrega cliente/artista já foram validadas.
-3. Validar/implementar email pessoal/operacional do artista quando existe booking desse artista.
+3. Monitorizar entregabilidade do email operacional do artista nos bookings; criação de booking -> `profile.notificationEmail` validada em produção em 2026-10-05.
 4. Melhorar UX da área de conta e notificações in-app.
 5. Executar Feature 7 Accessibility.
 6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.

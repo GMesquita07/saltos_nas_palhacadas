@@ -164,7 +164,7 @@ Limite: SMTP e PostgreSQL não partilham transação. Um crash/rollback depois d
 ## Fluxo de Email
 
 - `EmailService` continua a enviar plain text via Brevo SMTP.
-- `BookingNotificationService` preserva emails de cliente e a infraestrutura de Feature 4 para notificações operacionais está integrada. A validação funcional específica de notificar o email pessoal/operacional do artista em cada booking continua destacada no roadmap.
+- `BookingNotificationService` preserva emails de cliente e a infraestrutura de Feature 4 para notificações operacionais está integrada. O envio imediato para `profile.notificationEmail` em novos bookings foi validado em produção em 2026-10-05; eventos posteriores do booking usam a mesma infraestrutura best-effort.
 - `SiteNotificationService` carrega admins ativos da DB (`ADMIN` + `active=true`), deduplica destinatários case-insensitively e ignora duplicados entre artista/admin.
 - `profiles.notification_email` é privado e usado apenas para notificações relacionadas com o artista; não entra em DTOs públicos, perfil público, portfólio ou frontend público.
 - Falhas de envio são best-effort e não devem reverter bookings, registos ou reviews.
