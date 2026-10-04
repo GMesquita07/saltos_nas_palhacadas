@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-09-30.
+Last verified: 2026-10-05.
 
 ## Arquitetura Real
 
@@ -46,8 +46,8 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | GCP project | `saltos-prod-gmesquita` |
 | Região | `europe-west1` |
 | Cloud Run service | `saltos-backend` |
-| Imagem/código da aplicação | `backend:ea3eddf` |
-| Revisão atual | `saltos-backend-00019-jzp` |
+| Imagem/código da aplicação | `backend:dd872aa` / `sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763` |
+| Revisão atual | `saltos-backend-00021-5mv` |
 | Tráfego | 100% nesta revisão |
 | Cloud Build | `34c3f97c-14b0-42bc-99f5-a5ddc9ed4281` |
 | Image digest | `sha256:537486d2e2c12f59039383052944d0326cf0c21531a84c4a912063b4a55f14fb` |
@@ -58,7 +58,7 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | Billing | request-based |
 | Health | `/actuator/health` |
 
-O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00019-jzp` serve 100% do tráfego. O primeiro pedido manual de health durante o rollout devolveu um HTTP 503 transitório antes da readiness; pedidos seguintes devolveram UP. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
+O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00021-5mv` serve 100% do tráfego com a imagem imutável `sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763`. Durante o rollout houve um HTTP 503 transitório antes da readiness; pedidos seguintes devolveram HTTP 200/UP. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
 
 - `spring.jpa.hibernate.ddl-auto=validate`
 - `app.security.hsts.enabled=true` por default
@@ -75,13 +75,13 @@ O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-
 | Database | `neondb` |
 | Região | AWS Frankfurt / `eu-central-1` |
 | SSL | Obrigatório |
-| Schema | Flyway V25 |
+| Schema | Flyway V26 |
 | PITR/history observado no plano atual | 6 horas |
 | Snapshot manual durável | `pre-launch-2026-09-16` |
 
-Flyway validou 25 migrations. A versão atual do schema `public` é 25 e o schema está up to date, sem migrations pendentes. V24/V25 estão operacionalmente presentes em produção; a revisão `saltos-backend-00019-jzp` apenas confirmou a base já em V25 e não deve ser documentada como a revisão que aplicou V24/V25.
+Flyway validou 26 migrations. A revisão `saltos-backend-00020-ln5` encontrou o schema `public` em V25, aplicou `V26__artist_booking_reminders.sql` e terminou em V26. A revisão atual `saltos-backend-00021-5mv` encontrou V26 e confirmou o schema up to date, sem migrations pendentes.
 
-Este é o estado verificado na release de 2026-09-30. A branch local acrescenta V26 (`artist_reminder_sent_at`) em 2026-10-04; a sua promoção/aplicação está pendente e não altera os valores operacionais acima.
+Este é o estado verificado na release de 2026-10-05, promovida de `main` no commit `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`. O Cloud Build `874171bf-c557-4b22-aa92-6cb270e04d74` produziu `backend:dd872aa`; V26 e a UX de reset foram validadas em produção.
 
 Não documentar passwords, connection strings completas ou hosts privados.
 
@@ -170,7 +170,7 @@ Jobs ativos:
 | `saltos-private-media-cleanup` | `europe-west1` | `30 3 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/private-media-cleanup` | OIDC + Scheduler service account + `X-Maintenance-Key` |
 | `saltos-booking-reminders` | `europe-west1` | `0 9 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/booking-reminders` | OIDC + Scheduler service account + `X-Maintenance-Key` |
 
-A invocação histórica deste Scheduler foi validada; não comprova a receção do email «Lembrete do teu evento». A versão local com cliente + artista, tracking independente e retry na janela até ao evento ainda precisa de deploy e validação E2E nas duas mailboxes. Cron, chave e configuração do Scheduler real não foram alterados nesta tarefa. Ver procedimento em [OPERATIONS.md](OPERATIONS.md#validar-reminders-clienteartista-após-deploy).
+Em 2026-10-05 foi executado manualmente o Scheduler já existente com um booking de teste aceite dentro da janela: o utilizador confirmou receção dos reminders nas mailboxes de cliente e artista. Uma segunda execução manual não gerou novos emails, validando o comportamento idempotente observado. Cron, chave e configuração do Scheduler não foram alterados. O trigger automático das 09:00 continua a ser monitorizado separadamente. Ver procedimento em [OPERATIONS.md](OPERATIONS.md#validar-reminders-clienteartista-após-deploy).
 
 Os três jobs foram executados manualmente com sucesso. O backup também foi acionado via Scheduler e criou/concluiu uma execução do Cloud Run Job. O cron interno da aplicação continua desativado em produção.
 
@@ -269,8 +269,8 @@ Concluído:
 
 - Feature 4 notifications/email DONE: PR #27 -> `dev`, PR #29 -> `main`;
 - Global UI Redesign: PR #44 -> `dev`, PR #45 -> `main`, seguido de fixes visuais posteriores;
-- backend de produção atualizado para source release `ea3eddf`, imagem `backend:ea3eddf`, revisão `saltos-backend-00019-jzp`;
-- Flyway em produção validado até V25, com 25 migrations confirmadas e schema `public` up to date;
+- backend de produção atualizado para source release `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`, imagem `backend:dd872aa` (`sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763`), revisão `saltos-backend-00021-5mv`;
+- Flyway em produção validado em V26, com 26 migrations confirmadas; `saltos-backend-00020-ln5` aplicou V26 e `00021-5mv` confirmou o schema up to date;
 - CI, PostgreSQL CI e CodeQL passaram na release final `main`;
 - Cloudflare Pages production deployment vem de `main`;
 - produção manual smoke testing passou;

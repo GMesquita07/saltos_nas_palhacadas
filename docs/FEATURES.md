@@ -1,6 +1,6 @@
 # Funcionalidades
 
-Last verified: 2026-09-30.
+Last verified: 2026-10-05.
 
 ## Matriz
 
@@ -12,7 +12,7 @@ Last verified: 2026-09-30.
 | Contactos | Público/Admin | `ContactPage`, admin content management | `ContactController`, `AdminContactController` | `contacts` | Nenhuma | DONE |
 | Materiais | Público/Admin | `MaterialsPage`, admin content management | `MaterialController`, `AdminMaterialController` | `materials`, incluindo `imagePosition`/`imageZoom` | R2/media pública | DONE |
 | Registo/login | Público | `AuthPage`, `AuthContext` | `AuthController`, `JwtService` | `app_users` | Turnstile | DONE |
-| Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | Fluxo base DONE/VALIDATED em produção; pré-validação UX implementada localmente, sem deploy |
+| Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | DONE/VALIDATED em produção; pré-validação server-side e UX de link inválido/expirado confirmadas |
 | Conta do cliente | Cliente | `AccountPage` | `AuthController` | `app_users`, incluindo crop/posição/zoom da foto de conta | R2 para avatar | DONE |
 | Alteração de password | Cliente | `AccountPage` | `AuthController` | `app_users` | Nenhuma | DONE |
 | Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, favorites, reviews | Nenhuma | DONE técnico |
@@ -24,7 +24,7 @@ Last verified: 2026-09-30.
 | Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
 | Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService`, `SiteNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED; Feature 4 DONE |
 | Notificações admin/artista | Admin/Backend | `AdminArea` | `SiteNotificationService`, `BookingNotificationService`, `AdminPortfolioController` | `profiles.notification_email`, `app_users` | Brevo SMTP | DONE - infraestrutura Feature 4; envio específico de cada booking para o artista permanece TODO/validação E2E |
-| Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `reminder_sent_at` cliente + `artist_reminder_sent_at` artista (V26 local) | Scheduler + SMTP | IN PROGRESS; cliente/artista implementados localmente; deploy e entrega real E2E pendentes |
+| Reminders de eventos | Maintenance/Admin ops | N/A | `BookingReminderService`, `MaintenanceController` | `reminder_sent_at` cliente + `artist_reminder_sent_at` artista (V26) | Scheduler + SMTP | DONE/VALIDATED em produção; duas mailboxes confirmadas e segunda execução sem duplicados |
 | Upload/admin content management | Admin | `AdminArea`, `MaterialManagement`, crop editors/previews | `MediaController`, `MediaStorage` | R2/local + posição/zoom nas entidades editáveis | R2 em prod | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |
 | Media pública | Público | Imagens/vídeos no site | `PublicMediaController` | paths públicos | R2 public bucket | DONE |
@@ -43,7 +43,7 @@ Last verified: 2026-09-30.
 - Outro cliente não recebe informação sobre existência de media privada alheia; os casos não autorizados devolvem `404`.
 - O backend usa DTOs/records e validação Jakarta; propriedades JSON desconhecidas são rejeitadas globalmente.
 - Passwords usam BCrypt; tokens de reset são guardados como hash SHA-256.
-- Na branch `fix/password-reset-expired-link-ux`, o formulário só aparece após pré-validação server-side do link. Links incompletos/inutilizáveis mostram «Pedir novo link»; falhas de rede têm retry próprio. O POST final repete a validação e continua autoritativo. Alteração local de 2026-10-04, ainda sem deploy.
+- Em produção, o formulário de reset só aparece após pré-validação server-side do link. Links incompletos/inutilizáveis mostram «Pedir novo link»; falhas de rede têm retry próprio. O POST final repete a validação e continua autoritativo. O caminho de token inválido foi validado no domínio oficial em 2026-10-05.
 - Avatares atuais aceitam upload privado com crop/posição/zoom persistente; a proposta futura é avaliar avatares predefinidos.
 - `profiles.notification_email` é informação operacional privada: só endpoints admin podem ler/escrever; endpoints públicos de perfis/portfólio não expõem este campo.
 - Notificações operacionais usam admins ativos da base de dados (`role=ADMIN`, `active=true`), não `ADMIN_EMAIL`; `ADMIN_EMAIL` continua bootstrap-only.
@@ -59,7 +59,7 @@ Last verified: 2026-09-30.
 
 - O frontend é uma SPA client-rendered; já existem rotas públicas por perfil, mas SEO individual continua limitado sem renderização estática/SSR ou páginas pré-renderizadas.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
-- Reminders de booking já têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod. Execução do Scheduler não comprova entrega à mailbox. A versão cliente/artista com retries independentes está apenas na branch local.
+- Reminders de booking têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod. A versão cliente/artista com retries independentes está em produção e teve entrega manual E2E confirmada nas duas mailboxes; o trigger automático das 09:00 continua a ser monitorizado separadamente.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
-- A base de dados está operacionalmente confirmada em produção até Flyway V25; V26 de reminders do artista existe apenas no código local.
+- A base de dados está operacionalmente confirmada em Flyway V26, com 26 migrations validadas; `saltos-backend-00020-ln5` aplicou V26 e `00021-5mv` confirmou o schema up to date.
 - Uploads públicos feitos pelo admin ainda não têm ownership persistente em `media_objects`; limpeza automática de media pública órfã/R2 fica como follow-up para evitar apagar URLs reutilizados.
