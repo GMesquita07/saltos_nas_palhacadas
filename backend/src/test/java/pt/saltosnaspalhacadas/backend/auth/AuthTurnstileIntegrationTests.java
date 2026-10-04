@@ -117,4 +117,17 @@ class AuthTurnstileIntegrationTests {
 
         verifyNoInteractions(turnstileService);
     }
+
+    @Test
+    void resetPasswordPrevalidationDoesNotValidateTurnstile() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password/validate")
+                        .header("X-Turnstile-Token", "ignored-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"invalid-token"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(turnstileService);
+    }
 }

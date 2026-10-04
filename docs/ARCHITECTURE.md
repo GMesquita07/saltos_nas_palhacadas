@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- |
 | Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL. Código e produção estão confirmados até Flyway V25, com 25 migrations validadas. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL. Produção confirmada até Flyway V25, com 25 migrations validadas; código local acrescenta V26 para reminders do artista, sem deploy. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
 | Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |
@@ -76,7 +76,9 @@ sequenceDiagram
   API-->>U: JWT ou erro genérico
 ```
 
-Turnstile protege `login`, `register` e `forgot-password`; `reset-password` não usa Turnstile. O token não é guardado pelo backend.
+Turnstile protege `login`, `register` e `forgot-password`; `reset-password` não usa Turnstile. O token Turnstile não é guardado pelo backend.
+
+Alteração local de 2026-10-04, sem deploy: `POST /api/v1/auth/reset-password/validate` recebe o reset token no body e devolve 204 ou 400 genérico, sem dados da conta. Partilha com o POST final a verificação de hash SHA-256, validade, uso e utilizador ativo. A leitura é transacional/read-only e não consome o token. O frontend só apresenta o formulário após sucesso; o POST final volta a validar e continua transacional. Ambos usam o rate limiting público de auth, sem Turnstile adicional.
 
 ## Conteúdo Inicial Estático
 
@@ -149,6 +151,16 @@ Em produção:
 
 Os dois maintenance endpoints e o Scheduler do backup R2 foram executados manualmente com sucesso. O backup R2 também foi validado via trigger do Scheduler.
 
+### Reminders Cliente/Artista (Branch Local)
+
+Alteração de 2026-10-04, sem deploy: bookings `ACCEPTED` entre hoje e hoje + `days-before` (5 por defeito) são selecionados quando há pelo menos um destinatário configurado ainda pendente. O dia atual é calculado em `Europe/Lisbon`. Eventos anteriores a hoje ficam excluídos, mesmo que haja falhas por recuperar.
+
+`reminder_sent_at` mantém a semântica histórica de envio ao cliente; V26 acrescenta `artist_reminder_sent_at`. Cada destinatário é enviado e marcado independentemente, apenas após sucesso de `sendBestEffort`. SMTP desativado/sem host devolve falso, sem confirmar envio simulado. Aceitar/reaceitar ou alterar data/horário reinicia ambos os timestamps; reaplicar uma aceitação sem alterar o horário mantém o tracking. Aceitar contraproposta reinicia ambos.
+
+O job consulta IDs e processa cada booking numa transação independente (`REQUIRES_NEW`), relendo estado, janela e destinatários com bloqueio de escrita na linha. Isto serializa execuções sobrepostas e evita rollback de bookings anteriores por falha de outro booking. `processed` continua a contar bookings com pelo menos um envio bem sucedido nessa execução, não emails nem entregas em mailbox.
+
+Limite: SMTP e PostgreSQL não partilham transação. Um crash/rollback depois da aceitação SMTP e antes do commit pode causar reenvio. Não há garantia absoluta de exactly-once nem confirmação de entrega final; seria necessária idempotência no provider/outbox para evoluir essa garantia.
+
 ## Fluxo de Email
 
 - `EmailService` continua a enviar plain text via Brevo SMTP.
@@ -217,3 +229,4 @@ erDiagram
 | V23 | Adiciona `profiles.hero_background_image_url` para o background do hero do perfil. |
 | V24 | Adiciona `profiles.hero_background_image_position`, `profiles.hero_background_image_zoom`, `portfolio_items.thumbnail_position` e `portfolio_items.thumbnail_zoom`. |
 | V25 | Adiciona `materials.image_position` e `materials.image_zoom`. |
+| V26 | Local, sem deploy: adiciona `booking_requests.artist_reminder_sent_at` e índice; preserva o tracking histórico do cliente. |

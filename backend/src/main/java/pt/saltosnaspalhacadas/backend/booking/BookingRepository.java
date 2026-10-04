@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -43,18 +45,24 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             java.util.Collection<BookingStatus> statuses);
 
     @Query("""
-            select booking from Booking booking
-            join fetch booking.profile profile
+            select booking.id from Booking booking
+            join booking.profile profile
             where booking.status = :status
-              and booking.eventDate = :eventDate
-              and booking.reminderSentAt is null
-              and booking.contactEmail is not null
-              and trim(booking.contactEmail) <> ''
+              and booking.eventDate between :today and :through
+              and ((booking.reminderSentAt is null
+                    and booking.contactEmail is not null and trim(booking.contactEmail) <> '')
+                or (booking.artistReminderSentAt is null
+                    and profile.notificationEmail is not null and trim(profile.notificationEmail) <> ''))
             order by booking.startTime asc, booking.id asc
             """)
-    List<Booking> findAcceptedBookingsDueForReminder(
+    List<Long> findAcceptedBookingsDueForReminder(
             @Param("status") BookingStatus status,
-            @Param("eventDate") LocalDate eventDate);
+            @Param("today") LocalDate today,
+            @Param("through") LocalDate through);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select booking from Booking booking where booking.id = :id")
+    Optional<Booking> findByIdForReminder(@Param("id") Long id);
 
     @Query("""
             select booking from Booking booking

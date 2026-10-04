@@ -72,6 +72,8 @@ Razão: Brevo foi autenticado para `saltosnaspalhacadas.pt` com DKIM/DMARC e SMT
 
 Consequências: booking reminders já podem correr em produção; continuar a monitorizar entregabilidade e manter SMTP password no Secret Manager.
 
+Clarificação local de 2026-10-04: esta decisão confirma infraestrutura SMTP, não entrega E2E de reminders às mailboxes. A extensão cliente/artista usa tracking independente (V26), retry de hoje a +5 dias e transação/bloqueio por booking. Deploy e entrega real de ambos continuam pendentes; SMTP desativado não pode confirmar envio.
+
 ## Turnstile em Auth Pública
 
 Status: Accepted.

@@ -81,6 +81,8 @@ O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-
 
 Flyway validou 25 migrations. A versão atual do schema `public` é 25 e o schema está up to date, sem migrations pendentes. V24/V25 estão operacionalmente presentes em produção; a revisão `saltos-backend-00019-jzp` apenas confirmou a base já em V25 e não deve ser documentada como a revisão que aplicou V24/V25.
 
+Este é o estado verificado na release de 2026-09-30. A branch local acrescenta V26 (`artist_reminder_sent_at`) em 2026-10-04; a sua promoção/aplicação está pendente e não altera os valores operacionais acima.
+
 Não documentar passwords, connection strings completas ou hosts privados.
 
 Restore validado:
@@ -167,6 +169,8 @@ Jobs ativos:
 | `saltos-r2-backup-daily` | `europe-west1` | `30 2 * * *` | `Europe/Lisbon` | Cloud Run Job `saltos-r2-backup` | OAuth + Scheduler service account |
 | `saltos-private-media-cleanup` | `europe-west1` | `30 3 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/private-media-cleanup` | OIDC + Scheduler service account + `X-Maintenance-Key` |
 | `saltos-booking-reminders` | `europe-west1` | `0 9 * * *` | `Europe/Lisbon` | `POST /internal/maintenance/booking-reminders` | OIDC + Scheduler service account + `X-Maintenance-Key` |
+
+A invocação histórica deste Scheduler foi validada; não comprova a receção do email «Lembrete do teu evento». A versão local com cliente + artista, tracking independente e retry na janela até ao evento ainda precisa de deploy e validação E2E nas duas mailboxes. Cron, chave e configuração do Scheduler real não foram alterados nesta tarefa. Ver procedimento em [OPERATIONS.md](OPERATIONS.md#validar-reminders-clienteartista-após-deploy).
 
 Os três jobs foram executados manualmente com sucesso. O backup também foi acionado via Scheduler e criou/concluiu uma execução do Cloud Run Job. O cron interno da aplicação continua desativado em produção.
 

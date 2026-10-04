@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -94,6 +95,9 @@ public class Booking {
     @Column(name = "reminder_sent_at")
     private Instant reminderSentAt;
 
+    @Column(name = "artist_reminder_sent_at")
+    private Instant artistReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -146,6 +150,10 @@ public class Booking {
     }
 
     public void accept(LocalDate eventDate, LocalTime startTime, LocalTime endTime, BigDecimal budget, String adminMessage) {
+        if (status != BookingStatus.ACCEPTED || !Objects.equals(this.eventDate, eventDate)
+                || !Objects.equals(this.startTime, startTime) || !Objects.equals(this.endTime, endTime)) {
+            resetReminders();
+        }
         this.eventDate = eventDate;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -155,7 +163,6 @@ public class Booking {
         this.counterBudget = null;
         this.counterEventDate = null;
         this.cancelledAt = null;
-        this.reminderSentAt = null;
     }
 
     public void decline(String adminMessage) {
@@ -181,13 +188,13 @@ public class Booking {
     }
 
     public void acceptCounterProposal(LocalDate acceptedEventDate, BigDecimal acceptedBudget) {
+        resetReminders();
         this.eventDate = acceptedEventDate;
         this.budget = acceptedBudget;
         this.status = BookingStatus.ACCEPTED;
         this.counterBudget = null;
         this.counterEventDate = null;
         this.cancelledAt = null;
-        this.reminderSentAt = null;
     }
 
     public void declineCounterProposal() {
@@ -198,6 +205,24 @@ public class Booking {
 
     public void markReminderSent(Instant sentAt) {
         this.reminderSentAt = sentAt == null ? Instant.now() : sentAt;
+    }
+
+    public void markArtistReminderSent(Instant sentAt) {
+        this.artistReminderSentAt = sentAt == null ? Instant.now() : sentAt;
+    }
+
+    public boolean needsCustomerReminder() {
+        return reminderSentAt == null && contactEmail != null && !contactEmail.isBlank();
+    }
+
+    public boolean needsArtistReminder() {
+        return artistReminderSentAt == null && profile.getNotificationEmail() != null
+                && !profile.getNotificationEmail().isBlank();
+    }
+
+    private void resetReminders() {
+        reminderSentAt = null;
+        artistReminderSentAt = null;
     }
 
     public void anonymizeForAccountDeletion() {
@@ -237,6 +262,7 @@ public class Booking {
     public LocalDate getCounterEventDate() { return counterEventDate; }
     public Instant getCancelledAt() { return cancelledAt; }
     public Instant getReminderSentAt() { return reminderSentAt; }
+    public Instant getArtistReminderSentAt() { return artistReminderSentAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }
