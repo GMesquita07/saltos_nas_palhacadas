@@ -3499,3 +3499,97 @@
     padding: 9px;
   }
 }
+
+
+/* Mobile/accessibility polish for booking cards and counter-proposals. */
+.counterActions button:first-child {
+  border-color: #0b679b !important;
+  color: #ffffff !important;
+  background: #0b679b !important;
+}
+
+.counterActions button:first-child:hover:not(:disabled) {
+  border-color: #09547f !important;
+  color: #ffffff !important;
+  background: #09547f !important;
+}
+
+.counterActions button:not(:first-child):not(.declineCounter) {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  background: var(--surface-elevated) !important;
+}
+
+.counterActions button:not(:first-child):not(.declineCounter):hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive) !important;
+  background: var(--interactive-soft) !important;
+}
+
+.counterSuccess,
+.cancelSuccess {
+  width: 100%;
+  max-width: 100%;
+  color: var(--success) !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.counterError,
+.cancelError {
+  width: 100%;
+  max-width: 100%;
+  color: var(--danger) !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 760px) {
+  .mobileDetailsPanel,
+  .mobileDetailsPanel > *,
+  .proposalComparison,
+  .proposalComparison > * {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobileDetailsPanel {
+    overflow: hidden;
+  }
+
+  .mobileDetailsPanel button {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 520px) {
+  .proposalChange {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .proposalChangeLabel {
+    grid-column: auto;
+  }
+
+  .proposalArrow {
+    display: none;
+  }
+
+  .proposalOld,
+  .proposalNew {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .proposalComparison {
+    padding: 12px;
+  }
+}
