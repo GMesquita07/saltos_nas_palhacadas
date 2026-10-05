@@ -10,18 +10,18 @@ Last verified: 2026-10-05.
 | --- | --- |
 | Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
 | Backend Google Cloud Run | DONE; health UP; rollout validado |
-| Neon PostgreSQL | DONE; produção em Flyway V26 com 26 migrations validadas; V27/V28 existem apenas localmente e aguardam revisão/promoção/deploy |
+| Neon PostgreSQL | DONE; produção em Flyway V28 com 28 migrations validadas; V27/V28 aplicadas por `saltos-backend-00022-6x6` |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
 | Booking reminder Scheduler | DONE/VALIDATED; execução manual pós-release e E2E cliente/artista validados; próximo trigger automático 09:00 fica para monitorização operacional |
-| Reminders cliente/artista | DONE/VALIDATED; V26 em produção, receção nas duas mailboxes confirmada e segunda execução sem duplicados |
+| Reminders cliente/artista/in-app | DONE/VALIDATED; email cliente/artista validado E2E e canal in-app promovido em V28 |
 | Domínio final | DONE técnico; confirmação administrativa .PT pendente |
 | Brevo/SMTP | DONE/VALIDATED |
 | Backups/restore drill | DONE/VALIDATED |
 | CI/PostgreSQL CI/CodeQL final | DONE |
 | Smoke final de produção | DONE |
-| Final merge para `main` | DONE; release password-reset + booking reminders promovida por PR #90 e validada em produção em 2026-10-05 |
+| Final merge para `main` | DONE; notificações in-app + contrapropostas promovidas por PR #95/#96 e validadas em produção em 2026-10-05 |
 
 ## Checklist Técnico
 
@@ -73,11 +73,10 @@ Last verified: 2026-10-05.
 1. Acompanhar confirmação administrativa .PT externa.
 2. Monitorizar o próximo trigger automático das 09:00 Europe/Lisbon do Scheduler de booking reminders; a execução manual pós-release e a entrega cliente/artista já foram validadas.
 3. Monitorizar entregabilidade do email operacional do artista nos bookings; criação de booking -> `profile.notificationEmail` validada em produção em 2026-10-05.
-4. Rever, promover, fazer deploy e validar em produção a UX da conta, sino/inbox, contrapropostas bidirecionais e reminder in-app, implementados localmente com V27/V28.
-5. Executar Feature 7 Accessibility.
-6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
+4. Executar Feature 7 Accessibility.
+5. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
 
-Nota operacional: V26 está confirmada em produção. A revisão `saltos-backend-00020-ln5` migrou o schema de V25 para V26; a revisão atual `saltos-backend-00021-5mv` validou 26 migrations e encontrou o schema já em V26.
+Nota operacional: V28 está confirmada em produção. A revisão `saltos-backend-00022-6x6` encontrou o schema em V26, aplicou V27/V28, validou 28 migrations e ficou saudável a servir 100% do tráfego.
 
 ## Render
 

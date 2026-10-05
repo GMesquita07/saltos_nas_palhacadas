@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- |
 | Cloudflare Pages | Serve o frontend estático no domínio oficial a partir da production branch `main`. |
 | Google Cloud Run | Executa a API Spring Boot stateless; 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero e startup CPU boost. |
-| Neon PostgreSQL | Persistência relacional; produção usa SSL. Flyway V26 está em produção com 26 migrations validadas; `saltos-backend-00020-ln5` aplicou V26 e `saltos-backend-00021-5mv` confirmou o schema up to date. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
+| Neon PostgreSQL | Persistência relacional; produção usa SSL. Flyway V28 está em produção com 28 migrations validadas; `saltos-backend-00022-6x6` aplicou V27/V28 a partir de V26. PITR/history observado de 6 horas e snapshot manual pré-lançamento. |
 | Cloudflare R2 | Armazena media runtime. Bucket público para media publicada; bucket privado para uploads pendentes/privados; bucket separado para backups. |
 | Google Cloud Scheduler | Aciona maintenance endpoints e o Cloud Run Job de backup porque Cloud Run pode escalar para zero. |
 | Google Secret Manager | Guarda secrets de produção para backend. |
@@ -48,9 +48,9 @@ flowchart LR
 
 O frontend usa React Router com URLs reais como `/perfis/:slug`, `/agendar/:slug`, `/contactos`, `/materiais`, `/login`, `/reset-password`, `/conta`, `/favoritos` e `/admin/*`. Cloudflare Pages serve deep links através de `frontend/public/_redirects` com regras explícitas para as rotas conhecidas, sem catch-all genérico nem regras para `/api`.
 
-Na implementação local seguinte, `NotificationProvider` centraliza a inbox privada para clientes autenticados, com carregamento inicial, atualização a cada 60 segundos e refresh ao regressar à janela. O sino global e `AccountPage` consomem a mesma fonte de verdade; `GET /api/v1/notifications` e os PATCH individual/em massa tratam leitura. `UserNotificationService` persiste decisões administrativas e o reminder in-app, mantendo-se separado de `SiteNotificationService`/`BookingNotificationService`, responsáveis por email. Esta arquitetura depende de V27/V28 e ainda não foi promovida nem validada em produção.
+Em produção, `NotificationProvider` centraliza a inbox privada para utilizadores autenticados, incluindo CUSTOMER e ADMIN, com carregamento inicial, polling a cada 5 segundos enquanto a página está visível e refresh em focus/visibility e eventos explícitos. O sino global e `AccountPage` consomem a mesma fonte de verdade; `GET /api/v1/notifications` e os PATCH individual/em massa tratam leitura. `UserNotificationService` persiste decisões de booking e o reminder in-app, mantendo-se separado de `SiteNotificationService`/`BookingNotificationService`, responsáveis por email. Esta arquitetura usa V27/V28, ambas em produção.
 
-A V28 local torna a negociação de booking bidirecional. A proposta guarda autor (`ADMIN`/`CUSTOMER`) e apenas os desvios de data, horário e orçamento face aos termos canónicos; a validação compara a proposta efetiva nova com a proposta efetiva pendente, permitindo restaurar todos os termos originais sem ambiguidade. Só a contraparte pode aceitá-la; a aceitação aplica os termos efetivos, limpa o estado transitório e respeita a autoria da mensagem. Durante a negociação, o horário canónico de um booking já aceite continua reservado; o horário alternativo é validado no envio e no aceite, mas não fica reservado antes da aceitação. Uma proposta do cliente usa sempre o owner obtido da sessão e notifica operacionalmente equipa/artista por email, sem criar uma notificação in-app para o próprio cliente.
+A V28 em produção torna a negociação de booking bidirecional. A proposta guarda autor (`ADMIN`/`CUSTOMER`) e apenas os desvios de data, horário e orçamento face aos termos canónicos; a validação compara a proposta efetiva nova com a proposta efetiva pendente, permitindo restaurar todos os termos originais sem ambiguidade. Só a contraparte pode aceitá-la; a aceitação aplica os termos efetivos, limpa o estado transitório e respeita a autoria da mensagem. Durante a negociação, o horário canónico de um booking já aceite continua reservado; o horário alternativo é validado no envio e no aceite, mas não fica reservado antes da aceitação. Uma proposta do cliente usa sempre o owner obtido da sessão e notifica operacionalmente equipa/artista por email, sem criar uma notificação in-app para o próprio cliente.
 
 A sessão guardada em `sessionStorage` é restaurada imediatamente no cliente para evitar bloquear conteúdo público. A validação `/auth/me` corre em background; rotas privadas e admin mostram apenas loading local até a sessão ser validada.
 
@@ -155,15 +155,15 @@ Em produção:
 
 Os dois maintenance endpoints e o Scheduler do backup R2 foram executados manualmente com sucesso. O backup R2 também foi validado via trigger do Scheduler.
 
-### Reminders Cliente/Artista (Produção V26)
+### Reminders Cliente/Artista/In-App (Produção V28)
 
 Desde a release de 2026-10-05, bookings `ACCEPTED` entre hoje e hoje + `days-before` (5 por defeito) são selecionados quando há pelo menos um destinatário configurado ainda pendente. O dia atual é calculado em `Europe/Lisbon`. Eventos anteriores a hoje ficam excluídos, mesmo que haja falhas por recuperar.
 
 `reminder_sent_at` mantém a semântica histórica de envio ao cliente; V26 acrescenta `artist_reminder_sent_at`. Cada destinatário é enviado e marcado independentemente, apenas após sucesso de `sendBestEffort`. SMTP desativado/sem host devolve falso, sem confirmar envio simulado. Aceitar/reaceitar ou alterar data/horário reinicia ambos os timestamps; reaplicar uma aceitação sem alterar o horário mantém o tracking. Aceitar contraproposta reinicia ambos.
 
-O job consulta IDs e, em produção V26, processa cada booking numa transação independente (`REQUIRES_NEW`), relendo estado, janela e destinatários com bloqueio de escrita na linha. Isto serializa execuções sobrepostas e evita rollback de bookings anteriores por falha de outro booking. `processed` conta bookings com pelo menos um envio bem sucedido nessa execução, não emails nem entregas em mailbox.
+O job consulta IDs e processa cada canal de cada booking numa transação independente (`REQUIRES_NEW`), relendo estado, janela e destinatários com bloqueio de escrita na linha. Isto serializa execuções sobrepostas no PostgreSQL de produção e evita rollback de canais/bookings anteriores por falha posterior. `processed` conta bookings com pelo menos um canal concluído nessa execução, não emails nem entregas em mailbox.
 
-Na extensão local V28, o mesmo job acrescenta um terceiro canal independente: `BOOKING_REMINDER_5_DAYS` na inbox do cliente, controlado por `customer_in_app_reminder_sent_at`. Cada canal corre na sua própria transação `REQUIRES_NEW` e volta a bloquear/revalidar o booking, evitando que uma falha de inbox desfaça o tracking de emails já concluídos. A notificação é criada no máximo uma vez por ciclo aceite e pode ser repetida apenas depois de uma aceitação/reagendamento que altere termos. Neste código local, `processed` passa a contar bookings com pelo menos um canal de reminder concluído na execução, seja email ou in-app. Esta semântica ainda não está em produção.
+V28 acrescenta um terceiro canal independente: `BOOKING_REMINDER_5_DAYS` na inbox do cliente, controlado por `customer_in_app_reminder_sent_at`. Cada canal corre na sua própria transação `REQUIRES_NEW` e volta a bloquear/revalidar o booking, evitando que uma falha de inbox desfaça o tracking de emails já concluídos. A notificação é criada no máximo uma vez por ciclo aceite e pode ser repetida apenas depois de uma aceitação/reagendamento que altere termos. Esta semântica está em produção desde a revisão `saltos-backend-00022-6x6`.
 
 Limite: SMTP e PostgreSQL não partilham transação. Um crash/rollback depois da aceitação SMTP e antes do commit pode causar reenvio. Não há garantia absoluta de exactly-once nem confirmação de entrega final; seria necessária idempotência no provider/outbox para evoluir essa garantia.
 
@@ -238,5 +238,5 @@ erDiagram
 | V24 | Adiciona `profiles.hero_background_image_position`, `profiles.hero_background_image_zoom`, `portfolio_items.thumbnail_position` e `portfolio_items.thumbnail_zoom`. |
 | V25 | Adiciona `materials.image_position` e `materials.image_zoom`. |
 | V26 | Em produção desde 2026-10-05: adiciona `booking_requests.artist_reminder_sent_at` e índice; preserva o tracking histórico do cliente. Aplicada por `saltos-backend-00020-ln5`. |
-| V27 | Local/pending: cria `user_notifications`, índices por utilizador/data e unread, FK de utilizador com cascade e FK opcional de booking com set null. Ainda não aplicada em produção. |
-| V28 | Local/pending: acrescenta autor, horário e tracking completo das contrapropostas bidirecionais, mais `customer_in_app_reminder_sent_at` e respetivo índice. Faz backfill seguro de propostas históricas como `ADMIN`; ainda não aplicada em produção. |
+| V27 | Em produção desde 2026-10-05: cria `user_notifications`, índices por utilizador/data e unread, FK de utilizador com cascade e FK opcional de booking com set null. Aplicada por `saltos-backend-00022-6x6`. |
+| V28 | Em produção desde 2026-10-05: acrescenta autor, horário e tracking completo das contrapropostas bidirecionais, mais `customer_in_app_reminder_sent_at` e respetivo índice. Faz backfill seguro de propostas históricas como `ADMIN`. Aplicada por `saltos-backend-00022-6x6`. |

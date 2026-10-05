@@ -1,27 +1,27 @@
 # Estado do Projeto
 
-Last updated: 2026-10-05. Estado operacional de produção, V26, UX de reset e reminders cliente/artista confirmados após a release.
+Last updated: 2026-10-05. Estado operacional de produção em V28, com notificações in-app, contrapropostas bidirecionais e reminders validados após a release.
 
 ## Resumo
 
-O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o backend está UP, a revisão Cloud Run `saltos-backend-00021-5mv` serve 100% do tráfego com imagem `backend:dd872aa` / digest `sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763`, e Flyway confirmou produção em V26 com 26 migrations validadas.
+O lançamento técnico de produção está completo. A stack principal está em Cloudflare Pages, Google Cloud Run, Neon PostgreSQL, Cloudflare R2, Google Cloud Scheduler, Google Secret Manager, Cloudflare Turnstile e Brevo SMTP. O domínio `www.saltosnaspalhacadas.pt` responde HTTP 200, o backend está UP, a revisão Cloud Run `saltos-backend-00022-6x6` serve 100% do tráfego com imagem `backend:d50d8f9` / digest `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb`, e Flyway confirmou produção em V28 com 28 migrations validadas.
 
 Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media e Performance 6.2 Image Delivery / LCP estão DONE; a última medição documentada mantém PageSpeed 98 mobile / 100 desktop.
 
-A alteração de runtime mais recente em produção é a release `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`, que acrescenta pré-validação/UX de password reset e reminders independentes de cliente/artista. O Cloud Build `874171bf-c557-4b22-aa92-6cb270e04d74` produziu a imagem `backend:dd872aa`; a revisão `saltos-backend-00020-ln5` aplicou V26 e a revisão atual `00021-5mv` validou o schema já em V26.
+A alteração de runtime mais recente em produção é a release `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`, que acrescenta notificações persistentes para clientes/admins, contrapropostas bidirecionais e reminder in-app. O Cloud Build `a4a96676-45f3-4ed6-a097-e5213760498c` produziu a imagem `backend:d50d8f9`; a revisão `saltos-backend-00022-6x6` aplicou V27 e V28 a partir de V26 e terminou com o schema em V28.
 
-A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. O trigger automático das 09:00 continua a ser monitorizado separadamente. A UX da área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app estão implementados localmente com V27/V28, aguardando revisão, promoção, deploy e validação; produção permanece confirmada em V26. A sequência real de próximos trabalhos é: rever/promover/validar este conjunto local; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. A área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app foram promovidos por PR #95 -> `dev` e PR #96 -> `main`; backend, frontend, PostgreSQL CI, CodeQL, Cloudflare Pages, Flyway V28, health e smoke HTTP ficaram verdes. O trigger automático das 09:00 continua a ser monitorizado separadamente. Próximos trabalhos: Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
 | Área | Estado | Produção? | Validado? | Próximo passo |
 | --- | --- | --- | --- | --- |
 | Frontend Cloudflare Pages | DONE | Sim, branch `main` | Sim | Monitorização pós-lançamento |
-| Backend Cloud Run | DONE | Sim | Sim | Revisão `saltos-backend-00021-5mv` com 100% do tráfego e health UP |
+| Backend Cloud Run | DONE | Sim | Sim | Revisão `saltos-backend-00022-6x6` com 100% do tráfego e health UP |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
-| Flyway V1-V26 | DONE | Sim | Sim | Produção confirmada em V26; 26 migrations validadas; `00020-ln5` aplicou V26 e `00021-5mv` confirmou up to date |
-| UX da conta + notificações in-app / Flyway V27 | DONE local | Não | Testes locais | Provider, inbox e sino global para CUSTOMER implementados; pendente de revisão, promoção, deploy e validação em produção |
-| Contrapropostas bidirecionais + reminder in-app / Flyway V28 | DONE local | Não | Testes locais | Ping-pong admin/cliente, email + inbox e terceiro canal de reminder implementados; pendente de revisão, promoção, deploy e validação em produção |
+| Flyway V1-V28 | DONE | Sim | Sim | Produção confirmada em V28; 28 migrations validadas; `00022-6x6` aplicou V27/V28 a partir de V26 |
+| UX da conta + notificações in-app / Flyway V27 | DONE | Sim | Sim | Provider, inbox e sino global para CUSTOMER/ADMIN promovidos por PR #95/#96 e schema V27 aplicado em produção |
+| Contrapropostas bidirecionais + reminder in-app / Flyway V28 | DONE | Sim | Sim | Ping-pong ADMIN/CUSTOMER, email + inbox e terceiro canal de reminder promovidos por PR #95/#96; V28 aplicada em produção |
 | Artist media/crop UX | DONE | Sim | Sim | Release em produção validada; campos de hero background e thumbnail confirmados; `/materials` respondeu com sucesso mas atualmente não existem materiais publicados |
 | Flyway V21 profile notification email | DONE | Sim | Sim | Feature 4 notifications/email; PR #27 -> `dev`; PR #29 -> `main` |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |
@@ -59,12 +59,13 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 
 | Branch / PR | SHA conhecido | Papel |
 | --- | --- | --- |
-| `main` | `ea3eddf` | Source release em produção; Artist media/crop UX operacionalmente validada |
+| `main` | `d50d8f9` | Source release em produção; notificações in-app e contrapropostas bidirecionais validadas |
 | `dev` | integrado | Branch de integração |
 | `fix/artist-lightbox-desktop` | integrado | PR #81 -> `dev`; Artist media/crop UX |
 | PR #82 `dev` -> `main` | integrado | Promoveu a release Artist media/crop UX para `main` |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
 | `feat/notifications-and-email` | integrado | Feature 4: notifications/email DONE; PR #27 -> `dev`, PR #29 -> `main` |
+| `feat/account-notifications` | integrado | Notificações in-app + contrapropostas bidirecionais; PR #95 -> `dev`, PR #96 -> `main` |
 
 Fluxo histórico concluído:
 
@@ -78,14 +79,14 @@ feat/production-launch
 
 Distinção importante:
 
-- source release atualmente confirmada em produção: `ea3eddf`;
-- imagem backend atualmente confirmada em produção: `backend:ea3eddf`;
-- image digest imutável: `sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763`;
-- Cloud Run revision confirmada: `saltos-backend-00021-5mv`, a servir 100% do tráfego;
+- source release atualmente confirmada em produção: `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`;
+- imagem backend atualmente confirmada em produção: `backend:d50d8f9`;
+- image digest imutável: `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb`;
+- Cloud Run revision confirmada: `saltos-backend-00022-6x6`, a servir 100% do tráfego;
 - `/actuator/health` está UP; houve um HTTP 503 no primeiro pedido manual durante startup/rollout antes da prontidão, seguido de health UP;
 - Cloudflare Pages production branch é `main`;
-- Flyway em produção: 26 migrations validadas, schema `public` na versão 26 e up to date;
-- a revisão `00020-ln5` encontrou V25 e aplicou V26; a revisão `00021-5mv` encontrou V26 e confirmou o schema up to date;
+- Flyway em produção: 28 migrations validadas, schema `public` na versão 28 e up to date;
+- a revisão `00022-6x6` encontrou V26 e aplicou V27/V28; o startup terminou com o schema em V28;
 - Feature 4 notifications/email está DONE e V21 está em produção;
 - Feature 5 SEO / Google está DONE: Search Console configurado, domain property `saltosnaspalhacadas.pt` verificada, sitemap enviado com 11 URLs descobertas, páginas públicas/perfis indexados e ProfilePage reconhecido;
 - Feature 6 Performance & Media foi promovida por PR #55 -> `dev` e PR #56 -> `main`; PageSpeed inicial pós-Feature 6 mediu 85 mobile e 100 desktop, com TBT 0 ms e LCP mobile 4.4 s;
@@ -98,27 +99,27 @@ Distinção importante:
 
 ## Produção Conhecida
 
-Release de 2026-10-05: reminders de cliente e artista têm timestamps separados e retry independente. `V26__artist_booking_reminders.sql` foi aplicada por `saltos-backend-00020-ln5`. A entrega real para as duas mailboxes de teste foi confirmada e uma segunda execução manual não gerou duplicados.
+Release de 2026-10-05: além dos reminders de cliente/artista já validados, a release `d50d8f9` promoveu notificações in-app, contrapropostas bidirecionais e o terceiro canal de reminder. `saltos-backend-00022-6x6` aplicou V27/V28 e ficou saudável a 100% do tráfego.
 
 | Componente | Valor operacional documentável |
 | --- | --- |
 | Cloudflare Pages project | `saltos-nas-palhacadas-prod` |
-| Source release | `ea3eddf` |
+| Source release | `d50d8f9a47fed3ca10fb038aba6d0d5970d48290` |
 | URL público | `https://www.saltosnaspalhacadas.pt` |
 | Apex | `https://saltosnaspalhacadas.pt` redireciona 301 para `www` |
 | URL Pages temporário | `https://saltos-nas-palhacadas-prod.pages.dev` |
 | Cloud Run project | `saltos-prod-gmesquita` |
 | Região Cloud Run | `europe-west1` |
 | Service | `saltos-backend` |
-| Cloud Run revision | `saltos-backend-00021-5mv` |
-| Imagem | `backend:dd872aa` / `sha256:d16e16a8c72440e973e5e1ad5b4facb8495ac511b1ba431cc097b40ab0252763` |
-| Código de produção backend | `main` em `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`; revisão Cloud Run `saltos-backend-00021-5mv` |
+| Cloud Run revision | `saltos-backend-00022-6x6` |
+| Imagem | `backend:d50d8f9` / `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb` |
+| Código de produção backend | `main` em `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`; revisão Cloud Run `saltos-backend-00022-6x6` |
 | Tráfego | 100% |
 | Health | UP; primeiro pedido manual durante rollout devolveu 503 transitório antes da prontidão |
 | Recursos Cloud Run | 1 CPU, 1 GiB RAM, concurrency 80, max 2, scale-to-zero, startup CPU boost |
-| Flyway operacional confirmado | V26; 26 migrations validadas, schema `public` up to date |
-| Cloud Build backend | `874171bf-c557-4b22-aa92-6cb270e04d74` |
-| Image digest | `sha256:537486d2e2c12f59039383052944d0326cf0c21531a84c4a912063b4a55f14fb` |
+| Flyway operacional confirmado | V28; 28 migrations validadas, schema `public` up to date |
+| Cloud Build backend | `a4a96676-45f3-4ed6-a097-e5213760498c` |
+| Image digest | `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb` |
 | Neon branch | `production/default` |
 | R2 buckets | `saltos-prod-public`, `saltos-prod-private` |
 | R2 backup bucket | `saltos-prod-backup` |
