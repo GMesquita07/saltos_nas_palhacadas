@@ -447,6 +447,21 @@ class AuthAndAdminIntegrationTests {
     }
 
     @Test
+    void adminCannotDeleteOwnAccountThroughCustomerLifecycleEndpoint() throws Exception {
+        AppUser admin = users.findByEmailAndActiveTrue("admin@example.test").orElseThrow();
+        String token = jwtService.createToken(admin);
+
+        mockMvc.perform(delete("/api/v1/auth/me")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"change-me-now\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("A conta de administrador deve ser removida manualmente por outro administrador"));
+
+        assertThat(users.findById(admin.getId()).orElseThrow().isActive()).isTrue();
+    }
+
+    @Test
     void customerAvatarUploadIsPrivateAndReplacesPreviousAvatar() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         AppUser customer = users.save(new AppUser(

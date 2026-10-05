@@ -537,3 +537,26 @@
   color: #ffffff !important;
   background: var(--interactive) !important;
 }
+
+
+@media (max-width: 560px) {
+  .wrapper {
+    right: 14px;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .launcher {
+    width: 50px;
+  }
+
+  .launcher svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .panel,
+  .expanded {
+    width: calc(100vw - 28px);
+    max-height: calc(100svh - 132px);
+  }
+}
