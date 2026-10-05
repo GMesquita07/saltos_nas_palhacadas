@@ -52,14 +52,18 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     return () => window.clearTimeout(requestId)
   }, [token])
 
-  const refresh = useCallback(async () => {
+  const fetchNotifications = useCallback(async (background = false) => {
     if (!token) return
     const requestToken = token
     const requestGeneration = sessionGenerationRef.current
-    setState((current) => ({
-      ...(current.token === requestToken ? current : emptyState(requestToken)),
-      isLoading: true,
-    }))
+
+    if (!background) {
+      setState((current) => ({
+        ...(current.token === requestToken ? current : emptyState(requestToken)),
+        isLoading: true,
+      }))
+    }
+
     try {
       const nextInbox = await getNotifications(requestToken)
       setState((current) => isCurrentNotificationRequest(
@@ -72,39 +76,45 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         ? { ...current, inbox: nextInbox, error: null }
         : current)
     } catch (reason) {
-      setState((current) => isCurrentNotificationRequest(
-          activeTokenRef.current,
-          sessionGenerationRef.current,
-          requestToken,
-          requestGeneration,
-        )
-          && current.token === requestToken
-        ? { ...current, error: reason instanceof Error ? reason.message : 'Não foi possível carregar as notificações.' }
-        : current)
+      if (!background) {
+        setState((current) => isCurrentNotificationRequest(
+            activeTokenRef.current,
+            sessionGenerationRef.current,
+            requestToken,
+            requestGeneration,
+          )
+            && current.token === requestToken
+          ? { ...current, error: reason instanceof Error ? reason.message : 'Não foi possível carregar as notificações.' }
+          : current)
+      }
     } finally {
-      setState((current) => isCurrentNotificationRequest(
-          activeTokenRef.current,
-          sessionGenerationRef.current,
-          requestToken,
-          requestGeneration,
-        )
-          && current.token === requestToken
-        ? { ...current, isLoading: false }
-        : current)
+      if (!background) {
+        setState((current) => isCurrentNotificationRequest(
+            activeTokenRef.current,
+            sessionGenerationRef.current,
+            requestToken,
+            requestGeneration,
+          )
+            && current.token === requestToken
+          ? { ...current, isLoading: false }
+          : current)
+      }
     }
   }, [token])
+
+  const refresh = useCallback(() => fetchNotifications(false), [fetchNotifications])
 
   useEffect(() => {
     if (!token) return
 
-    void refresh()
+    void fetchNotifications()
     const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refresh()
+      if (document.visibilityState === 'visible') void fetchNotifications(true)
     }, 5_000)
-    const handleFocus = () => { void refresh() }
-    const handleExplicitRefresh = () => { void refresh() }
+    const handleFocus = () => { void fetchNotifications(true) }
+    const handleExplicitRefresh = () => { void fetchNotifications(true) }
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') void refresh()
+      if (document.visibilityState === 'visible') void fetchNotifications(true)
     }
     window.addEventListener('focus', handleFocus)
     window.addEventListener(notificationsRefreshEvent, handleExplicitRefresh)
@@ -115,7 +125,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       window.removeEventListener(notificationsRefreshEvent, handleExplicitRefresh)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [refresh, token])
+  }, [fetchNotifications, token])
 
   const markRead = useCallback(async (id: string) => {
     if (!token) return
