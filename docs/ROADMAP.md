@@ -65,7 +65,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | SEO para DJ KidG / João Tomás | DONE | Search Console validou indexação e structured data ProfilePage |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | DONE | Corrigido na Feature 4; PR #27 -> `dev` e PR #29 -> `main` |
-| Área pessoal do cliente como botões | IN PROGRESS | Implementada na UX da área de conta; pendente de revisão/promoção/validação |
+| Área pessoal do cliente como botões | DONE | UX da área de conta promovida por PR #95/#96 e validada em produção |
 | Zona de notificações in-site | DONE | Inbox e sino global para utilizadores autenticados promovidos por PR #95/#96; V27/V28 em produção |
 | Notificações futuras | OPTIONAL | Avaliar reminder in-app de 1 dia, pedido de review pós-evento, favoritos e waitlist/disponibilidade; nada implementado nesta ronda |
 | Formatação Privacy/Terms/Cookies | TODO | Melhorar UX e pedir revisão jurídica |
