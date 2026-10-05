@@ -63,7 +63,7 @@ Last verified: 2026-10-05.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod. A versão cliente/artista com retries independentes está em produção e teve entrega manual E2E confirmada nas duas mailboxes; o trigger automático das 09:00 continua a ser monitorizado separadamente.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
-- A base de dados está operacionalmente confirmada em Flyway V26, com 26 migrations validadas; `saltos-backend-00020-ln5` aplicou V26 e `00021-5mv` confirmou o schema up to date.
+- A base de dados está operacionalmente confirmada em Flyway V28, com 28 migrations validadas; `saltos-backend-00022-6x6` aplicou V27/V28 a partir de V26.
 - V27 cria `user_notifications` e V28 acrescenta negociação bidirecional e tracking do reminder in-app; ambas foram promovidas por PR #95/#96 e aplicadas em produção pela revisão `saltos-backend-00022-6x6`.
 - Reminder in-app de 1 dia, pedido de review pós-evento, atualizações de favoritos e waitlist/disponibilidade continuam apenas ideias futuras.
 - Uploads públicos feitos pelo admin ainda não têm ownership persistente em `media_objects`; limpeza automática de media pública órfã/R2 fica como follow-up para evitar apagar URLs reutilizados.
