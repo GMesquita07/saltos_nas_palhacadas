@@ -446,3 +446,68 @@
     display: none !important;
   }
 }
+
+
+/* Hotfix: keep the theme toggle geometrically circular and optically centered in every browser. */
+.themeButton,
+.inner nav .themeButton {
+  box-sizing: border-box !important;
+  aspect-ratio: 1 / 1 !important;
+  gap: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 0 !important;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.inner nav .desktopThemeButton {
+  inline-size: 40px !important;
+  block-size: 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  flex: 0 0 40px !important;
+  border-radius: 9999px !important;
+  padding: 0 !important;
+}
+
+.inner nav .desktopThemeButton svg {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .mobileThemeButton {
+    inline-size: 46px !important;
+    block-size: 46px !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    flex: 0 0 46px !important;
+    display: grid !important;
+    place-items: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    border-radius: 9999px !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  .mobileThemeButton svg {
+    display: block;
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+  }
+}
