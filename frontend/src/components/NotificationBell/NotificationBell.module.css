@@ -76,3 +76,22 @@
 @media (max-width: 900px) {
   .root { top: 84px; right: 12px; }
 }
+
+
+@media (max-width: 900px) {
+  .root {
+    top: calc(var(--header-height) + 28px);
+    right: 16px;
+  }
+
+  .trigger {
+    min-width: 50px;
+    height: 44px;
+    border-radius: 22px;
+  }
+
+  .panel {
+    top: 52px;
+    width: min(360px, calc(100vw - 32px));
+  }
+}
