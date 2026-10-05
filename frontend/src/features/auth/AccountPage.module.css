@@ -1317,3 +1317,66 @@
     justify-content: flex-start;
   }
 }
+
+
+/* Avoid nested scroll traps in the account inbox; progressively reveal older items instead. */
+.notificationList {
+  max-height: none !important;
+  padding-right: 0 !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  scrollbar-gutter: auto !important;
+}
+
+.showMoreNotifications {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  font-weight: 760;
+}
+
+.showMoreNotifications:hover {
+  border-color: var(--interactive);
+  color: var(--interactive);
+  background: var(--interactive-soft);
+}
+
+.adminDeletionNotice {
+  margin: 6px 0 0 !important;
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border));
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text-secondary) !important;
+  background: var(--warning-soft);
+  line-height: 1.55;
+}
+
+@media (max-width: 650px) {
+  .content {
+    padding: 18px;
+  }
+
+  .profileForm,
+  .sectionBlock,
+  .summary {
+    padding: 16px;
+  }
+
+  .notificationList li {
+    gap: 12px;
+    padding: 13px;
+  }
+
+  .notificationActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notificationActions button {
+    width: 100%;
+  }
+}
