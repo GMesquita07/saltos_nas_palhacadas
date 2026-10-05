@@ -70,7 +70,7 @@ export function SupportChat() {
             </span>
           </header>
 
-          <div className={styles.thread} ref={threadRef}>
+          <div aria-label="Conversa com o assistente" aria-live="polite" aria-relevant="additions text" className={styles.thread} ref={threadRef} role="log">
             {messages.map((message) => (
               <div className={`${styles.message} ${styles[message.role]}`} key={message.id}>
                 {message.text}
