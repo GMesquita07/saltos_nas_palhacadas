@@ -38,7 +38,8 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
         }
 
         String path = request.getRequestURI();
-        if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/bookings") || path.startsWith("/api/v1/admin") || path.startsWith("/api/v1/private-media")) {
+        if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/bookings") || path.startsWith("/api/v1/admin")
+                || path.startsWith("/api/v1/notifications") || path.startsWith("/api/v1/private-media")) {
             response.setHeader("Cache-Control", "no-store");
             response.setHeader("Pragma", "no-cache");
         }

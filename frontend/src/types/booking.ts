@@ -5,6 +5,17 @@ export type BookingCounterProposalDecision = 'ACCEPTED' | 'DECLINED'
 export type BookingCounterProposal = {
   budget: number | null
   eventDate: string | null
+  startTime: string | null
+  endTime: string | null
+  proposedBy: 'ADMIN' | 'CUSTOMER'
+}
+
+export type BookingCounterProposalInput = {
+  counterBudget?: number
+  counterEventDate?: string
+  counterStartTime?: string | null
+  counterEndTime?: string | null
+  message?: string
 }
 
 export type BookingProposal = {
@@ -43,11 +54,13 @@ export type BookingDecision = {
   agreedBudget?: number
   counterBudget?: number
   counterEventDate?: string
+  counterStartTime?: string | null
+  counterEndTime?: string | null
 }
 
 export type AvailabilitySlot = {
   date: string
   startTime: string | null
   endTime: string | null
-  status: Extract<BookingStatus, 'PENDING' | 'ACCEPTED'>
+  status: Extract<BookingStatus, 'PENDING' | 'ACCEPTED' | 'COUNTER_PROPOSED'>
 }

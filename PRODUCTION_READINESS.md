@@ -10,7 +10,7 @@ Last verified: 2026-10-05.
 | --- | --- |
 | Frontend Cloudflare Pages | DONE em domínio oficial; production branch `main` |
 | Backend Google Cloud Run | DONE; health UP; rollout validado |
-| Neon PostgreSQL | DONE; Flyway V26 confirmado com 26 migrations validadas |
+| Neon PostgreSQL | DONE; produção em Flyway V26 com 26 migrations validadas; V27/V28 existem apenas localmente e aguardam revisão/promoção/deploy |
 | Cloudflare R2 runtime + backup | DONE |
 | Turnstile | DONE/VALIDATED |
 | Cleanup Scheduler | DONE/VALIDATED |
@@ -73,7 +73,7 @@ Last verified: 2026-10-05.
 1. Acompanhar confirmação administrativa .PT externa.
 2. Monitorizar o próximo trigger automático das 09:00 Europe/Lisbon do Scheduler de booking reminders; a execução manual pós-release e a entrega cliente/artista já foram validadas.
 3. Monitorizar entregabilidade do email operacional do artista nos bookings; criação de booking -> `profile.notificationEmail` validada em produção em 2026-10-05.
-4. Melhorar UX da área de conta e notificações in-app.
+4. Rever, promover, fazer deploy e validar em produção a UX da conta, sino/inbox, contrapropostas bidirecionais e reminder in-app, implementados localmente com V27/V28.
 5. Executar Feature 7 Accessibility.
 6. Manter observabilidade/manutenção e fechar legal/inbound email/media cleanup.
 

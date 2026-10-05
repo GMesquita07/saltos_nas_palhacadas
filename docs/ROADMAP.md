@@ -49,7 +49,8 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | UX: link de recuperação expirado | DONE | Pré-validação server-side, formulário condicionado, «Link inválido ou expirado», «Pedir novo link» e retry implementados; POST final autoritativo. Promovido por PR #89/#90 e validado no domínio oficial em 2026-10-05. |
 | Reminders 5 dias: cliente e artista | DONE | V26 em produção, tracking/retries independentes até ao dia do evento; execução manual confirmou ambas as mailboxes e segunda execução sem duplicados. |
 | Email pessoal do artista em bookings | DONE | Implementação já existente em `BookingNotificationService`; novo booking envia para `profile.notificationEmail` e admins ativos. Entrega real no email do artista confirmada em produção em 2026-10-05. |
-| UX da área de conta + notificações in-app | TODO | Melhorar a área pessoal do cliente e desenhar zona de notificações in-site. |
+| UX da área de conta + notificações in-app | IN PROGRESS | Dashboard, provider partilhado e sino global implementados com V27; reminder in-app de 5 dias usa V28; pendente de revisão, promoção, deploy e validação em produção. |
+| Contrapropostas bidirecionais de booking | IN PROGRESS | Fluxo admin/cliente, autoria e termos propostos implementados localmente com V28; pendente de revisão, promoção, deploy e validação em produção. |
 | Feature 7: Acessibilidade | TODO | PageSpeed/Lighthouse atual 96; primeiro problema automático confirmado é contraste do botão `Aceitar` no Cookie Consent, seguido de teclado, focus, formulários, dialogs e leitor de ecrã. |
 | Observabilidade/manutenção | TODO | Monitorizar budgets/logs de GCP, Cloudflare, Neon e R2; manter drills periódicos e rotinas operacionais. |
 | Legal, inbound email e cleanup media | TODO | Rever Privacy/Terms/Cookies juridicamente e em UX; decidir provider ou Cloudflare Email Routing para `ola@`; cleanup de media pública órfã requer tracking seguro de ownership/referências antes de apagar objetos R2. |
@@ -64,8 +65,9 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | SEO para DJ KidG / João Tomás | DONE | Search Console validou indexação e structured data ProfilePage |
 | Tradução da página | POST-LAUNCH | Não é bloqueador |
 | Email "O animador" -> "A equipa irá analisar" | DONE | Corrigido na Feature 4; PR #27 -> `dev` e PR #29 -> `main` |
-| Área pessoal do cliente como botões | TODO | Produto/UX; agrupado com UX da área de conta |
-| Zona de notificações in-site | TODO | Nova funcionalidade; agrupada com UX da área de conta |
+| Área pessoal do cliente como botões | IN PROGRESS | Implementada na UX da área de conta; pendente de revisão/promoção/validação |
+| Zona de notificações in-site | IN PROGRESS | Inbox e sino global implementados com V27/V28; pendente de revisão/promoção/deploy/validação |
+| Notificações futuras | OPTIONAL | Avaliar reminder in-app de 1 dia, pedido de review pós-evento, favoritos e waitlist/disponibilidade; nada implementado nesta ronda |
 | Formatação Privacy/Terms/Cookies | TODO | Melhorar UX e pedir revisão jurídica |
 
 ## Arquitetura Híbrida Planeada

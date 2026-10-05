@@ -32,6 +32,7 @@ import pt.saltosnaspalhacadas.backend.profile.ProfileRepository;
 import pt.saltosnaspalhacadas.backend.user.AppUser;
 import pt.saltosnaspalhacadas.backend.user.AppUserRepository;
 import pt.saltosnaspalhacadas.backend.user.UserRole;
+import pt.saltosnaspalhacadas.backend.usernotification.UserNotificationRepository;
 
 @SpringBootTest(properties = "app.booking.reminder.cron=-")
 @ActiveProfiles("test")
@@ -43,6 +44,7 @@ class BookingReminderDeliveryIntegrationTests {
     @Autowired private ProfileRepository profiles;
     @Autowired private AppUserRepository users;
     @Autowired private BookingReminderService reminders;
+    @Autowired private UserNotificationRepository userNotifications;
     @MockitoBean private EmailService email;
     private AppUser user;
     private final List<Long> bookingIds = new ArrayList<>();
@@ -67,6 +69,8 @@ class BookingReminderDeliveryIntegrationTests {
         assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
         assertThat(reminders.sendDueReminders(TODAY)).isZero();
         assertSent(booking, true, true);
+        assertInApp(booking, true);
+        assertThat(userNotifications.countByUserIdAndReadAtIsNull(user.getId())).isEqualTo(1);
         verify(email).send(eq(CLIENT), eq("Lembrete do teu evento"), argThat(body ->
                 body.contains("Olá Cliente Teste") && body.contains("DJ Reminder")
                 && body.contains("7 de julho de 2035 entre as 10:00 e as 12:00")
@@ -143,10 +147,24 @@ class BookingReminderDeliveryIntegrationTests {
     }
 
     @Test
-    void missingBothRecipientsNeverSelectsBooking() {
-        booking(5, null, null, BookingStatus.ACCEPTED);
-        assertThat(reminders.sendDueReminders(TODAY)).isZero();
+    void missingEmailRecipientsStillCreatesTheInAppReminder() {
+        Booking booking = booking(5, null, null, BookingStatus.ACCEPTED);
+        assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
+        assertInApp(booking, true);
         verifyNoInteractions(email);
+    }
+
+    @Test
+    void inactiveCustomerNeverReceivesAnInAppReminder() {
+        Booking booking = booking(5, CLIENT, ARTIST, BookingStatus.ACCEPTED);
+        user.anonymizeForDeletion("deleted-" + UUID.randomUUID() + "@example.invalid", "disabled-password");
+        users.save(user);
+
+        assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
+
+        assertSent(booking, true, true);
+        assertInApp(booking, false);
+        assertThat(userNotifications.countByUserIdAndReadAtIsNull(user.getId())).isZero();
     }
 
     @ParameterizedTest
@@ -155,6 +173,7 @@ class BookingReminderDeliveryIntegrationTests {
         Booking booking = booking(5, CLIENT, ARTIST, status);
         assertThat(reminders.sendDueReminders(TODAY)).isZero();
         assertSent(booking, false, false);
+        assertInApp(booking, false);
         verifyNoInteractions(email);
     }
 
@@ -165,6 +184,7 @@ class BookingReminderDeliveryIntegrationTests {
         boolean eligible = days >= 0 && days <= 5;
         assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(eligible ? 1 : 0);
         assertSent(booking, eligible, eligible);
+        assertInApp(booking, eligible);
         verify(email, times(eligible ? 2 : 0)).send(anyString(), anyString(), anyString());
     }
 
@@ -172,9 +192,10 @@ class BookingReminderDeliveryIntegrationTests {
     void retriesStopAfterEventDay() {
         Booking booking = booking(0, CLIENT, ARTIST, BookingStatus.ACCEPTED);
         when(email.send(anyString(), anyString(), anyString())).thenReturn(false);
-        assertThat(reminders.sendDueReminders(TODAY)).isZero();
+        assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
         assertThat(reminders.sendDueReminders(TODAY.plusDays(1))).isZero();
         assertSent(booking, false, false);
+        assertInApp(booking, true);
         verify(email, times(2)).send(anyString(), anyString(), anyString());
     }
 
@@ -190,6 +211,7 @@ class BookingReminderDeliveryIntegrationTests {
         booking.accept(TODAY.plusDays(4), LocalTime.of(11, 0), LocalTime.of(13, 0), null, "Reagendado");
         bookings.save(booking);
         assertSent(booking, false, false);
+        assertInApp(booking, false);
         assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
 
         booking = bookings.findById(booking.getId()).orElseThrow();
@@ -197,6 +219,7 @@ class BookingReminderDeliveryIntegrationTests {
         booking.accept(TODAY.plusDays(4), LocalTime.of(11, 0), LocalTime.of(13, 0), null, "Reaceite");
         bookings.save(booking);
         assertSent(booking, false, false);
+        assertInApp(booking, false);
         assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
 
         booking = bookings.findById(booking.getId()).orElseThrow();
@@ -204,6 +227,7 @@ class BookingReminderDeliveryIntegrationTests {
         booking.acceptCounterProposal(TODAY.plusDays(3), null);
         bookings.save(booking);
         assertSent(booking, false, false);
+        assertInApp(booking, false);
         assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
     }
 
@@ -213,9 +237,11 @@ class BookingReminderDeliveryIntegrationTests {
         Booking successful = booking(5, CLIENT, ARTIST, BookingStatus.ACCEPTED);
         when(email.send(eq("failure@example.test"), anyString(), anyString())).thenThrow(new IllegalStateException("SMTP unavailable"));
         when(email.send(eq("failed-artist@example.test"), anyString(), anyString())).thenThrow(new IllegalStateException("SMTP unavailable"));
-        assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(1);
+        assertThat(reminders.sendDueReminders(TODAY)).isEqualTo(2);
         assertSent(failed, false, false);
         assertSent(successful, true, true);
+        assertInApp(failed, true);
+        assertInApp(successful, true);
         verify(email, times(4)).send(anyString(), anyString(), anyString());
     }
 
@@ -272,5 +298,10 @@ class BookingReminderDeliveryIntegrationTests {
         Booking saved = bookings.findById(booking.getId()).orElseThrow();
         assertThat(saved.getReminderSentAt() != null).isEqualTo(customer);
         assertThat(saved.getArtistReminderSentAt() != null).isEqualTo(artist);
+    }
+
+    private void assertInApp(Booking booking, boolean sent) {
+        Booking saved = bookings.findById(booking.getId()).orElseThrow();
+        assertThat(saved.getCustomerInAppReminderSentAt() != null).isEqualTo(sent);
     }
 }

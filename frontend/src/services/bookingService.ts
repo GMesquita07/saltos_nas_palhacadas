@@ -1,13 +1,14 @@
-import { apiClient } from './apiClient'
+import { apiClient } from './apiClient.ts'
 import type {
   AvailabilitySlot,
   Booking,
   BookingCounterProposal,
+  BookingCounterProposalInput,
   BookingCounterProposalDecision,
   BookingDecision,
   BookingProposal,
   BookingStatus,
-} from '../types/booking'
+} from '../types/booking.ts'
 
 type ApiBooking = {
   id: string | number
@@ -27,7 +28,13 @@ type ApiBooking = {
   description: string
   notes?: string | null
   status: string
-  counterProposal?: { budget?: number | null; eventDate?: string | null } | null
+  counterProposal?: {
+    budget?: number | null
+    eventDate?: string | null
+    startTime?: string | null
+    endTime?: string | null
+    proposedBy?: string | null
+  } | null
   message?: string | null
   createdAt?: string | null
   updatedAt?: string | null
@@ -113,6 +120,18 @@ export async function respondToCounterProposal(
   return toBooking(response)
 }
 
+export async function counterProposeBooking(
+  id: string,
+  proposal: BookingCounterProposalInput,
+  token: string,
+): Promise<Booking> {
+  const response = await apiClient<ApiBooking>(`/bookings/${encodeURIComponent(id)}/counter-proposal`, {
+    method: 'PUT',
+    body: JSON.stringify(proposal),
+  }, token)
+  return toBooking(response)
+}
+
 export async function cancelBooking(id: string, token: string, message?: string): Promise<Booking> {
   const response = await apiClient<ApiBooking>(`/bookings/${encodeURIComponent(id)}/cancel`, {
     method: 'PUT',
@@ -122,7 +141,7 @@ export async function cancelBooking(id: string, token: string, message?: string)
   return toBooking(response)
 }
 
-function toBooking(booking: ApiBooking): Booking {
+export function toBooking(booking: ApiBooking): Booking {
   return {
     id: String(booking.id),
     profileSlug: booking.profileSlug,
@@ -156,7 +175,11 @@ function toBookingStatus(status: string): BookingStatus {
 function toAvailabilitySlot(value: unknown): AvailabilitySlot | null {
   const slot = value as ApiAvailabilitySlot
   if (!slot || typeof slot.date !== 'string') return null
-  const status = slot.status === 'PENDING' ? 'PENDING' : slot.status === 'ACCEPTED' ? 'ACCEPTED' : null
+  const status = slot.status === 'PENDING'
+    ? 'PENDING'
+    : slot.status === 'ACCEPTED' || slot.status === 'COUNTER_PROPOSED'
+      ? slot.status
+      : null
   if (!status) return null
 
   return {
@@ -168,10 +191,17 @@ function toAvailabilitySlot(value: unknown): AvailabilitySlot | null {
 }
 
 function toCounterProposal(value: ApiBooking['counterProposal']): BookingCounterProposal | null {
-  if (!value || (typeof value.budget !== 'number' && !value.eventDate)) return null
+  if (!value || (value.proposedBy !== 'ADMIN' && value.proposedBy !== 'CUSTOMER')) return null
 
   return {
     budget: typeof value.budget === 'number' ? value.budget : null,
     eventDate: value.eventDate ?? null,
+    startTime: typeof value.startTime === 'string' && value.startTime ? value.startTime : null,
+    endTime: typeof value.endTime === 'string' && value.endTime ? value.endTime : null,
+    proposedBy: value.proposedBy,
   }
+}
+
+export function customerCanRespondToCounterProposal(booking: Booking): boolean {
+  return booking.status === 'COUNTER_PROPOSED' && booking.counterProposal?.proposedBy === 'ADMIN'
 }

@@ -33,7 +33,7 @@ public record BookingResponse(
         Instant updatedAt) {
 
     public static BookingResponse from(Booking booking) {
-        return from(booking, false);
+        return from(booking, true);
     }
 
     public static BookingResponse fromAdmin(Booking booking) {
@@ -42,7 +42,12 @@ public record BookingResponse(
 
     private static BookingResponse from(Booking booking, boolean includeBudget) {
         CounterProposalResponse counterProposal = booking.getStatus() == BookingStatus.COUNTER_PROPOSED
-                ? new CounterProposalResponse(booking.getCounterBudget(), booking.getCounterEventDate())
+                ? new CounterProposalResponse(
+                        booking.getCounterBudget(),
+                        booking.getCounterEventDate(),
+                        booking.getCounterStartTime(),
+                        booking.getCounterEndTime(),
+                        booking.getCounterProposedBy())
                 : null;
 
         return new BookingResponse(
@@ -69,6 +74,11 @@ public record BookingResponse(
                 booking.getUpdatedAt());
     }
 
-    public record CounterProposalResponse(BigDecimal budget, LocalDate eventDate) {
+    public record CounterProposalResponse(
+            BigDecimal budget,
+            LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            pt.saltosnaspalhacadas.backend.booking.CounterProposalAuthor proposedBy) {
     }
 }

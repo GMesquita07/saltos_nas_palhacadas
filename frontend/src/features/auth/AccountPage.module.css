@@ -1116,3 +1116,204 @@
   color: var(--interactive-hover);
   background: var(--interactive-soft);
 }
+
+.notificationsSection {
+  gap: 18px;
+}
+
+.notificationsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.notificationsHeader > div {
+  display: grid;
+  gap: 5px;
+}
+
+.unreadBadge {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--interactive) 36%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--interactive-hover);
+  background: var(--interactive-soft);
+  font-size: .75rem;
+  font-weight: 780;
+}
+
+.markAllButton,
+.notificationError button,
+.notificationActions button {
+  width: fit-content;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 760;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease);
+}
+
+.markAllButton:hover:not(:disabled),
+.notificationError button:hover:not(:disabled),
+.notificationActions button:hover:not(:disabled) {
+  border-color: var(--interactive);
+  color: var(--interactive-hover);
+  background: var(--interactive-soft);
+}
+
+.markAllButton:disabled,
+.notificationActions button:disabled {
+  opacity: .62;
+}
+
+.notificationState {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 22px;
+  text-align: center;
+}
+
+.notificationError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, transparent);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--danger-soft);
+}
+
+.notificationError p {
+  color: var(--danger) !important;
+}
+
+.notificationList {
+  display: grid;
+  max-height: min(560px, 58vh);
+  gap: 10px;
+  padding: 0 6px 0 0;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--interactive) 46%, transparent) transparent;
+  list-style: none;
+}
+
+.notificationList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notificationList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive) 42%, transparent);
+}
+
+.notificationList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 15px;
+  background: var(--surface-elevated);
+}
+
+.notificationList .notificationUnread {
+  border-color: color-mix(in srgb, var(--interactive) 42%, var(--border));
+  background: color-mix(in srgb, var(--interactive-soft) 46%, var(--surface-elevated));
+}
+
+.notificationRead .notificationCopy {
+  opacity: .78;
+}
+
+.notificationCopy {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.notificationTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notificationTitleRow h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--interactive);
+  box-shadow: 0 0 0 4px var(--interactive-soft);
+}
+
+.notificationCopy p {
+  color: var(--text-secondary) !important;
+  overflow-wrap: anywhere;
+}
+
+.notificationCopy time {
+  color: var(--text-secondary);
+  opacity: .72;
+  font-size: .72rem;
+  font-weight: 680;
+}
+
+.notificationActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.notificationActions .viewBookingButton {
+  border-color: var(--interactive);
+  color: #ffffff;
+  background: var(--interactive);
+}
+
+.notificationActions .viewBookingButton:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--interactive-hover);
+}
+
+@media (max-width: 650px) {
+  .notificationsHeader,
+  .notificationError {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .unreadBadge,
+  .markAllButton,
+  .notificationError button {
+    align-self: flex-start;
+  }
+
+  .notificationList li {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationActions {
+    justify-content: flex-start;
+  }
+}
