@@ -9,6 +9,7 @@ import type { UserNotification } from '../../types/notification'
 import { useNotifications } from '../notifications/NotificationContext'
 import { useAuth } from './AuthContext'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import { PasswordField } from '../../components/PasswordField/PasswordField'
 import headerStyles from '../../components/Header/Header.module.css'
 import styles from './AccountPage.module.css'
 
@@ -56,12 +57,14 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const [notificationActionError, setNotificationActionError] = useState<string | null>(null)
   const [notificationActionId, setNotificationActionId] = useState<string | null>(null)
   const [isMarkingAllNotifications, setIsMarkingAllNotifications] = useState(false)
+  const [visibleNotificationCount, setVisibleNotificationCount] = useState(8)
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
 
   if (!session) return null
   const notificationError = notificationActionError ?? notificationLoadError
+  const visibleAccountNotifications = accountNotifications.slice(0, visibleNotificationCount)
 
   const accountName = displayName(visibleForm.firstName, visibleForm.lastName) || visibleForm.username || session.email
   const avatar = (
@@ -347,7 +350,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                 )}
                 {!isLoadingNotifications && accountNotifications.length > 0 && (
                   <ul className={styles.notificationList}>
-                    {accountNotifications.map((notification) => (
+                    {visibleAccountNotifications.map((notification) => (
                       <li className={notification.read ? styles.notificationRead : styles.notificationUnread} key={notification.id}>
                         <div className={styles.notificationCopy}>
                           <div className={styles.notificationTitleRow}>
@@ -377,43 +380,46 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                     ))}
                   </ul>
                 )}
+                {!isLoadingNotifications && !notificationError && accountNotifications.length > visibleNotificationCount && (
+                  <button
+                    className={styles.showMoreNotifications}
+                    type="button"
+                    onClick={() => setVisibleNotificationCount((count) => Math.min(count + 8, accountNotifications.length))}
+                  >
+                    Mostrar mais notificações
+                  </button>
+                )}
               </section>
 
               <section className={styles.sectionBlock}>
                 <h2>Segurança</h2>
                 <form className={styles.securityForm} onSubmit={(event) => { void submitPasswordChange(event) }}>
-                  <label>
-                    Palavra-passe atual
-                    <input
-                      autoComplete="current-password"
-                      onChange={(event) => setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))}
-                      required
-                      type="password"
-                      value={passwordForm.currentPassword}
-                    />
-                  </label>
-                  <label>
-                    Nova palavra-passe
-                    <input
-                      autoComplete="new-password"
-                      minLength={8}
-                      onChange={(event) => setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))}
-                      required
-                      type="password"
-                      value={passwordForm.newPassword}
-                    />
-                  </label>
-                  <label>
-                    Confirmar nova palavra-passe
-                    <input
-                      autoComplete="new-password"
-                      minLength={8}
-                      onChange={(event) => setPasswordForm((current) => ({ ...current, confirmation: event.target.value }))}
-                      required
-                      type="password"
-                      value={passwordForm.confirmation}
-                    />
-                  </label>
+                  <PasswordField
+                    autoComplete="current-password"
+                    id="account-current-password"
+                    label="Palavra-passe atual"
+                    required
+                    value={passwordForm.currentPassword}
+                    onChange={(value) => setPasswordForm((current) => ({ ...current, currentPassword: value }))}
+                  />
+                  <PasswordField
+                    autoComplete="new-password"
+                    id="account-new-password"
+                    label="Nova palavra-passe"
+                    minLength={8}
+                    required
+                    value={passwordForm.newPassword}
+                    onChange={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))}
+                  />
+                  <PasswordField
+                    autoComplete="new-password"
+                    id="account-confirm-password"
+                    label="Confirmar nova palavra-passe"
+                    minLength={8}
+                    required
+                    value={passwordForm.confirmation}
+                    onChange={(value) => setPasswordForm((current) => ({ ...current, confirmation: value }))}
+                  />
                   {securityError && <p className={styles.error} role="alert">{securityError}</p>}
                   {securityNotice && <p className={styles.success} role="status">{securityNotice}</p>}
                   <button disabled={isChangingPassword} type="submit">{isChangingPassword ? 'A atualizar...' : 'Alterar palavra-passe'}</button>
@@ -424,22 +430,26 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                 <h2>Dados e privacidade</h2>
                 <p>Descarrega uma cópia dos dados associados à tua conta.</p>
                 <button className={styles.secondaryButton} disabled={isExportingData} type="button" onClick={() => { void downloadAccountData() }}>{isExportingData ? 'A preparar...' : 'Descarregar os meus dados'}</button>
-                <form className={styles.deleteForm} onSubmit={(event) => { void submitAccountDeletion(event) }}>
-                  <label>
-                    Palavra-passe
-                    <input
+                {session.role === 'ADMIN' ? (
+                  <p className={styles.adminDeletionNotice} role="note">
+                    Por segurança, uma conta de administrador não pode ser eliminada a partir da própria sessão. Deve ser removida manualmente por outro administrador.
+                  </p>
+                ) : (
+                  <form className={styles.deleteForm} onSubmit={(event) => { void submitAccountDeletion(event) }}>
+                    <PasswordField
                       autoComplete="current-password"
-                      disabled={session.role === 'ADMIN'}
-                      onChange={(event) => setDeletePassword(event.target.value)}
-                      type="password"
+                      id="delete-account-password"
+                      label="Palavra-passe"
+                      required
                       value={deletePassword}
+                      onChange={setDeletePassword}
                     />
-                  </label>
-                  {dataError && <p className={styles.error} role="alert">{dataError}</p>}
-                  <button className={styles.dangerButton} disabled={isDeletingAccount || session.role === 'ADMIN'} type="submit">
-                    {isDeletingAccount ? 'A eliminar...' : 'Eliminar a minha conta'}
-                  </button>
-                </form>
+                    {dataError && <p className={styles.error} role="alert">{dataError}</p>}
+                    <button className={styles.dangerButton} disabled={isDeletingAccount} type="submit">
+                      {isDeletingAccount ? 'A eliminar...' : 'Eliminar a minha conta'}
+                    </button>
+                  </form>
+                )}
               </section>
             </div>
           </div>
