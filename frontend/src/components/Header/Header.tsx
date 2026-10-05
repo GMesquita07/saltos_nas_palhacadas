@@ -79,6 +79,28 @@ export function Header({
         </button>
 
         <button
+          aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          className={`${styles.themeButton} ${styles.mobileThemeButton}`}
+          title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+          type="button"
+          onClick={onThemeToggle}
+        >
+          {theme === 'dark' ? (
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M20 15.25A8 8 0 0 1 8.75 4 8.25 8.25 0 1 0 20 15.25Z" />
+            </svg>
+          )}
+          <span className={styles.themeButtonLabel}>
+            {theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          </span>
+        </button>
+
+        <button
           className={styles.menuButton}
           type="button"
           aria-controls={mobileNavId}
@@ -158,7 +180,7 @@ export function Header({
           )}
           <button
             aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
-            className={styles.themeButton}
+            className={`${styles.themeButton} ${styles.desktopThemeButton}`}
             title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
             type="button"
             onClick={onThemeToggle}

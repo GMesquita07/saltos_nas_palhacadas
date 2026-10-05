@@ -561,3 +561,60 @@
   background: var(--disabled-bg) !important;
   opacity: 1 !important;
 }
+
+
+/* Keep the draft dismiss action compact so it is not confused with cancelling the event. */
+.decisionHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.dismissDecisionButton {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  align-self: start !important;
+  justify-self: end;
+  padding: 7px 11px !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+
+.dismissDecisionButton:hover:not(:disabled) {
+  border-color: var(--interactive) !important;
+  color: var(--interactive) !important;
+  background: var(--interactive-soft) !important;
+}
+
+@media (max-width: 720px) {
+  .booking {
+    padding: 18px;
+  }
+
+  .decisionHeading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .dismissDecisionButton {
+    width: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking {
+    padding: 15px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}

@@ -18,6 +18,7 @@ import {
   type ResetTokenValidationState,
 } from './resetPasswordUx'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import { PasswordField } from '../../components/PasswordField/PasswordField'
 import styles from './AuthPage.module.css'
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
@@ -360,29 +361,27 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
             <ResetLinkValidationError onRequestNewLink={requestNewResetLink} onRetry={retryResetTokenValidation} />
           )}
           {canShowResetForm && !isRecoveringPassword && (
-            <label>
-              {isResettingPassword ? 'Nova palavra-passe' : 'Palavra-passe'}
-              <input
-                autoComplete={isRegistering || isResettingPassword ? 'new-password' : 'current-password'}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                type="password"
-                value={password}
-              />
-              {(isRegistering || isResettingPassword) && <small>Usa pelo menos 8 caracteres.</small>}
-            </label>
+            <PasswordField
+              autoComplete={isRegistering || isResettingPassword ? 'new-password' : 'current-password'}
+              hint={isRegistering || isResettingPassword ? 'Usa pelo menos 8 caracteres.' : undefined}
+              id="auth-password"
+              label={isResettingPassword ? 'Nova palavra-passe' : 'Palavra-passe'}
+              minLength={isRegistering || isResettingPassword ? 8 : undefined}
+              required
+              value={password}
+              onChange={setPassword}
+            />
           )}
           {canShowResetForm && (isRegistering || isResettingPassword) && (
-            <label>
-              Confirmar palavra-passe
-              <input
-                autoComplete="new-password"
-                onChange={(event) => setPasswordConfirmation(event.target.value)}
-                required
-                type="password"
-                value={passwordConfirmation}
-              />
-            </label>
+            <PasswordField
+              autoComplete="new-password"
+              id="auth-password-confirmation"
+              label="Confirmar palavra-passe"
+              minLength={8}
+              required
+              value={passwordConfirmation}
+              onChange={setPasswordConfirmation}
+            />
           )}
           {canShowResetForm && turnstileAction && hasTurnstileSiteKey && (
             <Turnstile

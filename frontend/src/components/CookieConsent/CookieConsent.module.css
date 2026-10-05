@@ -145,3 +145,21 @@
 :global(html[data-theme='light']) .actions .primary:hover {
   color: #171a1d !important;
 }
+
+
+/* WCAG AA contrast for the primary consent action in both themes. */
+.actions .primary,
+:global(html[data-theme='light']) .actions .primary,
+:global(html[data-theme='dark']) .actions .primary {
+  border-color: #0b679b !important;
+  color: #ffffff !important;
+  background: #0b679b !important;
+}
+
+.actions .primary:hover,
+:global(html[data-theme='light']) .actions .primary:hover,
+:global(html[data-theme='dark']) .actions .primary:hover {
+  border-color: #09547f !important;
+  color: #ffffff !important;
+  background: #09547f !important;
+}
