@@ -362,7 +362,7 @@ export function BookingManagement({
                       <h4>{decisionTitle(draft.status)}</h4>
                       <p>{decisionDescription(draft.status)}</p>
                     </div>
-                    <button disabled={isSending} type="button" onClick={cancelDecision}>Cancelar</button>
+                    <button aria-label="Fechar edição da decisão" className={styles.dismissDecisionButton} disabled={isSending} type="button" onClick={cancelDecision}>Fechar</button>
                   </div>
 
                   {draft.status === 'COUNTER_PROPOSED' && (
