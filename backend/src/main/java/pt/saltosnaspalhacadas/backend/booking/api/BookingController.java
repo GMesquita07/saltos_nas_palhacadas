@@ -8,6 +8,8 @@ import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -90,6 +92,22 @@ public class BookingController {
                 request.decision()));
     }
 
+    @PutMapping("/{bookingId}/counter-proposal")
+    BookingResponse counterPropose(
+            Authentication authentication,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody CustomerCounterProposalRequest request) {
+        return BookingResponse.from(bookings.counterProposeMine(
+                currentEmail(authentication),
+                bookingId,
+                new BookingService.CustomerCounterProposalCommand(
+                        request.message(),
+                        request.counterBudget(),
+                        request.counterEventDate(),
+                        request.counterStartTime(),
+                        request.counterEndTime())));
+    }
+
     @PutMapping("/{bookingId}/cancel")
     BookingResponse cancelBooking(
             Authentication authentication,
@@ -154,6 +172,18 @@ public class BookingController {
     record CounterProposalDecisionRequest(
             @NotNull(message = "Escolhe se aceitas ou recusas a contraproposta")
             CounterProposalDecision decision) {
+    }
+
+    record CustomerCounterProposalRequest(
+            @Size(max = 1000, message = "A mensagem pode ter no máximo 1000 caracteres")
+            String message,
+            @DecimalMin(value = "0.01", message = "O orçamento da contraproposta tem de ser superior a zero")
+            @Digits(integer = 8, fraction = 2, message = "O orçamento só pode ter duas casas decimais")
+            java.math.BigDecimal counterBudget,
+            @FutureOrPresent(message = "A data da contraproposta não pode ser no passado")
+            LocalDate counterEventDate,
+            LocalTime counterStartTime,
+            LocalTime counterEndTime) {
     }
 
     record CancelBookingRequest(

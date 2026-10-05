@@ -3071,6 +3071,250 @@
   width: 100%;
 }
 
+.proposalComparison {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--interactive) 32%, var(--border));
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text-primary);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--interactive-soft) 72%, transparent),
+      color-mix(in srgb, var(--surface-elevated) 94%, transparent)
+    );
+}
+
+.proposalComparisonHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.proposalComparisonHeader > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.proposalEyebrow {
+  color: var(--interactive);
+  font-size: .64rem;
+  font-weight: 840;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.proposalComparisonHeader strong {
+  color: var(--text-primary);
+  font-size: .96rem;
+  line-height: 1.3;
+}
+
+.proposalComparisonHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .74rem;
+  line-height: 1.5;
+}
+
+.proposalPendingBadge {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--interactive) 42%, var(--border));
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--interactive);
+  background: color-mix(in srgb, var(--interactive-soft) 76%, transparent);
+  font-size: .62rem;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.proposalChanges {
+  display: grid;
+  gap: 7px;
+}
+
+.proposalChange {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+}
+
+.proposalChangeLabel {
+  color: var(--text-muted);
+  font-size: .62rem;
+  font-weight: 820;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.proposalOld,
+.proposalNew {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: .76rem;
+  line-height: 1.4;
+}
+
+.proposalOld {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.proposalArrow {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.proposalNew {
+  color: var(--interactive);
+  font-weight: 820;
+}
+
+.proposalRestore {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 11px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+  font-size: .76rem;
+}
+
+.proposalRestore > span {
+  color: var(--interactive);
+  font-size: 1rem;
+}
+
+.proposalUnchanged {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .7rem;
+  line-height: 1.45;
+}
+
+.proposalOutcome {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 11px;
+}
+
+.proposalOutcome span {
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 780;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.proposalOutcome strong {
+  color: var(--text-primary);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.customerCounterForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.customerCounterForm label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-weight: 720;
+}
+
+.customerCounterForm input,
+.customerCounterForm textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  font: inherit;
+}
+
+.customerCounterForm textarea { min-height: 76px; resize: vertical; }
+.customerCounterForm .counterMessageField,
+.customerCounterForm > button { grid-column: 1 / -1; }
+
+.customerCounterSubmit {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--interactive);
+  border-radius: 9px;
+  padding: 10px 16px;
+  color: #fff;
+  background: var(--interactive);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--interactive) 18%, transparent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color var(--ease), background-color var(--ease), transform var(--ease);
+}
+
+.customerCounterSubmit:hover:not(:disabled) {
+  border-color: var(--interactive-hover);
+  background: var(--interactive-hover);
+  transform: translateY(-1px);
+}
+
+.customerCounterSubmit:focus-visible {
+  outline: 3px solid var(--interactive-soft);
+  outline-offset: 3px;
+}
+
+.customerCounterSubmit:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+@media (max-width: 620px) {
+  .proposalComparisonHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .proposalPendingBadge {
+    align-self: flex-start;
+  }
+
+  .proposalChange {
+    grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  }
+
+  .proposalChangeLabel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .customerCounterForm { grid-template-columns: 1fr; }
+  .customerCounterForm .counterMessageField,
+  .customerCounterForm > button { grid-column: auto; }
+}
+
 @media (max-width: 760px) {
   .bookingTableWrap {
     overflow-x: visible;

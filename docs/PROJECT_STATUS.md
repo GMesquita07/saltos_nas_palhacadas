@@ -10,7 +10,7 @@ Feature 5 SEO / Google está DONE: Search Console configurado, domain property v
 
 A alteração de runtime mais recente em produção é a release `dd872aa5c9418650cab3ed8c52a8ff41fcb3faa5`, que acrescenta pré-validação/UX de password reset e reminders independentes de cliente/artista. O Cloud Build `874171bf-c557-4b22-aa92-6cb270e04d74` produziu a imagem `backend:dd872aa`; a revisão `saltos-backend-00020-ln5` aplicou V26 e a revisão atual `00021-5mv` validou o schema já em V26.
 
-A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. O trigger automático das 09:00 continua a ser monitorizado separadamente. A sequência real de próximos trabalhos é: UX da área de conta + notificações in-app; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. O trigger automático das 09:00 continua a ser monitorizado separadamente. A UX da área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app estão implementados localmente com V27/V28, aguardando revisão, promoção, deploy e validação; produção permanece confirmada em V26. A sequência real de próximos trabalhos é: rever/promover/validar este conjunto local; Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -20,6 +20,8 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | Backend Cloud Run | DONE | Sim | Sim | Revisão `saltos-backend-00021-5mv` com 100% do tráfego e health UP |
 | Neon PostgreSQL | DONE | Sim | Sim | Manter snapshot pre-launch e PITR observado |
 | Flyway V1-V26 | DONE | Sim | Sim | Produção confirmada em V26; 26 migrations validadas; `00020-ln5` aplicou V26 e `00021-5mv` confirmou up to date |
+| UX da conta + notificações in-app / Flyway V27 | DONE local | Não | Testes locais | Provider, inbox e sino global para CUSTOMER implementados; pendente de revisão, promoção, deploy e validação em produção |
+| Contrapropostas bidirecionais + reminder in-app / Flyway V28 | DONE local | Não | Testes locais | Ping-pong admin/cliente, email + inbox e terceiro canal de reminder implementados; pendente de revisão, promoção, deploy e validação em produção |
 | Artist media/crop UX | DONE | Sim | Sim | Release em produção validada; campos de hero background e thumbnail confirmados; `/materials` respondeu com sucesso mas atualmente não existem materiais publicados |
 | Flyway V21 profile notification email | DONE | Sim | Sim | Feature 4 notifications/email; PR #27 -> `dev`; PR #29 -> `main` |
 | Cloudflare R2 public/private | DONE | Sim | Sim | Buckets runtime sem lifecycle genérico nem bucket lock |

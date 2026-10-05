@@ -33,7 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/reset-password/validate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/media").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/profiles/*/reviews").authenticated()
-                        .requestMatchers("/api/v1/auth/me/**", "/api/v1/auth/me", "/api/v1/favorites/**", "/api/v1/bookings/**").authenticated()
+                        .requestMatchers("/api/v1/auth/me/**", "/api/v1/auth/me", "/api/v1/favorites/**", "/api/v1/bookings/**", "/api/v1/notifications/**").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

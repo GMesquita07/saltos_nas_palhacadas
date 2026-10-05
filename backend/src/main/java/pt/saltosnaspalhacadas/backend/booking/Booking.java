@@ -89,6 +89,16 @@ public class Booking {
     @Column(name = "counter_event_date")
     private LocalDate counterEventDate;
 
+    @Column(name = "counter_start_time")
+    private LocalTime counterStartTime;
+
+    @Column(name = "counter_end_time")
+    private LocalTime counterEndTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "counter_proposed_by", length = 16)
+    private CounterProposalAuthor counterProposedBy;
+
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
@@ -97,6 +107,9 @@ public class Booking {
 
     @Column(name = "artist_reminder_sent_at")
     private Instant artistReminderSentAt;
+
+    @Column(name = "customer_in_app_reminder_sent_at")
+    private Instant customerInAppReminderSentAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -150,8 +163,12 @@ public class Booking {
     }
 
     public void accept(LocalDate eventDate, LocalTime startTime, LocalTime endTime, BigDecimal budget, String adminMessage) {
-        if (status != BookingStatus.ACCEPTED || !Objects.equals(this.eventDate, eventDate)
-                || !Objects.equals(this.startTime, startTime) || !Objects.equals(this.endTime, endTime)) {
+        boolean termsChanged = status != BookingStatus.ACCEPTED
+                || !Objects.equals(this.eventDate, eventDate)
+                || !Objects.equals(this.startTime, startTime)
+                || !Objects.equals(this.endTime, endTime)
+                || !Objects.equals(this.budget, budget);
+        if (termsChanged) {
             resetReminders();
         }
         this.eventDate = eventDate;
@@ -160,47 +177,72 @@ public class Booking {
         this.budget = budget;
         this.status = BookingStatus.ACCEPTED;
         this.adminMessage = emptyToNull(adminMessage);
-        this.counterBudget = null;
-        this.counterEventDate = null;
+        clearCounterProposal();
         this.cancelledAt = null;
+    }
+
+    public void acceptCurrent(String adminMessage) {
+        accept(eventDate, startTime, endTime, budget, adminMessage);
     }
 
     public void decline(String adminMessage) {
         this.status = BookingStatus.DECLINED;
         this.adminMessage = emptyToNull(adminMessage);
-        this.counterBudget = null;
-        this.counterEventDate = null;
+        clearCounterProposal();
     }
 
     public void cancel(String adminMessage) {
         this.status = BookingStatus.CANCELLED;
         this.adminMessage = emptyToNull(adminMessage);
-        this.counterBudget = null;
-        this.counterEventDate = null;
+        clearCounterProposal();
         this.cancelledAt = Instant.now();
     }
 
     public void counterPropose(String adminMessage, BigDecimal counterBudget, LocalDate counterEventDate) {
+        counterPropose(CounterProposalAuthor.ADMIN, adminMessage, counterBudget, counterEventDate, null, null);
+    }
+
+    public void counterPropose(
+            CounterProposalAuthor proposedBy,
+            String message,
+            BigDecimal counterBudget,
+            LocalDate counterEventDate,
+            LocalTime counterStartTime,
+            LocalTime counterEndTime) {
         this.status = BookingStatus.COUNTER_PROPOSED;
-        this.adminMessage = emptyToNull(adminMessage);
+        this.adminMessage = emptyToNull(message);
         this.counterBudget = counterBudget;
         this.counterEventDate = counterEventDate;
+        this.counterStartTime = counterStartTime;
+        this.counterEndTime = counterEndTime;
+        this.counterProposedBy = Objects.requireNonNull(proposedBy);
+    }
+
+    public void acceptCounterProposalByAdmin(String adminMessage) {
+        accept(
+                counterEventDate == null ? eventDate : counterEventDate,
+                counterStartTime == null ? startTime : counterStartTime,
+                counterEndTime == null ? endTime : counterEndTime,
+                counterBudget == null ? budget : counterBudget,
+                adminMessage);
+    }
+
+    public void acceptCounterProposalByCustomer() {
+        accept(
+                counterEventDate == null ? eventDate : counterEventDate,
+                counterStartTime == null ? startTime : counterStartTime,
+                counterEndTime == null ? endTime : counterEndTime,
+                counterBudget == null ? budget : counterBudget,
+                adminMessage);
     }
 
     public void acceptCounterProposal(LocalDate acceptedEventDate, BigDecimal acceptedBudget) {
-        resetReminders();
-        this.eventDate = acceptedEventDate;
-        this.budget = acceptedBudget;
-        this.status = BookingStatus.ACCEPTED;
-        this.counterBudget = null;
-        this.counterEventDate = null;
-        this.cancelledAt = null;
+        accept(acceptedEventDate, startTime, endTime, acceptedBudget, adminMessage);
     }
 
     public void declineCounterProposal() {
         this.status = BookingStatus.DECLINED;
-        this.counterBudget = null;
-        this.counterEventDate = null;
+        clearCounterProposal();
     }
 
     public void markReminderSent(Instant sentAt) {
@@ -209,6 +251,10 @@ public class Booking {
 
     public void markArtistReminderSent(Instant sentAt) {
         this.artistReminderSentAt = sentAt == null ? Instant.now() : sentAt;
+    }
+
+    public void markCustomerInAppReminderSent(Instant sentAt) {
+        this.customerInAppReminderSentAt = sentAt == null ? Instant.now() : sentAt;
     }
 
     public boolean needsCustomerReminder() {
@@ -220,9 +266,22 @@ public class Booking {
                 && !profile.getNotificationEmail().isBlank();
     }
 
+    public boolean needsCustomerInAppReminder() {
+        return customerInAppReminderSentAt == null && user.isActive();
+    }
+
     private void resetReminders() {
         reminderSentAt = null;
         artistReminderSentAt = null;
+        customerInAppReminderSentAt = null;
+    }
+
+    private void clearCounterProposal() {
+        counterBudget = null;
+        counterEventDate = null;
+        counterStartTime = null;
+        counterEndTime = null;
+        counterProposedBy = null;
     }
 
     public void anonymizeForAccountDeletion() {
@@ -260,9 +319,13 @@ public class Booking {
     public String getAdminMessage() { return adminMessage; }
     public BigDecimal getCounterBudget() { return counterBudget; }
     public LocalDate getCounterEventDate() { return counterEventDate; }
+    public LocalTime getCounterStartTime() { return counterStartTime; }
+    public LocalTime getCounterEndTime() { return counterEndTime; }
+    public CounterProposalAuthor getCounterProposedBy() { return counterProposedBy; }
     public Instant getCancelledAt() { return cancelledAt; }
     public Instant getReminderSentAt() { return reminderSentAt; }
     public Instant getArtistReminderSentAt() { return artistReminderSentAt; }
+    public Instant getCustomerInAppReminderSentAt() { return customerInAppReminderSentAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

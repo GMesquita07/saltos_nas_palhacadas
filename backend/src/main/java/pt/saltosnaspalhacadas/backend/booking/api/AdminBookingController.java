@@ -8,7 +8,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -53,7 +53,9 @@ public class AdminBookingController {
                 request.endTime(),
                 request.agreedBudget(),
                 request.counterBudget(),
-                request.counterEventDate())));
+                request.counterEventDate(),
+                request.counterStartTime(),
+                request.counterEndTime())));
     }
 
     record DecisionBookingRequest(
@@ -70,7 +72,9 @@ public class AdminBookingController {
             @DecimalMin(value = "0.01", message = "O orçamento da contraproposta tem de ser superior a zero")
             @Digits(integer = 8, fraction = 2, message = "O orçamento só pode ter duas casas decimais")
             BigDecimal counterBudget,
-            @Future(message = "A nova data da contraproposta tem de ser futura")
-            LocalDate counterEventDate) {
+            @FutureOrPresent(message = "A data da contraproposta não pode ser no passado")
+            LocalDate counterEventDate,
+            LocalTime counterStartTime,
+            LocalTime counterEndTime) {
     }
 }

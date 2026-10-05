@@ -15,6 +15,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import pt.saltosnaspalhacadas.backend.usernotification.UserNotificationService;
+
 @Service
 public class BookingReminderService {
 
@@ -22,6 +24,7 @@ public class BookingReminderService {
 
     private final BookingRepository bookings;
     private final BookingNotificationService notifications;
+    private final UserNotificationService userNotifications;
     private final int daysBefore;
     private final Clock clock;
     private final TransactionTemplate transaction;
@@ -30,16 +33,24 @@ public class BookingReminderService {
     public BookingReminderService(
             BookingRepository bookings,
             BookingNotificationService notifications,
+            UserNotificationService userNotifications,
             PlatformTransactionManager transactionManager,
             @Value("${app.booking.reminder.days-before:5}") int daysBefore,
             @Value("${app.booking.reminder.zone:Europe/Lisbon}") String reminderZone) {
-        this(bookings, notifications, transactionManager, daysBefore, Clock.system(ZoneId.of(reminderZone)));
+        this(bookings, notifications, userNotifications, transactionManager, daysBefore, Clock.system(ZoneId.of(reminderZone)));
     }
 
     BookingReminderService(BookingRepository bookings, BookingNotificationService notifications,
             PlatformTransactionManager transactionManager, int daysBefore, Clock clock) {
+        this(bookings, notifications, null, transactionManager, daysBefore, clock);
+    }
+
+    BookingReminderService(BookingRepository bookings, BookingNotificationService notifications,
+            UserNotificationService userNotifications,
+            PlatformTransactionManager transactionManager, int daysBefore, Clock clock) {
         this.bookings = bookings;
         this.notifications = notifications;
+        this.userNotifications = userNotifications;
         this.daysBefore = Math.max(0, daysBefore);
         this.clock = clock;
         this.transaction = new TransactionTemplate(transactionManager);
@@ -54,7 +65,7 @@ public class BookingReminderService {
     public int sendDueRemindersNow() {
         int sent = sendDueRemindersForDate(LocalDate.now(clock));
         if (sent > 0) {
-            log.info("{} agendamentos tiveram pelo menos um lembrete aceite pelo serviço de email", sent);
+            log.info("{} agendamentos tiveram pelo menos um canal de lembrete concluído", sent);
         }
         return sent;
     }
@@ -69,34 +80,58 @@ public class BookingReminderService {
         int sentCount = 0;
 
         for (Long bookingId : dueBookings) {
-            try {
-                // Commit each booking independently; recheck under a row lock for overlapping jobs.
-                boolean sent = Boolean.TRUE.equals(transaction.execute(status ->
-                        sendForBooking(bookingId, today, reminderDate)));
-                if (sent) sentCount++;
-            } catch (RuntimeException exception) {
-                log.warn("Falha ao processar lembretes do agendamento #{}", bookingId, exception);
+            boolean completed = false;
+            for (ReminderChannel channel : ReminderChannel.values()) {
+                try {
+                    // Commit channels independently; each one rechecks under the booking row lock.
+                    completed |= Boolean.TRUE.equals(transaction.execute(status ->
+                            sendForBooking(bookingId, today, reminderDate, channel)));
+                } catch (RuntimeException exception) {
+                    log.warn("Falha ao processar canal {} do agendamento #{}", channel, bookingId, exception);
+                }
             }
+            if (completed) sentCount++;
         }
 
         return sentCount;
     }
 
-    private boolean sendForBooking(Long bookingId, LocalDate today, LocalDate through) {
+    private boolean sendForBooking(Long bookingId, LocalDate today, LocalDate through, ReminderChannel channel) {
         Booking booking = bookings.findByIdForReminder(bookingId).orElse(null);
         if (booking == null || booking.getStatus() != BookingStatus.ACCEPTED
                 || booking.getEventDate().isBefore(today) || booking.getEventDate().isAfter(through)) {
             return false;
         }
-        boolean sent = false;
-        if (booking.needsCustomerReminder() && notifications.sendEventReminder(booking)) {
-            booking.markReminderSent(clock.instant());
-            sent = true;
-        }
-        if (booking.needsArtistReminder() && notifications.sendArtistEventReminder(booking)) {
-            booking.markArtistReminderSent(clock.instant());
-            sent = true;
-        }
-        return sent;
+
+        return switch (channel) {
+            case CUSTOMER_EMAIL -> {
+                if (booking.needsCustomerReminder() && notifications.sendEventReminder(booking)) {
+                    booking.markReminderSent(clock.instant());
+                    yield true;
+                }
+                yield false;
+            }
+            case ARTIST_EMAIL -> {
+                if (booking.needsArtistReminder() && notifications.sendArtistEventReminder(booking)) {
+                    booking.markArtistReminderSent(clock.instant());
+                    yield true;
+                }
+                yield false;
+            }
+            case CUSTOMER_IN_APP -> {
+                if (userNotifications != null && booking.needsCustomerInAppReminder()
+                        && userNotifications.createFiveDayReminder(booking, today)) {
+                    booking.markCustomerInAppReminderSent(clock.instant());
+                    yield true;
+                }
+                yield false;
+            }
+        };
+    }
+
+    private enum ReminderChannel {
+        CUSTOMER_EMAIL,
+        ARTIST_EMAIL,
+        CUSTOMER_IN_APP
     }
 }

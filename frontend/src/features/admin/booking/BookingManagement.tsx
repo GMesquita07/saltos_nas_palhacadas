@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { decideBooking, getAdminBookings } from '../../../services/bookingService'
 import type { Booking, BookingDecisionStatus, BookingStatus } from '../../../types/booking'
 import { bookingEmptyMessage, bookingFilters, defaultBookingFilter, toBookingStatusFilter, type BookingFilter } from './bookingFilters'
+import { bookingsRefreshEvent } from '../../booking/bookingRefresh'
 import styles from './BookingManagement.module.css'
 
 type BookingNotice = {
@@ -17,10 +18,14 @@ type DecisionDraft = {
   bookingId: string
   status: BookingDecision
   message: string
-  eventDate: string
-  startTime: string
-  endTime: string
-  agreedBudget: string
+  counterEventDate: string
+  counterStartTime: string
+  counterEndTime: string
+  counterBudget: string
+  currentEventDate: string
+  currentStartTime: string
+  currentEndTime: string
+  currentBudget: string
 }
 
 const statusLabels: Record<BookingStatus, string> = {
@@ -75,20 +80,43 @@ export function BookingManagement({
     const requestId = window.setTimeout(() => {
       void loadBookings()
     }, 0)
+    const handleRefresh = () => { void loadBookings() }
+    window.addEventListener(bookingsRefreshEvent, handleRefresh)
 
-    return () => window.clearTimeout(requestId)
+    return () => {
+      window.clearTimeout(requestId)
+      window.removeEventListener(bookingsRefreshEvent, handleRefresh)
+    }
   }, [loadBookings])
 
   function openDecision(booking: AdminBooking, status: BookingDecision) {
+    const hasPendingProposal = booking.status === 'COUNTER_PROPOSED' && booking.counterProposal !== null
+    const effectiveEventDate = hasPendingProposal
+      ? booking.counterProposal?.eventDate ?? booking.eventDate
+      : booking.eventDate
+    const effectiveStartTime = hasPendingProposal
+      ? booking.counterProposal?.startTime ?? booking.startTime
+      : booking.startTime
+    const effectiveEndTime = hasPendingProposal
+      ? booking.counterProposal?.endTime ?? booking.endTime
+      : booking.endTime
+    const effectiveBudget = hasPendingProposal
+      ? booking.counterProposal?.budget ?? booking.budget
+      : booking.budget
+
     setFormError(null)
     setDraft({
       bookingId: booking.id,
       status,
       message: '',
-      eventDate: booking.eventDate,
-      startTime: booking.startTime?.slice(0, 5) ?? '',
-      endTime: booking.endTime?.slice(0, 5) ?? '',
-      agreedBudget: booking.budget == null ? '' : String(booking.budget),
+      counterEventDate: effectiveEventDate,
+      counterStartTime: effectiveStartTime?.slice(0, 5) ?? '',
+      counterEndTime: effectiveEndTime?.slice(0, 5) ?? '',
+      counterBudget: effectiveBudget == null ? '' : String(effectiveBudget),
+      currentEventDate: effectiveEventDate,
+      currentStartTime: effectiveStartTime?.slice(0, 5) ?? '',
+      currentEndTime: effectiveEndTime?.slice(0, 5) ?? '',
+      currentBudget: effectiveBudget == null ? '' : String(effectiveBudget),
     })
   }
 
@@ -101,26 +129,33 @@ export function BookingManagement({
     event.preventDefault()
     if (!draft || isSending) return
 
-    if (draft.status === 'ACCEPTED') {
-      if (!draft.eventDate) {
-        setFormError('Escolhe a data confirmada para o evento.')
+    if (draft.status === 'COUNTER_PROPOSED') {
+      if (!draft.counterEventDate) {
+        setFormError('Escolhe a data proposta para o evento.')
         return
       }
 
-      if ((draft.startTime && !draft.endTime) || (!draft.startTime && draft.endTime)) {
+      if ((draft.counterStartTime && !draft.counterEndTime) || (!draft.counterStartTime && draft.counterEndTime)) {
         setFormError('Indica a hora de início e fim, ou deixa ambas em branco.')
         return
       }
 
-      if (draft.startTime && draft.endTime && draft.startTime >= draft.endTime) {
+      if (draft.counterStartTime && draft.counterEndTime && draft.counterStartTime >= draft.counterEndTime) {
         setFormError('A hora de fim tem de ser posterior à hora de início.')
         return
       }
 
-      const hasAgreedBudget = draft.agreedBudget.trim() !== ''
-      const agreedBudget = Number(draft.agreedBudget)
-      if (hasAgreedBudget && (!Number.isFinite(agreedBudget) || agreedBudget <= 0)) {
-        setFormError('O orçamento acordado tem de ser um valor superior a 0 €.')
+      const hasBudget = draft.counterBudget.trim() !== ''
+      const counterBudget = Number(draft.counterBudget)
+      if (hasBudget && (!Number.isFinite(counterBudget) || counterBudget <= 0)) {
+        setFormError('O orçamento proposto tem de ser um valor superior a 0 €.')
+        return
+      }
+      if (draft.counterEventDate === draft.currentEventDate
+          && draft.counterStartTime === draft.currentStartTime
+          && draft.counterEndTime === draft.currentEndTime
+          && draft.counterBudget === draft.currentBudget) {
+        setFormError('Altera a data, o horário ou o orçamento antes de enviar a proposta.')
         return
       }
     }
@@ -134,15 +169,15 @@ export function BookingManagement({
     setFormError(null)
 
     try {
-      const agreedBudget = Number(draft.agreedBudget)
+      const counterBudget = Number(draft.counterBudget)
       await decideBooking(draft.bookingId, {
         status: draft.status,
         ...(draft.message.trim() ? { message: draft.message.trim() } : {}),
-        ...(draft.status === 'ACCEPTED' ? {
-          eventDate: draft.eventDate,
-          startTime: draft.startTime || null,
-          endTime: draft.endTime || null,
-          ...(draft.agreedBudget.trim() ? { agreedBudget } : {}),
+        ...(draft.status === 'COUNTER_PROPOSED' ? {
+          counterEventDate: draft.counterEventDate,
+          counterStartTime: draft.counterStartTime || null,
+          counterEndTime: draft.counterEndTime || null,
+          ...(draft.counterBudget.trim() ? { counterBudget } : {}),
         } : {}),
       }, token)
 
@@ -264,18 +299,25 @@ export function BookingManagement({
 
               {booking.counterProposal && (
                 <section className={styles.counterSummary} aria-label="Alteração proposta">
-                  <strong>Alteração proposta</strong>
+                  <strong>{booking.counterProposal.proposedBy === 'CUSTOMER' ? 'Contraproposta do cliente' : 'Proposta enviada ao cliente'}</strong>
                   <span>
                     {booking.counterProposal.budget != null && formatCurrency(booking.counterProposal.budget)}
                     {booking.counterProposal.budget != null && booking.counterProposal.eventDate && ' · '}
                     {booking.counterProposal.eventDate && `Data alternativa: ${formatDate(booking.counterProposal.eventDate)}`}
+                    {(booking.counterProposal.budget != null || booking.counterProposal.eventDate) && booking.counterProposal.startTime && ' · '}
+                    {booking.counterProposal.startTime && `Horário: ${formatTimeRange(booking.counterProposal.startTime, booking.counterProposal.endTime)}`}
+                    {booking.counterProposal.budget == null
+                      && booking.counterProposal.eventDate == null
+                      && booking.counterProposal.startTime == null
+                      && 'Mantém ou restaura os termos originais do pedido.'}
                   </span>
+                  {booking.counterProposal.proposedBy === 'ADMIN' && <small>A aguardar resposta do cliente.</small>}
                 </section>
               )}
 
               {booking.message && (
                 <section className={styles.message} aria-label="Mensagem da administração">
-                  <strong>Mensagem da administração</strong>
+                  <strong>{booking.counterProposal?.proposedBy === 'CUSTOMER' ? 'Mensagem do cliente' : 'Mensagem da administração'}</strong>
                   <p>{booking.message}</p>
                 </section>
               )}
@@ -284,14 +326,32 @@ export function BookingManagement({
 
               {booking.status === 'PENDING' && (
                 <div className={styles.actions}>
-                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'ACCEPTED')}>Confirmar / alterar</button>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'ACCEPTED')}>Aceitar pedido</button>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'COUNTER_PROPOSED')}>Propor alterações</button>
                   <button className={styles.declineButton} disabled={isSending} type="button" onClick={() => openDecision(booking, 'DECLINED')}>Recusar</button>
                 </div>
               )}
 
               {booking.status === 'ACCEPTED' && (
                 <div className={styles.actions}>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'COUNTER_PROPOSED')}>Propor alteração</button>
                   <button className={styles.declineButton} disabled={isSending} type="button" onClick={() => openDecision(booking, 'CANCELLED')}>Cancelar evento</button>
+                </div>
+              )}
+
+              {booking.status === 'COUNTER_PROPOSED' && booking.counterProposal?.proposedBy === 'CUSTOMER' && (
+                <div className={styles.actions}>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'ACCEPTED')}>Aceitar proposta</button>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'COUNTER_PROPOSED')}>Responder com outra proposta</button>
+                  <button className={styles.declineButton} disabled={isSending} type="button" onClick={() => openDecision(booking, 'DECLINED')}>Recusar</button>
+                  <button className={styles.declineButton} disabled={isSending} type="button" onClick={() => openDecision(booking, 'CANCELLED')}>Cancelar</button>
+                </div>
+              )}
+
+              {booking.status === 'COUNTER_PROPOSED' && booking.counterProposal?.proposedBy === 'ADMIN' && (
+                <div className={styles.actions}>
+                  <button disabled={isSending} type="button" onClick={() => openDecision(booking, 'COUNTER_PROPOSED')}>Rever proposta</button>
+                  <button className={styles.declineButton} disabled={isSending} type="button" onClick={() => openDecision(booking, 'CANCELLED')}>Cancelar</button>
                 </div>
               )}
 
@@ -305,44 +365,44 @@ export function BookingManagement({
                     <button disabled={isSending} type="button" onClick={cancelDecision}>Cancelar</button>
                   </div>
 
-                  {draft.status === 'ACCEPTED' && (
+                  {draft.status === 'COUNTER_PROPOSED' && (
                     <div className={styles.scheduleFields}>
                       <label>
-                        Data confirmada
+                        Data proposta
                         <input
                           min={todayDateValue()}
-                          onChange={(event) => setDraft((current) => current ? { ...current, eventDate: event.target.value } : current)}
+                          onChange={(event) => setDraft((current) => current ? { ...current, counterEventDate: event.target.value } : current)}
                           required
                           type="date"
-                          value={draft.eventDate}
+                          value={draft.counterEventDate}
                         />
                       </label>
                       <label>
                         Hora de início <span>(opcional)</span>
                         <input
-                          onChange={(event) => setDraft((current) => current ? { ...current, startTime: event.target.value } : current)}
+                          onChange={(event) => setDraft((current) => current ? { ...current, counterStartTime: event.target.value } : current)}
                           type="time"
-                          value={draft.startTime}
+                          value={draft.counterStartTime}
                         />
                       </label>
                       <label>
                         Hora de fim <span>(opcional)</span>
                         <input
-                          onChange={(event) => setDraft((current) => current ? { ...current, endTime: event.target.value } : current)}
+                          onChange={(event) => setDraft((current) => current ? { ...current, counterEndTime: event.target.value } : current)}
                           type="time"
-                          value={draft.endTime}
+                          value={draft.counterEndTime}
                         />
                       </label>
                       <label>
-                        Orçamento acordado <span>(só admin)</span>
+                        Orçamento proposto
                         <input
                           inputMode="decimal"
                           min="0.01"
-                          onChange={(event) => setDraft((current) => current ? { ...current, agreedBudget: event.target.value } : current)}
+                          onChange={(event) => setDraft((current) => current ? { ...current, counterBudget: event.target.value } : current)}
                           placeholder="Ex.: 450"
                           step="0.01"
                           type="number"
-                          value={draft.agreedBudget}
+                          value={draft.counterBudget}
                         />
                       </label>
                     </div>
@@ -356,7 +416,7 @@ export function BookingManagement({
                       placeholder={draft.status === 'CANCELLED'
                         ? 'Explica o motivo do cancelamento.'
                         : draft.status === 'ACCEPTED'
-                          ? 'Indica qualquer ajuste combinado por telefone/email.'
+                          ? 'Confirma ao cliente que o pedido foi aceite como submetido.'
                           : 'Adiciona uma nota, se necessário.'}
                       required={draft.status === 'CANCELLED'}
                       value={draft.message}
@@ -379,14 +439,14 @@ export function BookingManagement({
 }
 
 function decisionTitle(status: BookingDecision) {
-  if (status === 'ACCEPTED') return 'Confirmar ou alterar pedido'
+  if (status === 'ACCEPTED') return 'Aceitar pedido'
   if (status === 'DECLINED') return 'Rejeitar pedido'
   if (status === 'CANCELLED') return 'Cancelar evento'
   return 'Enviar alteração'
 }
 
 function decisionDescription(status: BookingDecision) {
-  if (status === 'ACCEPTED') return 'Confirma a data pedida ou ajusta a data/hora combinada fora do site.'
+  if (status === 'ACCEPTED') return 'Aceita exatamente os termos atuais do pedido ou da contraproposta do cliente.'
   if (status === 'DECLINED') return 'Informa o cliente de que o pedido não pode avançar.'
   if (status === 'CANCELLED') return 'Cancela o evento e regista a justificação para libertar o calendário.'
   return 'Regista a alteração proposta ao cliente.'
