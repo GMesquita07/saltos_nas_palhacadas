@@ -273,6 +273,10 @@ public class AuthController {
     @Transactional(rollbackFor = IOException.class)
     void deleteCurrentUser(Authentication authentication, @Valid @RequestBody DeleteAccountRequest request) throws IOException {
         AppUser user = findCurrentUser(authentication);
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A conta de administrador deve ser removida manualmente por outro administrador");
+        }
         if (!passwords.matches(request.password(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A palavra-passe não está correta");
         }
