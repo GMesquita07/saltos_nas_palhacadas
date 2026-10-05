@@ -120,7 +120,7 @@ Cloudflare força HTTPS no domínio oficial validado. O apex redireciona para `h
 - `server.error.include-*` está configurado para não expor detalhes internos.
 - SMTP password, maintenance key, R2 credentials, Turnstile secret e credenciais de backup ficam no Google Secret Manager.
 - Email privado de notificações por artista (`profiles.notification_email`) é dado operacional: só endpoints admin o expõem, nunca endpoints públicos de perfis/portfólio nem exports de conta.
-- A inbox V27 guarda apenas títulos/mensagens curtos sobre decisões e reminders de booking. O export RGPD inclui os registos do próprio utilizador e a eliminação da conta remove-os antes de preservar a política existente de anonimização dos bookings. A proteção de utilizador ativo impede que decisões posteriores sobre bookings anonimizados recriem notificações. V27/V28 ainda não estão em produção.
+- A inbox V27 guarda apenas títulos/mensagens curtos sobre decisões e reminders de booking. O export RGPD inclui os registos do próprio utilizador e a eliminação da conta remove-os antes de preservar a política existente de anonimização dos bookings. A proteção de utilizador ativo impede que decisões posteriores sobre bookings anonimizados recriem notificações. V27/V28 estão em produção desde 2026-10-05.
 - Notificações para administradores usam utilizadores ativos na DB com role `ADMIN`; a lista nunca é exposta publicamente.
 
 ## Startup Verifier

@@ -13,19 +13,19 @@ Last verified: 2026-10-05.
 | Materiais | Público/Admin | `MaterialsPage`, admin content management | `MaterialController`, `AdminMaterialController` | `materials`, incluindo `imagePosition`/`imageZoom` | R2/media pública | DONE |
 | Registo/login | Público | `AuthPage`, `AuthContext` | `AuthController`, `JwtService` | `app_users` | Turnstile | DONE |
 | Forgot/reset password | Público | `AuthPage` | `AuthController`, `PasswordResetToken` | `password_reset_tokens` | Brevo SMTP | DONE/VALIDATED em produção; pré-validação server-side e UX de link inválido/expirado confirmadas |
-| Conta do cliente | Cliente | `AccountPage` com dashboard pessoal e inbox | `AuthController`, `UserNotificationController` | `app_users`, incluindo crop/posição/zoom da foto de conta; `user_notifications` local em V27 | R2 para avatar | DONE em código local; inbox pendente de revisão/promoção/deploy/validação |
+| Conta do cliente | Cliente | `AccountPage` com dashboard pessoal e inbox | `AuthController`, `UserNotificationController` | `app_users`, incluindo crop/posição/zoom da foto de conta; `user_notifications` em V27 | R2 para avatar | DONE/VALIDATED em produção; inbox e sino promovidos por PR #95/#96 |
 | Alteração de password | Cliente | `AccountPage` | `AuthController` | `app_users` | Nenhuma | DONE |
-| Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, favorites, reviews, notifications | Nenhuma | DONE técnico; extensão de notifications local |
+| Export RGPD | Cliente | `AccountPage` | `AccountLifecycleService` | users, bookings, favorites, reviews, notifications | Nenhuma | DONE técnico; extensão de notifications incluída em produção |
 | Eliminação de conta | Cliente | `AccountPage` | `AccountLifecycleService` | Anonimiza/apaga dados relacionados | R2 para apagar media | DONE técnico |
 | Favoritos | Cliente | `FavoritesPage`, `AuthContext` | `FavoriteController`, `FavoriteService` | `user_favorites` | Nenhuma | DONE |
 | Booking | Cliente | `BookingPage` | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
 | Disponibilidade | Público | `BookingPage` | `ProfileAvailabilityController` | `booking_requests` | Nenhuma | DONE |
-| Decisões/counter-proposals | Cliente/Admin | `BookingPage`, `BookingManagement` | `BookingController`, `AdminBookingController` | `booking_requests`, incluindo proposta/autor/data/horário/orçamento em V28 local | Brevo SMTP | IN PROGRESS; negociação bidirecional implementada localmente, pendente de revisão/promoção/deploy/validação |
+| Decisões/counter-proposals | Cliente/Admin | `BookingPage`, `BookingManagement` | `BookingController`, `AdminBookingController` | `booking_requests`, incluindo proposta/autor/data/horário/orçamento em V28 | Brevo SMTP | DONE/VALIDATED em produção; negociação ADMIN↔CUSTOMER promovida por PR #95/#96 |
 | Cancelamentos | Cliente/Admin | `BookingPage`, admin | `BookingController`, `BookingService` | `booking_requests` | Brevo SMTP | DONE/VALIDATED |
 | Emails transacionais | Backend | N/A | `EmailService`, `BookingNotificationService`, `SiteNotificationService` | N/A | Brevo SMTP | DONE/VALIDATED; Feature 4 DONE |
 | Notificações admin/artista | Admin/Backend | `AdminArea` | `SiteNotificationService`, `BookingNotificationService`, `AdminPortfolioController` | `profiles.notification_email`, `app_users` | Brevo SMTP | DONE/VALIDATED; novo booking envia para o email operacional do artista e admins ativos, com E2E confirmado em produção |
-| Reminders de eventos | Maintenance/Admin ops | Sino/`AccountPage` no canal local | `BookingReminderService`, `MaintenanceController` | emails em V26; `customer_in_app_reminder_sent_at` em V28 local | Scheduler + SMTP | DONE/VALIDATED em produção para emails; reminder in-app IN PROGRESS local |
-| Notificações in-app de booking | Cliente | `NotificationProvider`, sino global, `AccountPage` | `UserNotificationController`, `UserNotificationService`, integrações de booking/reminder | `user_notifications` (V27 local), tracking in-app V28 local | Nenhuma | IN PROGRESS; implementado e testado localmente, pendente de revisão/promoção/deploy/validação |
+| Reminders de eventos | Maintenance/Admin ops | Sino/`AccountPage` | `BookingReminderService`, `MaintenanceController` | emails em V26; `customer_in_app_reminder_sent_at` em V28 | Scheduler + SMTP | DONE/VALIDATED; emails cliente/artista e canal in-app estão em produção |
+| Notificações in-app de booking | Cliente/Admin | `NotificationProvider`, sino global, `AccountPage` | `UserNotificationController`, `UserNotificationService`, integrações de booking/reminder | `user_notifications` (V27), tracking in-app V28 | Nenhuma | DONE/VALIDATED em produção; CUSTOMER e ADMIN usam inbox/sino autenticados |
 | Upload/admin content management | Admin | `AdminArea`, `MaterialManagement`, crop editors/previews | `MediaController`, `MediaStorage` | R2/local + posição/zoom nas entidades editáveis | R2 em prod | DONE |
 | Media privada | Cliente/Admin | `AuthenticatedMedia` | `PrivateMediaController` | `media_objects` | R2 private bucket | DONE |
 | Media pública | Público | Imagens/vídeos no site | `PublicMediaController` | paths públicos | R2 public bucket | DONE |
@@ -63,7 +63,7 @@ Last verified: 2026-10-05.
 - Email transacional está ativo em produção, mas a entregabilidade deve continuar monitorizada.
 - Reminders de booking têm Scheduler em produção; manter o cron interno do Spring desativado no profile prod. A versão cliente/artista com retries independentes está em produção e teve entrega manual E2E confirmada nas duas mailboxes; o trigger automático das 09:00 continua a ser monitorizado separadamente.
 - Analytics não deve ser ativado sem consentimento e revisão da política de cookies.
-- A base de dados está operacionalmente confirmada em Flyway V26, com 26 migrations validadas; `saltos-backend-00020-ln5` aplicou V26 e `00021-5mv` confirmou o schema up to date.
-- V27 cria `user_notifications` e V28 acrescenta negociação bidirecional e tracking do reminder in-app; ambas existem apenas nesta branch local e ainda não foram revistas, promovidas, aplicadas ou validadas em produção.
+- A base de dados está operacionalmente confirmada em Flyway V28, com 28 migrations validadas; `saltos-backend-00022-6x6` aplicou V27/V28 a partir de V26.
+- V27 cria `user_notifications` e V28 acrescenta negociação bidirecional e tracking do reminder in-app; ambas foram promovidas por PR #95/#96 e aplicadas em produção pela revisão `saltos-backend-00022-6x6`.
 - Reminder in-app de 1 dia, pedido de review pós-evento, atualizações de favoritos e waitlist/disponibilidade continuam apenas ideias futuras.
 - Uploads públicos feitos pelo admin ainda não têm ownership persistente em `media_objects`; limpeza automática de media pública órfã/R2 fica como follow-up para evitar apagar URLs reutilizados.
