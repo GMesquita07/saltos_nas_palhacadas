@@ -166,7 +166,7 @@ Extensão da mesma branch, 2026-10-04. A implementação/testes de reset acima f
 
 Em produção, um booking de teste aceite dentro da janela foi processado por execução manual do Scheduler: o utilizador confirmou receção nas mailboxes de cliente e artista; uma segunda execução manual não gerou novos emails. A inspeção direta dos timestamps na BD não foi realizada nesta validação e o trigger automático das 09:00 não foi revalidado após a release. Sucesso SMTP continua distinto de entrega final; crash entre envio e commit pode causar reenvio.
 
-## Conta, Notificações e Contrapropostas: Validação Local
+## Conta, Notificações e Contrapropostas: Validação Local + Produção
 
 A suite inclui testes de integração para decisões administrativas, negociação ADMIN -> CUSTOMER -> ADMIN, restauro integral dos termos canónicos, normalização isolada de data/horário/orçamento, data no próprio dia, aplicação dos termos finais, autoria/mensagens, ownership, rejeição de propostas idênticas sem efeitos laterais, substituição de proposta administrativa sem deixar notificações obsoletas por ler e reserva do horário canónico durante negociação. A inbox mantém cobertura de ordenação determinística, unread total de 55 com latest 50, resolução de ações pendentes, leitura idempotente, read-all isolado e RGPD.
 
