@@ -49,6 +49,7 @@ export type AccountDataExport = {
   bookings: unknown[]
   favorites: unknown[]
   reviews: unknown[]
+  notifications: unknown[]
 }
 
 export async function login(credentials: Credentials, turnstileToken?: string): Promise<AuthSession> {

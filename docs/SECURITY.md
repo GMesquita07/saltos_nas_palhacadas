@@ -29,6 +29,8 @@ Implementação promovida e validada em produção em 2026-10-05:
 - Endpoints públicos são explicitamente permitidos.
 - `/api/v1/admin/**` exige `ADMIN`.
 - `/api/v1/auth/me`, favoritos, bookings e media privada exigem sessão.
+- `/api/v1/notifications/**` exige sessão; o utilizador é sempre resolvido pelo email autenticado, nunca por `userId` recebido do cliente. Leituras e alterações são filtradas pelo owner e IDs alheios devolvem `404`.
+- A contraproposta de cliente em `/api/v1/bookings/{id}/counter-proposal` também deriva o owner exclusivamente da sessão e só é aceite quando a proposta atual pertence ao admin. O backend rejeita autoaceitação e alterações fora do fluxo permitido.
 - Media privada valida owner ou `ADMIN` antes de consultar/devolver objetos geridos.
 - Falhas de autorização em media privada devolvem `404` para não revelar existência de objetos de outros utilizadores.
 - Reminders cliente/artista em V26 mantêm `POST /internal/maintenance/booking-reminders` protegido por `X-Maintenance-Key`. O email operacional usa apenas `profile.notificationEmail`, sem o expor em DTOs públicos; inclui os contactos e detalhes do booking necessários ao artista. Não houve novo endpoint público nem alteração de secrets/Scheduler; a entrega manual E2E foi validada nas duas mailboxes.
@@ -118,6 +120,7 @@ Cloudflare força HTTPS no domínio oficial validado. O apex redireciona para `h
 - `server.error.include-*` está configurado para não expor detalhes internos.
 - SMTP password, maintenance key, R2 credentials, Turnstile secret e credenciais de backup ficam no Google Secret Manager.
 - Email privado de notificações por artista (`profiles.notification_email`) é dado operacional: só endpoints admin o expõem, nunca endpoints públicos de perfis/portfólio nem exports de conta.
+- A inbox V27 guarda apenas títulos/mensagens curtos sobre decisões e reminders de booking. O export RGPD inclui os registos do próprio utilizador e a eliminação da conta remove-os antes de preservar a política existente de anonimização dos bookings. A proteção de utilizador ativo impede que decisões posteriores sobre bookings anonimizados recriem notificações. V27/V28 ainda não estão em produção.
 - Notificações para administradores usam utilizadores ativos na DB com role `ADMIN`; a lista nunca é exposta publicamente.
 
 ## Startup Verifier

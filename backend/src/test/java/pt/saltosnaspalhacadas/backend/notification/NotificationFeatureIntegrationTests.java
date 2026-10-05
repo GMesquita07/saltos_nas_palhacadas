@@ -199,7 +199,7 @@ class NotificationFeatureIntegrationTests {
         try {
             Long acceptedId = createBooking(customer, profile, LocalDate.now().plusDays(22), "Cliente Aceite " + suffix);
             resetEmailMock();
-            decide(acceptedId, "{\"status\":\"ACCEPTED\",\"eventDate\":\"" + LocalDate.now().plusDays(22) + "\",\"startTime\":\"10:00\",\"endTime\":\"12:00\",\"message\":\"Confirmado.\"}");
+            decide(acceptedId, "{\"status\":\"ACCEPTED\",\"message\":\"Confirmado.\"}");
             verify(emailService).send(eq("cliente-" + profile.getSlug() + "@example.test"), eq("Pedido de agendamento aceite"), contains("foi aceite"));
             verify(emailService).send(eq(profile.getNotificationEmail()), contains("pedido aceite"), contains("O pedido foi aceite"));
             verify(emailService).send(eq(ADMIN_EMAIL), contains("pedido aceite"), contains("Estado: ACCEPTED"));
@@ -232,6 +232,88 @@ class NotificationFeatureIntegrationTests {
                     .andExpect(status().isOk());
             verify(emailService).send(eq(profile.getNotificationEmail()), contains("agendamento cancelado"), contains("O agendamento foi cancelado"));
         } finally {
+            profiles.deleteById(profile.getId());
+            users.deleteById(customer.getId());
+        }
+    }
+
+    @Test
+    void counterProposalRoundTripEmailsCustomerAdminsAndArtist() throws Exception {
+        String suffix = suffix();
+        AppUser customer = users.save(new AppUser(
+                "counter-email-" + suffix + "@example.test",
+                passwords.encode("password-segura"),
+                UserRole.CUSTOMER));
+        Profile profile = profiles.save(new Profile(
+                "counter-email-" + suffix,
+                "DJ Contrapropostas",
+                "DJ",
+                "Perfil para testar emails de contraproposta",
+                null,
+                "50% 50%",
+                1.0,
+                null,
+                0,
+                "artist-counter-" + suffix + "@example.test"));
+
+        try {
+            Long bookingId = createBooking(
+                    customer, profile, LocalDate.now().plusDays(30), "Cliente Counter " + suffix);
+
+            // ADMIN -> CUSTOMER: o cliente recebe a proposta e a equipa recebe o evento operacional.
+            resetEmailMock();
+            decide(bookingId, "{\"status\":\"COUNTER_PROPOSED\",\"counterBudget\":300,\"message\":\"Proposta da equipa.\"}");
+            verify(emailService).send(
+                    eq("cliente-" + profile.getSlug() + "@example.test"),
+                    eq("Alteração proposta ao teu pedido"),
+                    argThat(body -> body.contains("300") && body.contains("fazeres uma contraproposta")));
+            verify(emailService).send(eq(ADMIN_EMAIL), contains("alteração proposta"), contains("Estado: COUNTER_PROPOSED"));
+            verify(emailService).send(eq(profile.getNotificationEmail()), contains("alteração proposta"), contains("Proposta da equipa"));
+
+            // CUSTOMER -> ADMIN: confirmação ao cliente + email operacional para admin/artista.
+            resetEmailMock();
+            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal", bookingId)
+                            .header("Authorization", bearer(customer))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"counterBudget\":350,\"message\":\"Consigo avançar por este valor.\"}"))
+                    .andExpect(status().isOk());
+            verify(emailService).send(
+                    eq("cliente-" + profile.getSlug() + "@example.test"),
+                    eq("Contraproposta enviada"),
+                    argThat(body -> body.contains("350") && body.contains("A equipa irá analisar a proposta")));
+            verify(emailService).send(
+                    eq(ADMIN_EMAIL),
+                    contains("contraproposta do cliente"),
+                    argThat(body -> body.contains("Estado: COUNTER_PROPOSED")
+                            && body.contains("Orçamento proposto")
+                            && body.contains("350")));
+            verify(emailService).send(
+                    eq(profile.getNotificationEmail()),
+                    contains("contraproposta do cliente"),
+                    contains("Consigo avançar por este valor."));
+
+            // ADMIN aceita a contraproposta do cliente.
+            resetEmailMock();
+            decide(bookingId, "{\"status\":\"ACCEPTED\",\"message\":\"Contraproposta aceite.\"}");
+            verify(emailService).send(eq("cliente-" + profile.getSlug() + "@example.test"), eq("Pedido de agendamento aceite"), contains("foi aceite"));
+            verify(emailService).send(eq(ADMIN_EMAIL), contains("pedido aceite"), contains("Estado: ACCEPTED"));
+            verify(emailService).send(eq(profile.getNotificationEmail()), contains("pedido aceite"), contains("Contraproposta aceite"));
+
+            // CUSTOMER aceita uma contraproposta administrativa.
+            Long customerAcceptsId = createBooking(
+                    customer, profile, LocalDate.now().plusDays(31), "Cliente Aceita Counter " + suffix);
+            decide(customerAcceptsId, "{\"status\":\"COUNTER_PROPOSED\",\"counterBudget\":325}");
+            resetEmailMock();
+            mockMvc.perform(put("/api/v1/bookings/{id}/counter-proposal/decision", customerAcceptsId)
+                            .header("Authorization", bearer(customer))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"decision\":\"ACCEPTED\"}"))
+                    .andExpect(status().isOk());
+            verify(emailService).send(eq("cliente-" + profile.getSlug() + "@example.test"), eq("Pedido de agendamento aceite"), contains("foi aceite"));
+            verify(emailService).send(eq(ADMIN_EMAIL), contains("contraproposta aceite"), contains("O cliente aceitou a contraproposta"));
+            verify(emailService).send(eq(profile.getNotificationEmail()), contains("contraproposta aceite"), contains("Estado: ACCEPTED"));
+        } finally {
+            bookings.deleteAll(bookings.findAllByUserIdOrderByCreatedAtDesc(customer.getId()));
             profiles.deleteById(profile.getId());
             users.deleteById(customer.getId());
         }

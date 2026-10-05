@@ -1,6 +1,6 @@
 # Testes
 
-Last verified: 2026-09-17.
+Last verified: 2026-10-05.
 
 ## Suites
 
@@ -103,6 +103,7 @@ Validação final da release `main`:
 | Auth | BCrypt, JWT, forgot/reset, account update/delete/export |
 | Bookings | Criar, decidir, contraproposta, cancelar, disponibilidade, reminders |
 | Frontend | Header Turnstile, validação central de upload, helpers de routing, returnTo seguro, ações por modo auth |
+| Notificações in-app | Decisões admin vs ações cliente, ownership/404, ordenação/unread, leitura idempotente, read-all isolado, auth, RGPD export/delete, parsing frontend e contratos GET/PATCH |
 
 ## Matriz de Mudança
 
@@ -164,3 +165,11 @@ Extensão da mesma branch, 2026-10-04. A implementação/testes de reset acima f
 - `git diff --check`: passou. Sem novas dependências ou alterações às migrations históricas.
 
 Em produção, um booking de teste aceite dentro da janela foi processado por execução manual do Scheduler: o utilizador confirmou receção nas mailboxes de cliente e artista; uma segunda execução manual não gerou novos emails. A inspeção direta dos timestamps na BD não foi realizada nesta validação e o trigger automático das 09:00 não foi revalidado após a release. Sucesso SMTP continua distinto de entrega final; crash entre envio e commit pode causar reenvio.
+
+## Conta, Notificações e Contrapropostas: Validação Local
+
+A implementação local acrescenta testes de integração para decisões administrativas, negociação ADMIN -> CUSTOMER -> ADMIN, restauro integral dos termos canónicos, normalização isolada de data/horário/orçamento, data no próprio dia, aplicação dos termos finais, autoria/mensagens, ownership, rejeição de propostas idênticas sem efeitos laterais, substituição de proposta administrativa sem deixar notificações obsoletas por ler e reserva do horário canónico durante negociação. A inbox mantém cobertura de ordenação determinística, unread total de 55 com latest 50, resolução de ações pendentes, leitura idempotente, read-all isolado e RGPD.
+
+Os reminders cobrem três canais independentes, retry sem duplicar canais concluídos, limites hoje/+5, exclusões de estado/utilizador, reset por reagendamento e concorrência. V27/V28 são aplicadas pelo Flyway no H2 em modo PostgreSQL durante a suite; a compatibilidade PostgreSQL real continua dependente do job CI após revisão/promoção. O frontend testa parsing do novo contrato e orçamento final, disponibilidade `COUNTER_PROPOSED`, endpoints de contraproposta, decisão da contraparte, tipo de reminder, badge 0/1/99/99+, ordenação, eventos explícitos de refresh e proteção contra respostas tardias/cross-session. Não existe ainda validação em produção.
+
+Validação local final em 2026-10-05: `./mvnw test` passou com **169 testes**, zero falhas/erros/ignorados, e aplicou 28 migrations. `npm test` passou com **100 testes**; lint, build, audit e checks de diff passaram. Não foi adicionada qualquer dependência. Produção permanece confirmada apenas em V26; V27/V28 continuam locais.

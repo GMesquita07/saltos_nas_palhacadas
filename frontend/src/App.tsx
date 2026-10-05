@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
+import { NotificationBell } from './components/NotificationBell/NotificationBell'
 import { CookieConsent } from './components/CookieConsent/CookieConsent'
 import { useAuth } from './features/auth/AuthContext'
 import type { AuthMode } from './features/auth/authTypes'
@@ -227,6 +228,10 @@ function App() {
           onProfilesClick={goHome}
           onThemeToggle={toggleTheme}
         />
+        <NotificationBell
+          onBookings={() => navigate(session?.role === 'ADMIN' ? adminPath('bookings') : bookingPath())}
+          onViewAll={() => navigate('/conta#account-notifications-title')}
+        />
         <main className={styles.main}>
           <Suspense fallback={<RouteFallback />}>
           <Routes>
@@ -274,7 +279,11 @@ function App() {
               path="/conta"
               element={(
                 <RequireSession isSessionReady={isSessionReady} session={session}>
-                  {() => <AccountPage onBookingsClick={() => navigate(bookingPath())} onExit={goHome} onFavoritesClick={() => navigate('/favoritos')} />}
+                  {(accountSession) => <AccountPage
+                    onBookingsClick={() => navigate(accountSession.role === 'ADMIN' ? adminPath('bookings') : bookingPath())}
+                    onExit={goHome}
+                    onFavoritesClick={() => navigate('/favoritos')}
+                  />}
                 </RequireSession>
               )}
             />

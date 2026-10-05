@@ -9,12 +9,14 @@ import pt.saltosnaspalhacadas.backend.booking.BookingStatus;
 
 public record AvailabilityResponse(List<LocalDate> bookedDates, List<AvailabilitySlotResponse> slots) {
 
-    public static AvailabilityResponse from(List<Booking> bookings) {
+    public static AvailabilityResponse from(List<Booking> bookings, LocalDate from, LocalDate to) {
         List<AvailabilitySlotResponse> slots = bookings.stream()
-                .map(AvailabilitySlotResponse::from)
+                .flatMap(booking -> AvailabilitySlotResponse.from(booking).stream())
+                .filter(slot -> !slot.date().isBefore(from) && !slot.date().isAfter(to))
                 .toList();
         List<LocalDate> bookedDates = slots.stream()
-                .filter(slot -> slot.status() == BookingStatus.ACCEPTED)
+                .filter(slot -> slot.status() == BookingStatus.ACCEPTED
+                        || slot.status() == BookingStatus.COUNTER_PROPOSED)
                 .filter(slot -> slot.startTime() == null || slot.endTime() == null)
                 .map(AvailabilitySlotResponse::date)
                 .distinct()
@@ -28,12 +30,33 @@ public record AvailabilityResponse(List<LocalDate> bookedDates, List<Availabilit
             LocalTime endTime,
             BookingStatus status) {
 
-        static AvailabilitySlotResponse from(Booking booking) {
-            return new AvailabilitySlotResponse(
+        static List<AvailabilitySlotResponse> from(Booking booking) {
+            AvailabilitySlotResponse canonical = new AvailabilitySlotResponse(
                     booking.getEventDate(),
                     booking.getStartTime(),
                     booking.getEndTime(),
                     booking.getStatus());
+
+            if (booking.getStatus() != BookingStatus.COUNTER_PROPOSED
+                    || (booking.getCounterEventDate() == null
+                        && booking.getCounterStartTime() == null
+                        && booking.getCounterEndTime() == null)) {
+                return List.of(canonical);
+            }
+
+            AvailabilitySlotResponse proposed = new AvailabilitySlotResponse(
+                    booking.getCounterEventDate() == null
+                            ? booking.getEventDate()
+                            : booking.getCounterEventDate(),
+                    booking.getCounterStartTime() == null
+                            ? booking.getStartTime()
+                            : booking.getCounterStartTime(),
+                    booking.getCounterEndTime() == null
+                            ? booking.getEndTime()
+                            : booking.getCounterEndTime(),
+                    BookingStatus.COUNTER_PROPOSED);
+
+            return List.of(canonical, proposed);
         }
     }
 }

@@ -63,7 +63,11 @@ Estado validado em produção em 2026-10-05: V26 aplicada, backend healthy, exec
 
 V26 não preenche retroativamente o timestamp do artista: bookings aceites na janela com cliente já notificado podem enviar apenas ao artista após deploy. Falhas são tentadas nas próximas execuções; destinatários sem email não geram trabalho recorrente. Se um email for configurado posteriormente dentro da janela, torna-se elegível.
 
-Limitações: sucesso SMTP não comprova entrega na mailbox. Um crash entre envio e commit pode provocar duplicado, porque SMTP não é transacional com a BD. O bloqueio por booking é mantido durante os envios; a duração do job depende do SMTP. Não repetir manualmente jobs de envio sem verificar os registos persistidos.
+Limitações: sucesso SMTP não comprova entrega na mailbox. Um crash entre envio e commit pode provocar duplicado, porque SMTP não é transacional com a BD. Em produção V26, o bloqueio por booking é mantido durante os envios; a duração do job depende do SMTP. Não repetir manualmente jobs de envio sem verificar os registos persistidos.
+
+### Extensão Local V28: Reminder In-App
+
+A branch local acrescenta `customer_in_app_reminder_sent_at` como terceiro canal independente e separa cada canal numa transação com nova leitura/bloqueio do booking. Depois de uma futura promoção, a validação operacional deve também confirmar uma única `BOOKING_REMINDER_5_DAYS` na inbox, ausência de duplicado na segunda execução e retry independente entre inbox, email do cliente e email do artista. Nesse código, `processed` significa bookings com pelo menos um canal concluído na execução, não número de mensagens nem entrega SMTP. V28 não está em produção; não alterar o procedimento operacional confirmado de V26 até ao respetivo deploy.
 
 ## Turnstile
 

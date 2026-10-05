@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { cancelBooking, createBooking, getAvailability, getMyBookings, respondToCounterProposal } from '../../services/bookingService'
-import type { AvailabilitySlot, Booking, BookingCounterProposalDecision, BookingProposal, BookingStatus } from '../../types/booking'
+import { cancelBooking, counterProposeBooking, createBooking, getAvailability, getMyBookings, respondToCounterProposal } from '../../services/bookingService'
+import type { AvailabilitySlot, Booking, BookingCounterProposalDecision, BookingCounterProposalInput, BookingProposal, BookingStatus } from '../../types/booking'
 import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import { bookingsRefreshEvent, requestNotificationsRefresh } from './bookingRefresh'
 import styles from './BookingPage.module.css'
 
 type BookingPageProps = {
@@ -89,6 +90,9 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   const fullyBookedDateSet = useMemo(() => new Set(availabilitySlots
     .filter((slot) => slot.status === 'ACCEPTED' && (!slot.startTime || !slot.endTime))
     .map((slot) => slot.date)), [availabilitySlots])
+  const fullyEvaluatingDateSet = useMemo(() => new Set(availabilitySlots
+    .filter((slot) => slot.status !== 'ACCEPTED' && (!slot.startTime || !slot.endTime))
+    .map((slot) => slot.date)), [availabilitySlots])
   const selectedDateSlots = selectedDate ? availabilityByDate.get(selectedDate) ?? [] : []
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth])
   const today = useMemo(() => atStartOfDay(new Date()), [])
@@ -130,24 +134,52 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   }, [selectedProfileSlug, visibleMonth])
 
   useEffect(() => {
+    if (!selectedProfileSlug) return
+
+    const refreshAvailability = () => {
+      if (document.visibilityState !== 'visible') return
+      const from = toDateValue(firstDayOfMonth(visibleMonth))
+      const to = toDateValue(lastDayOfMonth(visibleMonth))
+      void getAvailability(selectedProfileSlug, from, to)
+        .then(setAvailabilitySlots)
+        .catch(() => setAvailabilityError('Não foi possível atualizar a disponibilidade deste perfil.'))
+    }
+
+    window.addEventListener('focus', refreshAvailability)
+    document.addEventListener('visibilitychange', refreshAvailability)
+    return () => {
+      window.removeEventListener('focus', refreshAvailability)
+      document.removeEventListener('visibilitychange', refreshAvailability)
+    }
+  }, [selectedProfileSlug, visibleMonth])
+
+  const loadMyBookings = useCallback(async () => {
     if (!session) {
+      setMyBookings([])
+      setIsBookingsLoading(false)
       return
     }
 
-    let isCurrent = true
-    void getMyBookings(session.token)
-      .then((bookings) => {
-        if (isCurrent) setMyBookings(bookings)
-      })
-      .catch((reason) => {
-        if (isCurrent) setBookingsError(reason instanceof Error ? reason.message : 'Não foi possível carregar os teus pedidos.')
-      })
-      .finally(() => {
-        if (isCurrent) setIsBookingsLoading(false)
-      })
-
-    return () => { isCurrent = false }
+    setIsBookingsLoading(true)
+    setBookingsError(null)
+    try {
+      setMyBookings(await getMyBookings(session.token))
+    } catch (reason) {
+      setBookingsError(reason instanceof Error ? reason.message : 'Não foi possível carregar os teus pedidos.')
+    } finally {
+      setIsBookingsLoading(false)
+    }
   }, [session])
+
+  useEffect(() => {
+    const requestId = window.setTimeout(() => { void loadMyBookings() }, 0)
+    const handleRefresh = () => { void loadMyBookings() }
+    window.addEventListener(bookingsRefreshEvent, handleRefresh)
+    return () => {
+      window.clearTimeout(requestId)
+      window.removeEventListener(bookingsRefreshEvent, handleRefresh)
+    }
+  }, [loadMyBookings])
 
   function handleProfileChange(profileSlug: string) {
     setSelectedProfileSlug(profileSlug)
@@ -223,7 +255,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
       return
     }
     if (hasAcceptedOverlap(selectedDateSlots, startTime || null, endTime || null)) {
-      setSubmitError('Já existe um evento confirmado nesse horário. Escolhe outro intervalo.')
+      setSubmitError('Já existe um evento confirmado ou um horário em avaliação nesse intervalo. Escolhe outro intervalo.')
       return
     }
 
@@ -287,6 +319,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
           ? 'Aceitaste a alteração. O evento ficou confirmado.'
           : 'Recusaste a alteração. O pedido foi encerrado.',
       })
+      requestNotificationsRefresh()
     } catch (reason) {
       setCounterProposalFeedback({
         bookingId,
@@ -297,6 +330,34 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
       respondingBookingRef.current = null
       setRespondingBookingId(null)
       setRespondingCounterDecision(null)
+    }
+  }
+
+  async function handleCustomerCounterProposal(bookingId: string, proposal: BookingCounterProposalInput) {
+    if (!session || respondingBookingRef.current) return
+    respondingBookingRef.current = bookingId
+    setRespondingBookingId(bookingId)
+    setRespondingCounterDecision(null)
+    setCounterProposalFeedback(null)
+    try {
+      const updatedBooking = await counterProposeBooking(bookingId, proposal, session.token)
+      setMyBookings((current) => current.map((booking) => booking.id === bookingId ? updatedBooking : booking))
+      if (updatedBooking.profileSlug === selectedProfileSlug) {
+        const from = toDateValue(firstDayOfMonth(visibleMonth))
+        const to = toDateValue(lastDayOfMonth(visibleMonth))
+        setAvailabilitySlots(await getAvailability(selectedProfileSlug, from, to))
+      }
+      setCounterProposalFeedback({ bookingId, type: 'success', message: 'Contraproposta enviada. A equipa tem agora de responder.' })
+      requestNotificationsRefresh()
+    } catch (reason) {
+      setCounterProposalFeedback({
+        bookingId,
+        type: 'error',
+        message: reason instanceof Error ? reason.message : 'Não foi possível enviar a contraproposta.',
+      })
+    } finally {
+      respondingBookingRef.current = null
+      setRespondingBookingId(null)
     }
   }
 
@@ -318,6 +379,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
         type: 'success',
         message: 'Pedido cancelado. A data voltou a ficar disponível para análise.',
       })
+      requestNotificationsRefresh()
     } catch (reason) {
       setCancellationFeedback({
         bookingId,
@@ -446,17 +508,18 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
                   const dateValue = toDateValue(date)
                   const daySlots = availabilityByDate.get(dateValue) ?? []
                   const hasAccepted = daySlots.some((slot) => slot.status === 'ACCEPTED')
-                  const hasPending = daySlots.some((slot) => slot.status === 'PENDING')
+                  const hasEvaluation = daySlots.some((slot) => slot.status !== 'ACCEPTED')
                   const isFullyBooked = fullyBookedDateSet.has(dateValue)
+                  const isFullyEvaluating = fullyEvaluatingDateSet.has(dateValue)
                   const isUnavailable = hasAccepted || isFullyBooked
                   const isPast = isPastDate(date, today)
                   const isSelected = selectedDate === dateValue
-                  const isDisabled = !isCurrentMonth || isPast || isFullyBooked
+                  const isDisabled = !isCurrentMonth || isPast || isFullyBooked || isFullyEvaluating
                   const dayState = isFullyBooked
                     ? 'Indisponível'
                     : hasAccepted
                       ? 'Com horários ocupados'
-                      : hasPending
+                      : hasEvaluation
                         ? 'Em avaliação'
                         : isPast
                           ? 'Data passada'
@@ -468,7 +531,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
                     <button
                       aria-label={`${dateFormatter.format(date)} · ${dayState}`}
                       aria-pressed={isSelected}
-                      className={`${styles.day} ${!isCurrentMonth ? styles.outsideMonth : ''} ${isUnavailable ? styles.booked : ''} ${hasPending ? styles.standby : ''} ${isSelected ? styles.selected : ''}`}
+                      className={`${styles.day} ${!isCurrentMonth ? styles.outsideMonth : ''} ${isUnavailable ? styles.booked : ''} ${hasEvaluation && !hasAccepted ? styles.standby : ''} ${isSelected ? styles.selected : ''}`}
                       disabled={isDisabled}
                       key={dateValue}
                       type="button"
@@ -489,7 +552,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
                   <strong>{dateFormatter.format(toLocalDate(selectedDate))}</strong>
                   {selectedDateSlots.map((slot, index) => (
                     <span key={`${slot.status}-${slot.startTime ?? 'day'}-${index}`}>
-                      {slot.status === 'PENDING' ? 'Em avaliação' : 'Confirmado'} · {formatTimeRange(slot.startTime, slot.endTime)}
+                      {slot.status === 'ACCEPTED' ? 'Confirmado' : 'Em avaliação'} · {formatTimeRange(slot.startTime, slot.endTime)}
                     </span>
                   ))}
                 </div>
@@ -594,7 +657,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
               <p className={styles.sectionIntro}>Consulta rapidamente artista, data, local e estado de cada pedido.</p>
             </div>
           </div>
-          {isBookingsLoading ? <p className={styles.feedback}>A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="status">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} cancellationFeedback={cancellationFeedback} cancellingBookingId={cancellingBookingId} counterProposalFeedback={counterProposalFeedback} onCancelBooking={handleCancelBooking} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
+          {isBookingsLoading ? <p className={styles.feedback}>A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="status">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} cancellationFeedback={cancellationFeedback} cancellingBookingId={cancellingBookingId} counterProposalFeedback={counterProposalFeedback} onCancelBooking={handleCancelBooking} onCounterProposal={handleCustomerCounterProposal} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
         </section>
       )}
     </section>
@@ -607,12 +670,13 @@ type BookingListProps = {
   cancellingBookingId: string | null
   counterProposalFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
   onCancelBooking: (bookingId: string) => void
+  onCounterProposal: (bookingId: string, proposal: BookingCounterProposalInput) => void
   onCounterProposalDecision: (bookingId: string, decision: BookingCounterProposalDecision) => void
   respondingBookingId: string | null
   respondingCounterDecision: BookingCounterProposalDecision | null
 }
 
-function BookingList({ bookings, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCancelBooking, onCounterProposalDecision, respondingBookingId, respondingCounterDecision }: BookingListProps) {
+function BookingList({ bookings, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCancelBooking, onCounterProposal, onCounterProposalDecision, respondingBookingId, respondingCounterDecision }: BookingListProps) {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null)
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId) ?? null
@@ -691,6 +755,7 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
                         counterProposalFeedback={counterProposalFeedback}
                         respondingBookingId={respondingBookingId}
                         respondingCounterDecision={respondingCounterDecision}
+                        onCounterProposal={onCounterProposal}
                         onCounterProposalDecision={onCounterProposalDecision}
                         onRequestCancel={() => setCancelBookingId(booking.id)}
                       />
@@ -821,51 +886,22 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
             )}
 
             {selectedBooking.counterProposal && (
-              <div className={styles.counterProposal}>
-                <strong>Alteração proposta</strong>
-                <span>
-                  {[
-                    selectedBooking.counterProposal.budget === null
-                      ? null
-                      : formatCurrency(selectedBooking.counterProposal.budget),
-                    selectedBooking.counterProposal.eventDate
-                      ? dateFormatter.format(toLocalDate(selectedBooking.counterProposal.eventDate))
-                      : null,
-                  ].filter(Boolean).join(' · ')}
-                </span>
-              </div>
+              <CounterProposalSummary booking={selectedBooking} />
             )}
 
             {selectedBooking.status === 'COUNTER_PROPOSED' && (
-              <div className={styles.counterResponse}>
-                <p>Queres aceitar esta alteração?</p>
-                <div className={styles.counterActions}>
-                  <button
-                    disabled={respondingBookingId !== null}
-                    type="button"
-                    onClick={() => onCounterProposalDecision(selectedBooking.id, 'ACCEPTED')}
-                  >
-                    {respondingBookingId === selectedBooking.id && respondingCounterDecision === 'ACCEPTED'
-                      ? 'A aceitar...'
-                      : 'Aceitar alteração'}
-                  </button>
-                  <button
-                    className={styles.declineCounter}
-                    disabled={respondingBookingId !== null}
-                    type="button"
-                    onClick={() => onCounterProposalDecision(selectedBooking.id, 'DECLINED')}
-                  >
-                    {respondingBookingId === selectedBooking.id && respondingCounterDecision === 'DECLINED'
-                      ? 'A recusar...'
-                      : 'Recusar alteração'}
-                  </button>
-                </div>
-              </div>
+              <CustomerCounterActions
+                booking={selectedBooking}
+                isResponding={respondingBookingId !== null}
+                onAccept={() => onCounterProposalDecision(selectedBooking.id, 'ACCEPTED')}
+                onCounter={(proposal) => onCounterProposal(selectedBooking.id, proposal)}
+                respondingDecision={respondingBookingId === selectedBooking.id ? respondingCounterDecision : null}
+              />
             )}
 
             {selectedBooking.message && (
               <div className={styles.modalSection}>
-                <span>Mensagem da equipa</span>
+                <span>{selectedBooking.counterProposal?.proposedBy === 'CUSTOMER' ? 'A tua mensagem' : 'Mensagem da equipa'}</span>
                 <p>{selectedBooking.message}</p>
               </div>
             )}
@@ -984,20 +1020,14 @@ type BookingInlineDetailsProps = {
   cancellingBookingId: string | null
   counterProposalFeedback: { bookingId: string; type: 'error' | 'success'; message: string } | null
   onCounterProposalDecision: (bookingId: string, decision: BookingCounterProposalDecision) => void
+  onCounterProposal: (bookingId: string, proposal: BookingCounterProposalInput) => void
   onRequestCancel: () => void
   respondingBookingId: string | null
   respondingCounterDecision: BookingCounterProposalDecision | null
 }
 
-function BookingInlineDetails({ booking, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCounterProposalDecision, onRequestCancel, respondingBookingId, respondingCounterDecision }: BookingInlineDetailsProps) {
+function BookingInlineDetails({ booking, cancellationFeedback, cancellingBookingId, counterProposalFeedback, onCounterProposal, onCounterProposalDecision, onRequestCancel, respondingBookingId, respondingCounterDecision }: BookingInlineDetailsProps) {
   const status = statusMeta(booking.status)
-  const counterDetails = booking.counterProposal
-    ? [
-        booking.counterProposal.budget === null ? null : formatCurrency(booking.counterProposal.budget),
-        booking.counterProposal.eventDate ? dateFormatter.format(toLocalDate(booking.counterProposal.eventDate)) : null,
-      ].filter(Boolean).join(' · ')
-    : ''
-
   return (
     <details className={styles.mobileBookingDetails}>
       <summary className={styles.mobileDetailsSummary}>Ver detalhes</summary>
@@ -1058,42 +1088,22 @@ function BookingInlineDetails({ booking, cancellationFeedback, cancellingBooking
         )}
 
         {booking.counterProposal && (
-          <div className={styles.counterProposal}>
-            <strong>Alteração proposta</strong>
-            <span>{counterDetails || 'A combinar com a equipa.'}</span>
-          </div>
+          <CounterProposalSummary booking={booking} />
         )}
 
         {booking.status === 'COUNTER_PROPOSED' && (
-          <div className={styles.counterResponse}>
-            <p>Queres aceitar esta alteração?</p>
-            <div className={styles.counterActions}>
-              <button
-                disabled={respondingBookingId !== null}
-                type="button"
-                onClick={() => onCounterProposalDecision(booking.id, 'ACCEPTED')}
-              >
-                {respondingBookingId === booking.id && respondingCounterDecision === 'ACCEPTED'
-                  ? 'A aceitar...'
-                  : 'Aceitar alteração'}
-              </button>
-              <button
-                className={styles.declineCounter}
-                disabled={respondingBookingId !== null}
-                type="button"
-                onClick={() => onCounterProposalDecision(booking.id, 'DECLINED')}
-              >
-                {respondingBookingId === booking.id && respondingCounterDecision === 'DECLINED'
-                  ? 'A recusar...'
-                  : 'Recusar alteração'}
-              </button>
-            </div>
-          </div>
+          <CustomerCounterActions
+            booking={booking}
+            isResponding={respondingBookingId !== null}
+            onAccept={() => onCounterProposalDecision(booking.id, 'ACCEPTED')}
+            onCounter={(proposal) => onCounterProposal(booking.id, proposal)}
+            respondingDecision={respondingBookingId === booking.id ? respondingCounterDecision : null}
+          />
         )}
 
         {booking.message && (
           <div className={styles.mobileDetailsSection}>
-            <span>Mensagem da equipa</span>
+            <span>{booking.counterProposal?.proposedBy === 'CUSTOMER' ? 'A tua mensagem' : 'Mensagem da equipa'}</span>
             <p>{booking.message}</p>
           </div>
         )}
@@ -1130,6 +1140,163 @@ function BookingInlineDetails({ booking, cancellationFeedback, cancellingBooking
         )}
       </div>
     </details>
+  )
+}
+
+function CounterProposalSummary({ booking }: { booking: Booking }) {
+  const proposal = booking.counterProposal
+  if (!proposal) return null
+
+  const isAdminProposal = proposal.proposedBy === 'ADMIN'
+  const changes = [
+    proposal.eventDate
+      ? {
+          label: 'Data',
+          current: dateFormatter.format(toLocalDate(booking.eventDate)),
+          proposed: dateFormatter.format(toLocalDate(proposal.eventDate)),
+        }
+      : null,
+    proposal.startTime && proposal.endTime
+      ? {
+          label: 'Horário',
+          current: formatTimeRange(booking.startTime, booking.endTime),
+          proposed: formatTimeRange(proposal.startTime, proposal.endTime),
+        }
+      : null,
+    proposal.budget !== null
+      ? {
+          label: 'Orçamento',
+          current: booking.budget === null ? 'Não indicado' : formatCurrency(booking.budget),
+          proposed: formatCurrency(proposal.budget),
+        }
+      : null,
+  ].filter((change): change is { label: string; current: string; proposed: string } => change !== null)
+
+  const effectiveDate = proposal.eventDate ?? booking.eventDate
+  const effectiveStartTime = proposal.startTime ?? booking.startTime
+  const effectiveEndTime = proposal.endTime ?? booking.endTime
+  const effectiveBudget = proposal.budget ?? booking.budget
+  const finalTerms = [
+    dateFormatter.format(toLocalDate(effectiveDate)),
+    formatTimeRange(effectiveStartTime, effectiveEndTime),
+    effectiveBudget === null ? null : formatCurrency(effectiveBudget),
+  ].filter(Boolean).join(' · ')
+
+  return (
+    <section
+      aria-label={isAdminProposal ? 'Alterações propostas pela equipa' : 'A tua contraproposta'}
+      className={styles.proposalComparison}
+    >
+      <div className={styles.proposalComparisonHeader}>
+        <div>
+          <span className={styles.proposalEyebrow}>
+            {isAdminProposal ? 'Proposta da equipa' : 'A tua contraproposta'}
+          </span>
+          <strong>{isAdminProposal ? 'Alterações propostas' : 'Alterações que propuseste'}</strong>
+          <p>
+            {changes.length > 0
+              ? `${isAdminProposal ? 'A equipa propõe' : 'Propuseste'} alterar ${changes.length} ${changes.length === 1 ? 'condição' : 'condições'} do pedido.`
+              : isAdminProposal
+                ? 'A equipa propõe restaurar as condições originais do pedido.'
+                : 'Propuseste restaurar as condições originais do pedido.'}
+          </p>
+        </div>
+        <span className={styles.proposalPendingBadge}>
+          {isAdminProposal ? 'Requer resposta' : 'A aguardar equipa'}
+        </span>
+      </div>
+
+      {changes.length > 0 ? (
+        <div className={styles.proposalChanges}>
+          {changes.map((change) => (
+            <div className={styles.proposalChange} key={change.label}>
+              <span className={styles.proposalChangeLabel}>{change.label}</span>
+              <span className={styles.proposalOld}>{change.current}</span>
+              <span aria-hidden="true" className={styles.proposalArrow}>→</span>
+              <strong className={styles.proposalNew}>{change.proposed}</strong>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.proposalRestore}>
+          <span aria-hidden="true">↺</span>
+          <strong>Restaurar as condições originais do pedido</strong>
+        </div>
+      )}
+
+      <p className={styles.proposalUnchanged}>As restantes condições mantêm-se iguais.</p>
+
+      <div className={styles.proposalOutcome}>
+        <span>{isAdminProposal ? 'Se aceitares, o evento ficará' : 'Se a equipa aceitar, o evento ficará'}</span>
+        <strong>{finalTerms}</strong>
+      </div>
+    </section>
+  )
+}
+
+function CustomerCounterActions({
+  booking,
+  isResponding,
+  onAccept,
+  onCounter,
+  respondingDecision,
+}: {
+  booking: Booking
+  isResponding: boolean
+  onAccept: () => void
+  onCounter: (proposal: BookingCounterProposalInput) => void
+  respondingDecision: BookingCounterProposalDecision | null
+}) {
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const proposal = booking.counterProposal
+
+  if (!proposal || proposal.proposedBy === 'CUSTOMER') {
+    return (
+      <div className={styles.counterResponse}>
+        <strong>Contraproposta enviada</strong>
+        <p>A aguardar resposta da equipa.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.counterResponse}>
+      <p>Esta proposta requer a tua resposta.</p>
+      <div className={styles.counterActions}>
+        <button disabled={isResponding} type="button" onClick={onAccept}>
+          {respondingDecision === 'ACCEPTED' ? 'A aceitar...' : 'Aceitar proposta'}
+        </button>
+        <button disabled={isResponding} type="button" onClick={() => setIsFormOpen((current) => !current)}>
+          Fazer contraproposta
+        </button>
+      </div>
+      {isFormOpen && (
+        <form
+          className={styles.customerCounterForm}
+          onSubmit={(event) => {
+            event.preventDefault()
+            const form = new FormData(event.currentTarget)
+            const budget = String(form.get('counterBudget') ?? '').trim()
+            onCounter({
+              counterEventDate: String(form.get('counterEventDate') ?? '').trim() || undefined,
+              counterStartTime: String(form.get('counterStartTime') ?? '').trim() || null,
+              counterEndTime: String(form.get('counterEndTime') ?? '').trim() || null,
+              ...(budget ? { counterBudget: Number(budget) } : {}),
+              message: String(form.get('counterMessage') ?? '').trim() || undefined,
+            })
+          }}
+        >
+          <label>Data<input defaultValue={proposal.eventDate ?? booking.eventDate} min={todayDateValue()} name="counterEventDate" required type="date" /></label>
+          <label>Início<input defaultValue={(proposal.startTime ?? booking.startTime)?.slice(0, 5) ?? ''} name="counterStartTime" type="time" /></label>
+          <label>Fim<input defaultValue={(proposal.endTime ?? booking.endTime)?.slice(0, 5) ?? ''} name="counterEndTime" type="time" /></label>
+          <label>Orçamento<input defaultValue={proposal.budget ?? booking.budget ?? ''} min="0.01" name="counterBudget" step="0.01" type="number" /></label>
+          <label className={styles.counterMessageField}>Mensagem<textarea maxLength={1000} name="counterMessage" /></label>
+          <button className={styles.customerCounterSubmit} disabled={isResponding} type="submit">
+            {isResponding ? 'A enviar...' : 'Enviar contraproposta'}
+          </button>
+        </form>
+      )}
+    </div>
   )
 }
 
@@ -1175,7 +1342,7 @@ function groupAvailabilityByDate(slots: AvailabilitySlot[]) {
 
 function hasAcceptedOverlap(slots: AvailabilitySlot[], startTime: string | null, endTime: string | null) {
   return slots
-    .filter((slot) => slot.status === 'ACCEPTED')
+    .filter((slot) => slot.status === 'ACCEPTED' || slot.status === 'COUNTER_PROPOSED')
     .some((slot) => timeRangesOverlap(slot.startTime, slot.endTime, startTime, endTime))
 }
 
@@ -1190,6 +1357,7 @@ function addMonths(date: Date, amount: number) { return new Date(date.getFullYea
 function atStartOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()) }
 function isPastDate(date: Date, today: Date) { return atStartOfDay(date).getTime() < today.getTime() }
 function toDateValue(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
+function todayDateValue() { return toDateValue(new Date()) }
 function toLocalDate(value: string) { const [year, month, day] = value.split('-').map(Number); return new Date(year, month - 1, day) }
 function capitalize(value: string) { return `${value.charAt(0).toUpperCase()}${value.slice(1)}` }
 function formatTimeRange(startTime: string | null, endTime: string | null) { return startTime && endTime ? `${startTime.slice(0, 5)} - ${endTime.slice(0, 5)}` : 'Horário a combinar' }

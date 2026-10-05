@@ -87,6 +87,30 @@ public class BookingNotificationService {
                 "O cliente recusou a contraproposta.");
     }
 
+    public void sendCustomerCounterProposal(Booking booking) {
+        sendCustomer(booking, "Contraproposta enviada", """
+                Olá %s,
+
+                Recebemos a tua contraproposta para o agendamento com %s.
+
+                %s
+
+                A equipa irá analisar a proposta. Receberás um email e uma notificação no site quando existir uma decisão ou uma nova proposta.
+
+                Obrigado,
+                Saltos nas Palhaçadas
+                """.formatted(
+                booking.getContactName(),
+                booking.getProfile().getName(),
+                formatCounterProposal(booking)));
+
+        notifyBookingStakeholders(
+                booking,
+                "booking-customer-counter-proposed",
+                "contraproposta do cliente",
+                "O cliente enviou uma contraproposta que requer decisão da equipa.");
+    }
+
     public boolean sendEventReminder(Booking booking) {
         if (booking.getContactEmail() == null || booking.getContactEmail().isBlank()) {
             return false;
@@ -186,7 +210,7 @@ public class BookingNotificationService {
 
                 %s
 
-                Entra na tua conta para aceitares ou recusares esta alteração.
+                Entra na tua conta para aceitares a proposta, fazeres uma contraproposta ou cancelares o pedido.
 
                 Obrigado,
                 Saltos nas Palhaçadas
@@ -234,7 +258,7 @@ public class BookingNotificationService {
                 Telemóvel: %s
                 Descrição: %s
                 Notas: %s
-                Mensagem administrativa: %s
+                Mensagem da proposta/decisão: %s
                 %s
                 """.formatted(
                 summary,
@@ -292,12 +316,23 @@ public class BookingNotificationService {
             }
             builder.append("Orçamento proposto: ").append(formatCurrency(booking.getCounterBudget())).append(".");
         }
-        return builder.isEmpty() ? "A equipa deixou uma mensagem sobre o teu pedido." : builder.toString();
+        if (booking.getCounterStartTime() != null && booking.getCounterEndTime() != null) {
+            if (!builder.isEmpty()) {
+                builder.append("\n");
+            }
+            builder.append("Horário proposto: ")
+                    .append(TIME_FORMATTER.format(booking.getCounterStartTime()))
+                    .append(" - ")
+                    .append(TIME_FORMATTER.format(booking.getCounterEndTime()))
+                    .append(".");
+        }
+        return builder.isEmpty() ? "A proposta mantém ou restaura os termos atuais do pedido." : builder.toString();
     }
 
     private static String formatCounterProposalForOperations(Booking booking) {
-        if (booking.getCounterBudget() == null && booking.getCounterEventDate() == null) {
-            return "Contraproposta: -";
+        if (booking.getCounterBudget() == null && booking.getCounterEventDate() == null
+                && booking.getCounterStartTime() == null) {
+            return "Contraproposta: mantém ou restaura os termos atuais do pedido.";
         }
         return "Contraproposta: %s".formatted(formatCounterProposal(booking).replace("\n", " "));
     }

@@ -20,6 +20,8 @@ import pt.saltosnaspalhacadas.backend.media.ManagedMedia;
 import pt.saltosnaspalhacadas.backend.media.ManagedMediaRepository;
 import pt.saltosnaspalhacadas.backend.review.Review;
 import pt.saltosnaspalhacadas.backend.review.ReviewRepository;
+import pt.saltosnaspalhacadas.backend.usernotification.UserNotification;
+import pt.saltosnaspalhacadas.backend.usernotification.UserNotificationRepository;
 
 @Service
 public class AccountLifecycleService {
@@ -31,6 +33,7 @@ public class AccountLifecycleService {
     private final ManagedMediaRepository media;
     private final ManagedMediaService mediaService;
     private final MediaStorage storage;
+    private final UserNotificationRepository notifications;
 
     public AccountLifecycleService(
             AppUserRepository users,
@@ -39,7 +42,8 @@ public class AccountLifecycleService {
             ReviewRepository reviews,
             ManagedMediaRepository media,
             ManagedMediaService mediaService,
-            MediaStorage storage) {
+            MediaStorage storage,
+            UserNotificationRepository notifications) {
         this.users = users;
         this.bookings = bookings;
         this.favorites = favorites;
@@ -47,6 +51,7 @@ public class AccountLifecycleService {
         this.media = media;
         this.mediaService = mediaService;
         this.storage = storage;
+        this.notifications = notifications;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +65,9 @@ public class AccountLifecycleService {
                 AccountProfile.from(user),
                 bookings.findAllByUserIdWithProfileOrderByCreatedAtDesc(userId).stream().map(BookingExport::from).toList(),
                 favorites.findAllByUserId(userId).stream().map(FavoriteExport::from).toList(),
-                reviews.findAllByUserId(userId).stream().map(ReviewExport::from).toList());
+                reviews.findAllByUserId(userId).stream().map(ReviewExport::from).toList(),
+                notifications.findByUserIdOrderByCreatedAtDescIdDesc(userId, org.springframework.data.domain.Pageable.unpaged())
+                        .stream().map(NotificationExport::from).toList());
     }
 
     @Transactional(rollbackFor = IOException.class)
@@ -81,6 +88,7 @@ public class AccountLifecycleService {
         storage.deleteManagedUrl(legacyProfileImageUrl);
         reviews.deleteAllByUserId(userId);
         favorites.deleteAllByUserId(userId);
+        notifications.deleteAllByUserId(userId);
         anonymizeBookings(userId);
         deleteOwnedMedia(userId);
     }
@@ -105,7 +113,8 @@ public class AccountLifecycleService {
             AccountProfile profile,
             List<BookingExport> bookings,
             List<FavoriteExport> favorites,
-            List<ReviewExport> reviews) {
+            List<ReviewExport> reviews,
+            List<NotificationExport> notifications) {
     }
 
     public record AccountProfile(
@@ -141,12 +150,16 @@ public class AccountLifecycleService {
             String contactName,
             String contactEmail,
             String contactPhone,
+            java.math.BigDecimal budget,
             String description,
             String notes,
             BookingStatus status,
             String adminMessage,
             java.math.BigDecimal counterBudget,
             java.time.LocalDate counterEventDate,
+            java.time.LocalTime counterStartTime,
+            java.time.LocalTime counterEndTime,
+            String counterProposedBy,
             Instant createdAt,
             Instant updatedAt) {
         static BookingExport from(Booking booking) {
@@ -163,12 +176,16 @@ public class AccountLifecycleService {
                     booking.getContactName(),
                     booking.getContactEmail(),
                     booking.getContactPhone(),
+                    booking.getBudget(),
                     booking.getDescription(),
                     booking.getNotes(),
                     booking.getStatus(),
                     booking.getAdminMessage(),
                     booking.getCounterBudget(),
                     booking.getCounterEventDate(),
+                    booking.getCounterStartTime(),
+                    booking.getCounterEndTime(),
+                    booking.getCounterProposedBy() == null ? null : booking.getCounterProposedBy().name(),
                     booking.getCreatedAt(),
                     booking.getUpdatedAt());
         }
@@ -207,6 +224,26 @@ public class AccountLifecycleService {
                     review.getRating(),
                     review.getReviewDate(),
                     review.isPublished());
+        }
+    }
+
+    public record NotificationExport(
+            Long id,
+            String type,
+            String title,
+            String message,
+            Long bookingId,
+            Instant createdAt,
+            Instant readAt) {
+        static NotificationExport from(UserNotification notification) {
+            return new NotificationExport(
+                    notification.getId(),
+                    notification.getType().name(),
+                    notification.getTitle(),
+                    notification.getMessage(),
+                    notification.getBooking() == null ? null : notification.getBooking().getId(),
+                    notification.getCreatedAt(),
+                    notification.getReadAt());
         }
     }
 }

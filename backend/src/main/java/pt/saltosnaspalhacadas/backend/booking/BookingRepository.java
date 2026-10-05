@@ -47,12 +47,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             select booking.id from Booking booking
             join booking.profile profile
+            join booking.user user
             where booking.status = :status
               and booking.eventDate between :today and :through
               and ((booking.reminderSentAt is null
                     and booking.contactEmail is not null and trim(booking.contactEmail) <> '')
                 or (booking.artistReminderSentAt is null
-                    and profile.notificationEmail is not null and trim(profile.notificationEmail) <> ''))
+                    and profile.notificationEmail is not null and trim(profile.notificationEmail) <> '')
+                or (booking.customerInAppReminderSentAt is null and user.active = true))
             order by booking.startTime asc, booking.id asc
             """)
     List<Long> findAcceptedBookingsDueForReminder(
@@ -61,7 +63,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("through") LocalDate through);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select booking from Booking booking where booking.id = :id")
+    @Query("select booking from Booking booking join fetch booking.profile join fetch booking.user where booking.id = :id")
     Optional<Booking> findByIdForReminder(@Param("id") Long id);
 
     @Query("""
@@ -92,12 +94,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             select booking from Booking booking
             where booking.profile.slug = :profileSlug
               and booking.status in :statuses
-              and booking.eventDate between :from and :to
+              and (
+                    booking.eventDate between :from and :to
+                    or (
+                        booking.status = :counterProposedStatus
+                        and booking.counterEventDate between :from and :to
+                    )
+              )
             order by booking.eventDate asc, booking.startTime asc, booking.createdAt asc
             """)
     List<Booking> findAvailabilitySlots(
             @Param("profileSlug") String profileSlug,
             @Param("statuses") java.util.Collection<BookingStatus> statuses,
+            @Param("counterProposedStatus") BookingStatus counterProposedStatus,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
 

@@ -4,6 +4,9 @@ import { CroppedImage } from '../../components/CroppedImage'
 import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
 import { formatImagePosition, parseImageCrop, type ImageCrop } from '../../components/imageCrop'
 import { uploadUserImage } from '../../services/apiClient'
+import { formatNotificationDate } from '../../services/notificationService'
+import type { UserNotification } from '../../types/notification'
+import { useNotifications } from '../notifications/NotificationContext'
 import { useAuth } from './AuthContext'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import headerStyles from '../../components/Header/Header.module.css'
@@ -27,6 +30,15 @@ type AccountForm = {
 
 export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: AccountPageProps) {
   const { changePassword, deleteAccount, exportAccountData, favorites, logout, session, updateAccount } = useAuth()
+  const {
+    error: notificationLoadError,
+    isLoading: isLoadingNotifications,
+    markAllRead,
+    markRead,
+    notifications: accountNotifications,
+    refresh: refreshNotifications,
+    unreadCount,
+  } = useNotifications()
   const [form, setForm] = useState<AccountForm>(() => emptyForm(session))
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmation: '' })
   const [deletePassword, setDeletePassword] = useState('')
@@ -41,11 +53,15 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const [isExportingData, setIsExportingData] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false)
+  const [notificationActionError, setNotificationActionError] = useState<string | null>(null)
+  const [notificationActionId, setNotificationActionId] = useState<string | null>(null)
+  const [isMarkingAllNotifications, setIsMarkingAllNotifications] = useState(false)
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
 
   if (!session) return null
+  const notificationError = notificationActionError ?? notificationLoadError
 
   const accountName = displayName(visibleForm.firstName, visibleForm.lastName) || visibleForm.username || session.email
   const avatar = (
@@ -209,6 +225,43 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
     }
   }
 
+  async function markOneNotificationRead(notification: UserNotification) {
+    if (notification.read) return
+    setNotificationActionId(notification.id)
+    setNotificationActionError(null)
+    try {
+      await markRead(notification.id)
+    } catch (reason) {
+      setNotificationActionError(reason instanceof Error ? reason.message : 'Não foi possível marcar a notificação como lida.')
+    } finally {
+      setNotificationActionId(null)
+    }
+  }
+
+  async function markEveryNotificationRead() {
+    setIsMarkingAllNotifications(true)
+    setNotificationActionError(null)
+    try {
+      await markAllRead()
+    } catch (reason) {
+      setNotificationActionError(reason instanceof Error ? reason.message : 'Não foi possível marcar todas as notificações como lidas.')
+    } finally {
+      setIsMarkingAllNotifications(false)
+    }
+  }
+
+  function openNotificationBooking(notification: UserNotification) {
+    if (!notification.read) {
+      void markRead(notification.id).catch(() => undefined)
+    }
+    onBookingsClick()
+  }
+
+  function retryNotifications() {
+    setNotificationActionError(null)
+    void refreshNotifications()
+  }
+
   return (
     <section className={styles.page}>
       <button className={styles.back} type="button" onClick={onExit}>
@@ -258,6 +311,72 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                     <strong>Ver pedidos</strong>
                   </button>
                 </div>
+              </section>
+
+              <section className={`${styles.sectionBlock} ${styles.notificationsSection}`} aria-labelledby="account-notifications-title">
+                <div className={styles.notificationsHeader}>
+                  <div>
+                    <h2 id="account-notifications-title">Notificações</h2>
+                    <p>Atualizações importantes que requerem a tua atenção.</p>
+                  </div>
+                  <span className={styles.unreadBadge} aria-label={`${unreadCount} notificações não lidas`}>
+                    {unreadCount} não {unreadCount === 1 ? 'lida' : 'lidas'}
+                  </span>
+                </div>
+
+                {unreadCount > 0 && !isLoadingNotifications && (
+                  <button
+                    className={styles.markAllButton}
+                    disabled={isMarkingAllNotifications}
+                    type="button"
+                    onClick={() => { void markEveryNotificationRead() }}
+                  >
+                    {isMarkingAllNotifications ? 'A atualizar...' : 'Marcar todas como lidas'}
+                  </button>
+                )}
+
+                {isLoadingNotifications && <p className={styles.notificationState} role="status">A carregar notificações...</p>}
+                {notificationError && (
+                  <div className={styles.notificationError} role="alert">
+                    <p>{notificationError}</p>
+                    <button type="button" onClick={retryNotifications}>Tentar novamente</button>
+                  </div>
+                )}
+                {!isLoadingNotifications && !notificationError && accountNotifications.length === 0 && (
+                  <p className={styles.notificationState}>Não tens notificações.</p>
+                )}
+                {!isLoadingNotifications && accountNotifications.length > 0 && (
+                  <ul className={styles.notificationList}>
+                    {accountNotifications.map((notification) => (
+                      <li className={notification.read ? styles.notificationRead : styles.notificationUnread} key={notification.id}>
+                        <div className={styles.notificationCopy}>
+                          <div className={styles.notificationTitleRow}>
+                            {!notification.read && <span className={styles.unreadDot} aria-label="Não lida" />}
+                            <h3>{notification.title}</h3>
+                          </div>
+                          <p>{notification.message}</p>
+                          <time dateTime={notification.createdAt}>{formatNotificationDate(notification.createdAt)}</time>
+                        </div>
+                        <div className={styles.notificationActions}>
+                          {!notification.read && (
+                            <button
+                              disabled={notificationActionId === notification.id}
+                              type="button"
+                              onClick={() => { void markOneNotificationRead(notification) }}
+                            >
+                              {notificationActionId === notification.id ? 'A atualizar...' : 'Marcar como lida'}
+                            </button>
+                          )}
+                          {notification.bookingId && (
+                            <button className={styles.viewBookingButton} type="button" onClick={() => openNotificationBooking(notification)}>
+                              Ver agendamentos
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
 
               <section className={styles.sectionBlock}>
