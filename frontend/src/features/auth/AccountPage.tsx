@@ -327,7 +327,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                   </span>
                 </div>
 
-                {unreadCount > 0 && !isLoadingNotifications && (
+                {unreadCount > 0 && (
                   <button
                     className={styles.markAllButton}
                     disabled={isMarkingAllNotifications}
@@ -338,7 +338,9 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                   </button>
                 )}
 
-                {isLoadingNotifications && <p className={styles.notificationState} role="status">A carregar notificações...</p>}
+                {isLoadingNotifications && accountNotifications.length === 0 && (
+                  <p className={styles.notificationState} role="status">A carregar notificações...</p>
+                )}
                 {notificationError && (
                   <div className={styles.notificationError} role="alert">
                     <p>{notificationError}</p>
@@ -348,7 +350,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                 {!isLoadingNotifications && !notificationError && accountNotifications.length === 0 && (
                   <p className={styles.notificationState}>Não tens notificações.</p>
                 )}
-                {!isLoadingNotifications && accountNotifications.length > 0 && (
+                {accountNotifications.length > 0 && (
                   <ul className={styles.notificationList}>
                     {visibleAccountNotifications.map((notification) => (
                       <li className={notification.read ? styles.notificationRead : styles.notificationUnread} key={notification.id}>
@@ -380,7 +382,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                     ))}
                   </ul>
                 )}
-                {!isLoadingNotifications && !notificationError && accountNotifications.length > visibleNotificationCount && (
+                {!notificationError && accountNotifications.length > visibleNotificationCount && (
                   <button
                     className={styles.showMoreNotifications}
                     type="button"
