@@ -425,6 +425,11 @@
   left: 50%;
   display: block;
   margin: 0 !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
   transform: translate(-50%, -50%);
   transform-origin: center;
   pointer-events: none;
@@ -471,6 +476,14 @@
   .mobileThemeButton > svg {
     width: 20px !important;
     height: 20px !important;
+  }
+
+  :global(html[data-theme='dark']) .mobileThemeButton {
+    color: #f6f7f8 !important;
+  }
+
+  :global(html[data-theme='light']) .mobileThemeButton {
+    color: #171a1d !important;
   }
 
   .mobileThemeButton .themeButtonLabel,
