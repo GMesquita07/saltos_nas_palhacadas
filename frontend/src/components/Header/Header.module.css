@@ -399,67 +399,35 @@
 }
 
 
-/* Accessibility/mobile polish: the theme switch is always visible and truly circular. */
+/* Theme toggle: fixed square geometry with the glyph anchored to the true centre.
+   Keeping this as one final override avoids the historical mobile/desktop rules
+   fighting each other in Safari. */
 .mobileThemeButton {
   display: none !important;
 }
 
-.inner nav .desktopThemeButton {
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  flex: 0 0 40px !important;
-  padding: 0 !important;
-  border-radius: 50% !important;
-}
-
-@media (max-width: 900px) {
-  .mobileThemeButton {
-    display: inline-grid !important;
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    flex: 0 0 44px !important;
-    place-items: center !important;
-    margin-left: auto;
-    border: 1px solid var(--border) !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-    color: var(--text-primary) !important;
-    background: var(--surface-elevated) !important;
-  }
-
-  .mobileThemeButton svg {
-    width: 19px;
-    height: 19px;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.8;
-  }
-
-  .mobileThemeButton .themeButtonLabel,
-  .inner nav .desktopThemeButton {
-    display: none !important;
-  }
-}
-
-
-/* Hotfix: keep the theme toggle geometrically circular and optically centered in every browser. */
 .themeButton,
 .inner nav .themeButton {
   box-sizing: border-box !important;
   aspect-ratio: 1 / 1 !important;
   gap: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
-  line-height: 0 !important;
   overflow: hidden;
+  padding: 0 !important;
+  line-height: 0 !important;
   -webkit-appearance: none;
   appearance: none;
+}
+
+.themeButton > svg,
+.inner nav .themeButton > svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  margin: 0 !important;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  pointer-events: none;
 }
 
 .inner nav .desktopThemeButton {
@@ -472,19 +440,18 @@
   min-height: 40px !important;
   max-height: 40px !important;
   flex: 0 0 40px !important;
-  border-radius: 9999px !important;
-  padding: 0 !important;
+  border-radius: 50% !important;
 }
 
-.inner nav .desktopThemeButton svg {
-  display: block;
+.inner nav .desktopThemeButton > svg {
   width: 18px !important;
   height: 18px !important;
-  margin: 0 !important;
 }
 
 @media (max-width: 900px) {
   .mobileThemeButton {
+    position: relative !important;
+    display: block !important;
     inline-size: 46px !important;
     block-size: 46px !important;
     width: 46px !important;
@@ -494,20 +461,20 @@
     min-height: 46px !important;
     max-height: 46px !important;
     flex: 0 0 46px !important;
-    display: grid !important;
-    place-items: center !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    border-radius: 9999px !important;
-    padding: 0 !important;
-    line-height: 0 !important;
+    margin-left: auto;
+    border: 1px solid var(--border) !important;
+    border-radius: 50% !important;
+    color: var(--text-primary) !important;
+    background: var(--surface-elevated) !important;
   }
 
-  .mobileThemeButton svg {
-    display: block;
+  .mobileThemeButton > svg {
     width: 20px !important;
     height: 20px !important;
-    margin: 0 !important;
+  }
+
+  .mobileThemeButton .themeButtonLabel,
+  .inner nav .desktopThemeButton {
+    display: none !important;
   }
 }
