@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { decideBooking, getAdminBookings } from '../../../services/bookingService'
 import type { Booking, BookingDecisionStatus, BookingStatus } from '../../../types/booking'
 import { bookingEmptyMessage, bookingFilters, defaultBookingFilter, toBookingStatusFilter, type BookingFilter } from './bookingFilters'
-import { bookingsRefreshEvent } from '../../booking/bookingRefresh'
+import { bookingSyncIntervalMs, bookingsRefreshEvent } from '../../booking/bookingRefresh'
 import styles from './BookingManagement.module.css'
 
 type BookingNotice = {
@@ -59,33 +59,50 @@ export function BookingManagement({
   const [isSending, setIsSending] = useState(false)
   const [draft, setDraft] = useState<DecisionDraft | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const bookingRequestSequenceRef = useRef(0)
 
-  const loadBookings = useCallback(async () => {
-    setIsLoading(true)
+  const loadBookings = useCallback(async (background = false) => {
+    const requestSequence = ++bookingRequestSequenceRef.current
+
+    if (!background) setIsLoading(true)
 
     try {
       const response = await getAdminBookings(token, toBookingStatusFilter(filter))
-      setBookings(response)
+      if (requestSequence === bookingRequestSequenceRef.current) {
+        setBookings(response)
+      }
     } catch (error) {
-      onNotice({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Não foi possível carregar os agendamentos.',
-      })
+      if (!background && requestSequence === bookingRequestSequenceRef.current) {
+        onNotice({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Não foi possível carregar os agendamentos.',
+        })
+      }
     } finally {
-      setIsLoading(false)
+      if (!background) setIsLoading(false)
     }
   }, [filter, onNotice, token])
 
   useEffect(() => {
     const requestId = window.setTimeout(() => {
-      void loadBookings()
+      void loadBookings(false)
     }, 0)
-    const handleRefresh = () => { void loadBookings() }
-    window.addEventListener(bookingsRefreshEvent, handleRefresh)
+
+    const refreshInBackground = () => {
+      if (document.visibilityState === 'visible') void loadBookings(true)
+    }
+
+    const intervalId = window.setInterval(refreshInBackground, bookingSyncIntervalMs)
+    window.addEventListener(bookingsRefreshEvent, refreshInBackground)
+    window.addEventListener('focus', refreshInBackground)
+    document.addEventListener('visibilitychange', refreshInBackground)
 
     return () => {
       window.clearTimeout(requestId)
-      window.removeEventListener(bookingsRefreshEvent, handleRefresh)
+      window.clearInterval(intervalId)
+      window.removeEventListener(bookingsRefreshEvent, refreshInBackground)
+      window.removeEventListener('focus', refreshInBackground)
+      document.removeEventListener('visibilitychange', refreshInBackground)
     }
   }, [loadBookings])
 
@@ -189,7 +206,7 @@ export function BookingManagement({
       }
       onNotice({ type: 'success', text: labels[draft.status] })
       cancelDecision()
-      await loadBookings()
+      await loadBookings(true)
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Não foi possível guardar a decisão.')
     } finally {
@@ -220,7 +237,7 @@ export function BookingManagement({
               ))}
             </select>
           </label>
-          <button disabled={isLoading || isSending} type="button" onClick={() => { void loadBookings() }}>
+          <button disabled={isLoading || isSending} type="button" onClick={() => { void loadBookings(false) }}>
             {isLoading ? 'A atualizar...' : 'Atualizar lista'}
           </button>
         </div>
