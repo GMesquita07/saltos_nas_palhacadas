@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -246,6 +247,10 @@ class BookingReminderDeliveryIntegrationTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(
+            named = "SPRING_DATASOURCE_DRIVER_CLASS_NAME",
+            matches = "org\\.postgresql\\.Driver",
+            disabledReason = "Concurrency locking semantics are validated by the PostgreSQL CI job; H2 does not reliably reproduce them")
     void overlappingExecutionsDoNotDuplicateEmails() throws Exception {
         Booking booking = booking(5, CLIENT, ARTIST, BookingStatus.ACCEPTED);
         CountDownLatch sending = new CountDownLatch(1);
