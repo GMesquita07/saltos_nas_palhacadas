@@ -1319,30 +1319,27 @@
 }
 
 
-/* Avoid nested scroll traps in the account inbox; progressively reveal older items instead. */
+/* Keep the inbox compact without reintroducing the old polling layout shift.
+   The list stays mounted during background refreshes and scrolls independently. */
 .notificationList {
-  max-height: none !important;
-  padding-right: 0 !important;
-  overflow: visible !important;
-  overscroll-behavior: auto !important;
-  scrollbar-gutter: auto !important;
+  max-height: min(520px, 52dvh);
+  padding-right: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
-.showMoreNotifications {
-  width: 100%;
-  min-height: 42px;
-  border: 1px solid var(--border);
+.notificationList:focus-visible {
   border-radius: 10px;
-  padding: 10px 14px;
-  color: var(--text-primary);
-  background: var(--surface-elevated);
-  font-weight: 760;
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
 }
 
-.showMoreNotifications:hover {
-  border-color: var(--interactive);
-  color: var(--interactive);
-  background: var(--interactive-soft);
+@media (max-width: 650px) {
+  .notificationList {
+    max-height: min(440px, 48dvh);
+  }
 }
 
 .adminDeletionNotice {
