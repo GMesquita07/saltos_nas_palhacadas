@@ -57,14 +57,12 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const [notificationActionError, setNotificationActionError] = useState<string | null>(null)
   const [notificationActionId, setNotificationActionId] = useState<string | null>(null)
   const [isMarkingAllNotifications, setIsMarkingAllNotifications] = useState(false)
-  const [visibleNotificationCount, setVisibleNotificationCount] = useState(8)
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
 
   if (!session) return null
   const notificationError = notificationActionError ?? notificationLoadError
-  const visibleAccountNotifications = accountNotifications.slice(0, visibleNotificationCount)
 
   const accountName = displayName(visibleForm.firstName, visibleForm.lastName) || visibleForm.username || session.email
   const avatar = (
@@ -351,8 +349,8 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                   <p className={styles.notificationState}>Não tens notificações.</p>
                 )}
                 {accountNotifications.length > 0 && (
-                  <ul className={styles.notificationList}>
-                    {visibleAccountNotifications.map((notification) => (
+                  <ul aria-label="Lista de notificações" className={styles.notificationList} tabIndex={0}>
+                    {accountNotifications.map((notification) => (
                       <li className={notification.read ? styles.notificationRead : styles.notificationUnread} key={notification.id}>
                         <div className={styles.notificationCopy}>
                           <div className={styles.notificationTitleRow}>
@@ -381,15 +379,6 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                       </li>
                     ))}
                   </ul>
-                )}
-                {!notificationError && accountNotifications.length > visibleNotificationCount && (
-                  <button
-                    className={styles.showMoreNotifications}
-                    type="button"
-                    onClick={() => setVisibleNotificationCount((count) => Math.min(count + 8, accountNotifications.length))}
-                  >
-                    Mostrar mais notificações
-                  </button>
                 )}
               </section>
 
