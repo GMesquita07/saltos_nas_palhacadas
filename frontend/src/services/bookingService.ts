@@ -88,14 +88,27 @@ export async function createBooking(proposal: BookingProposal, token: string): P
   return toBooking(response)
 }
 
-export async function getMyBookings(token: string): Promise<Booking[]> {
-  const response = await apiClient<ApiBooking[]>('/bookings/mine', {}, token)
+export async function getMyBookings(
+  token: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<Booking[]> {
+  const response = await apiClient<ApiBooking[]>('/bookings/mine', {
+    cache: 'no-store',
+    signal: options.signal,
+  }, token)
   return response.map(toBooking)
 }
 
-export async function getAdminBookings(token: string, status?: BookingStatus): Promise<Booking[]> {
+export async function getAdminBookings(
+  token: string,
+  status?: BookingStatus,
+  options: { signal?: AbortSignal } = {},
+): Promise<Booking[]> {
   const query = status ? `?status=${encodeURIComponent(status)}` : ''
-  const response = await apiClient<ApiBooking[]>(`/admin/bookings${query}`, {}, token)
+  const response = await apiClient<ApiBooking[]>(`/admin/bookings${query}`, {
+    cache: 'no-store',
+    signal: options.signal,
+  }, token)
   return response.map(toBooking)
 }
 
