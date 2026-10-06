@@ -59,7 +59,10 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   const [cancellationFeedback, setCancellationFeedback] = useState<{ bookingId: string; type: 'error' | 'success'; message: string } | null>(null)
   const respondingBookingRef = useRef<string | null>(null)
   const bookingFormRef = useRef<HTMLFormElement | null>(null)
-  const bookingsRequestSequenceRef = useRef(0)
+  const bookingsRequestRef = useRef<{ controller: AbortController | null; inFlight: boolean }>({
+    controller: null,
+    inFlight: false,
+  })
 
   const selectedProfile = profiles.find((profile) => profile.slug === selectedProfileSlug) ?? null
   const filteredProfiles = useMemo(() => {
@@ -161,25 +164,33 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
       return
     }
 
-    const requestSequence = ++bookingsRequestSequenceRef.current
+    if (background && bookingsRequestRef.current.inFlight) return
 
     if (!background) {
+      bookingsRequestRef.current.controller?.abort()
       setIsBookingsLoading(true)
       setBookingsError(null)
     }
 
+    const controller = new AbortController()
+    bookingsRequestRef.current = { controller, inFlight: true }
+
     try {
-      const response = await getMyBookings(session.token)
-      if (requestSequence === bookingsRequestSequenceRef.current) {
+      const response = await getMyBookings(session.token, { signal: controller.signal })
+      if (!controller.signal.aborted) {
         setMyBookings(response)
         if (!background) setBookingsError(null)
       }
     } catch (reason) {
-      if (!background && requestSequence === bookingsRequestSequenceRef.current) {
+      if (controller.signal.aborted) return
+      if (!background) {
         setBookingsError(reason instanceof Error ? reason.message : 'Não foi possível carregar os teus pedidos.')
       }
     } finally {
-      if (!background) setIsBookingsLoading(false)
+      if (bookingsRequestRef.current.controller === controller) {
+        bookingsRequestRef.current = { controller: null, inFlight: false }
+        if (!background) setIsBookingsLoading(false)
+      }
     }
   }, [session])
 
@@ -198,6 +209,8 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
     return () => {
       window.clearTimeout(requestId)
       window.clearInterval(intervalId)
+      bookingsRequestRef.current.controller?.abort()
+      bookingsRequestRef.current = { controller: null, inFlight: false }
       window.removeEventListener(bookingsRefreshEvent, refreshInBackground)
       window.removeEventListener('focus', refreshInBackground)
       document.removeEventListener('visibilitychange', refreshInBackground)
