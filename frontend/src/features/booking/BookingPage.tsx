@@ -5,7 +5,7 @@ import type { AvailabilitySlot, Booking, BookingCounterProposalDecision, Booking
 import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
-import { bookingsRefreshEvent, requestNotificationsRefresh } from './bookingRefresh'
+import { bookingSyncIntervalMs, bookingsRefreshEvent, requestNotificationsRefresh } from './bookingRefresh'
 import styles from './BookingPage.module.css'
 
 type BookingPageProps = {
@@ -59,6 +59,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   const [cancellationFeedback, setCancellationFeedback] = useState<{ bookingId: string; type: 'error' | 'success'; message: string } | null>(null)
   const respondingBookingRef = useRef<string | null>(null)
   const bookingFormRef = useRef<HTMLFormElement | null>(null)
+  const bookingsRequestSequenceRef = useRef(0)
 
   const selectedProfile = profiles.find((profile) => profile.slug === selectedProfileSlug) ?? null
   const filteredProfiles = useMemo(() => {
@@ -153,31 +154,53 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
     }
   }, [selectedProfileSlug, visibleMonth])
 
-  const loadMyBookings = useCallback(async () => {
+  const loadMyBookings = useCallback(async (background = false) => {
     if (!session) {
       setMyBookings([])
       setIsBookingsLoading(false)
       return
     }
 
-    setIsBookingsLoading(true)
-    setBookingsError(null)
+    const requestSequence = ++bookingsRequestSequenceRef.current
+
+    if (!background) {
+      setIsBookingsLoading(true)
+      setBookingsError(null)
+    }
+
     try {
-      setMyBookings(await getMyBookings(session.token))
+      const response = await getMyBookings(session.token)
+      if (requestSequence === bookingsRequestSequenceRef.current) {
+        setMyBookings(response)
+        if (!background) setBookingsError(null)
+      }
     } catch (reason) {
-      setBookingsError(reason instanceof Error ? reason.message : 'Não foi possível carregar os teus pedidos.')
+      if (!background && requestSequence === bookingsRequestSequenceRef.current) {
+        setBookingsError(reason instanceof Error ? reason.message : 'Não foi possível carregar os teus pedidos.')
+      }
     } finally {
-      setIsBookingsLoading(false)
+      if (!background) setIsBookingsLoading(false)
     }
   }, [session])
 
   useEffect(() => {
-    const requestId = window.setTimeout(() => { void loadMyBookings() }, 0)
-    const handleRefresh = () => { void loadMyBookings() }
-    window.addEventListener(bookingsRefreshEvent, handleRefresh)
+    const requestId = window.setTimeout(() => { void loadMyBookings(false) }, 0)
+
+    const refreshInBackground = () => {
+      if (document.visibilityState === 'visible') void loadMyBookings(true)
+    }
+
+    const intervalId = window.setInterval(refreshInBackground, bookingSyncIntervalMs)
+    window.addEventListener(bookingsRefreshEvent, refreshInBackground)
+    window.addEventListener('focus', refreshInBackground)
+    document.addEventListener('visibilitychange', refreshInBackground)
+
     return () => {
       window.clearTimeout(requestId)
-      window.removeEventListener(bookingsRefreshEvent, handleRefresh)
+      window.clearInterval(intervalId)
+      window.removeEventListener(bookingsRefreshEvent, refreshInBackground)
+      window.removeEventListener('focus', refreshInBackground)
+      document.removeEventListener('visibilitychange', refreshInBackground)
     }
   }, [loadMyBookings])
 
