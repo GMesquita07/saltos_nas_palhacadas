@@ -59,27 +59,38 @@ export function BookingManagement({
   const [isSending, setIsSending] = useState(false)
   const [draft, setDraft] = useState<DecisionDraft | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const bookingRequestSequenceRef = useRef(0)
+  const bookingRequestRef = useRef<{ controller: AbortController | null; inFlight: boolean }>({
+    controller: null,
+    inFlight: false,
+  })
 
   const loadBookings = useCallback(async (background = false) => {
-    const requestSequence = ++bookingRequestSequenceRef.current
+    if (background && bookingRequestRef.current.inFlight) return
 
-    if (!background) setIsLoading(true)
+    if (!background) {
+      bookingRequestRef.current.controller?.abort()
+      setIsLoading(true)
+    }
+
+    const controller = new AbortController()
+    bookingRequestRef.current = { controller, inFlight: true }
 
     try {
-      const response = await getAdminBookings(token, toBookingStatusFilter(filter))
-      if (requestSequence === bookingRequestSequenceRef.current) {
-        setBookings(response)
-      }
+      const response = await getAdminBookings(token, toBookingStatusFilter(filter), { signal: controller.signal })
+      if (!controller.signal.aborted) setBookings(response)
     } catch (error) {
-      if (!background && requestSequence === bookingRequestSequenceRef.current) {
+      if (controller.signal.aborted) return
+      if (!background) {
         onNotice({
           type: 'error',
           text: error instanceof Error ? error.message : 'Não foi possível carregar os agendamentos.',
         })
       }
     } finally {
-      if (!background) setIsLoading(false)
+      if (bookingRequestRef.current.controller === controller) {
+        bookingRequestRef.current = { controller: null, inFlight: false }
+        if (!background) setIsLoading(false)
+      }
     }
   }, [filter, onNotice, token])
 
@@ -100,6 +111,8 @@ export function BookingManagement({
     return () => {
       window.clearTimeout(requestId)
       window.clearInterval(intervalId)
+      bookingRequestRef.current.controller?.abort()
+      bookingRequestRef.current = { controller: null, inFlight: false }
       window.removeEventListener(bookingsRefreshEvent, refreshInBackground)
       window.removeEventListener('focus', refreshInBackground)
       document.removeEventListener('visibilitychange', refreshInBackground)
