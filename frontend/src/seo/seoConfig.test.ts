@@ -35,6 +35,14 @@ test('builds homepage metadata with canonical and indexable robots', () => {
   assert.equal(metadata.robots, 'index,follow')
 })
 
+test('keeps materials page indexable with evergreen canonical metadata', () => {
+  const metadata = buildSeoMetadata({ pathname: '/materiais', profiles: [] })
+
+  assert.equal(metadata.title, 'Material para eventos | Saltos nas Palhaçadas')
+  assert.equal(metadata.canonicalUrl, `${canonicalOrigin}/materiais`)
+  assert.equal(metadata.robots, 'index,follow')
+})
+
 test('builds profile canonical, title and compact description', () => {
   const profile = {
     ...baseProfile,

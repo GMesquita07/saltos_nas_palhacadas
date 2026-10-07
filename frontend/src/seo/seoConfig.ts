@@ -53,8 +53,8 @@ const publicRoutes: Record<string, StaticRouteMetadata> = {
     path: '/contactos',
   },
   '/materiais': {
-    title: `Material disponível | ${siteName}`,
-    description: 'Consulta o material disponível para apoiar animação, música e experiências em eventos.',
+    title: `Material para eventos | ${siteName}`,
+    description: 'Consulta informação sobre material e equipamento para eventos e confirma necessidades específicas com a equipa.',
     path: '/materiais',
   },
   '/faq': {
