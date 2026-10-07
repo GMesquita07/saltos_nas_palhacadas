@@ -98,7 +98,7 @@ export function buildSeoMetadata({
     if (profile) return buildProfileSeo(profile)
 
     const canonicalUrl = absoluteSiteUrl(profilePath(profileSlug))
-    if (isProfilesLoading && !hasProfilesError) {
+    if (isProfilesLoading || hasProfilesError) {
       return buildPageSeo({
         title: `${siteName} | Perfil de artista`,
         description: 'Perfil público de artista na Saltos nas Palhaçadas.',
