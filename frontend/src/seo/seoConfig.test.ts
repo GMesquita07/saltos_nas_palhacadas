@@ -75,11 +75,23 @@ test('marks artist-specific booking route noindex with /agendar canonical', () =
   assert.equal(metadata.canonicalUrl, `${canonicalOrigin}/agendar`)
 })
 
-test('keeps profile loading route indexable until profiles finish loading', () => {
+test('keeps profile route indexable during loading or transient profile API errors', () => {
   const loading = buildSeoMetadata({ pathname: '/perfis/dj-kidg', profiles: [], isProfilesLoading: true })
-  const notFound = buildSeoMetadata({ pathname: '/perfis/dj-kidg', profiles: [], isProfilesLoading: false })
+  const apiError = buildSeoMetadata({
+    pathname: '/perfis/dj-kidg',
+    profiles: [],
+    isProfilesLoading: false,
+    hasProfilesError: true,
+  })
+  const notFound = buildSeoMetadata({
+    pathname: '/perfis/dj-kidg',
+    profiles: [],
+    isProfilesLoading: false,
+    hasProfilesError: false,
+  })
 
   assert.equal(loading.robots, 'index,follow')
+  assert.equal(apiError.robots, 'index,follow')
   assert.equal(notFound.robots, 'noindex,nofollow')
 })
 
