@@ -1,7 +1,8 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { BrandMark } from '../BrandMark/BrandMark'
 import { NavIcon } from '../NavIcon/NavIcon'
 import type { AuthSession } from '../../types/auth'
+import { dismissNavigationMenuOnEscape, navigationAriaCurrent } from '../../navigation/accessibility'
 import { useAuthenticatedMediaUrl } from '../AuthenticatedMedia'
 import { CroppedImage } from '../CroppedImage'
 import styles from './Header.module.css'
@@ -45,8 +46,10 @@ export function Header({
 }: HeaderProps) {
   const accountAvatarUrl = useAuthenticatedMediaUrl(session?.profileImageUrl, session?.token)
   const activeClass = (view: string) => activeView === view ? styles.isActive : ''
+  const currentPage = (view: string) => navigationAriaCurrent(activeView, view)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const mobileNavId = useId()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   const runAndClose = (action: () => void) => {
     setIsMenuOpen(false)
@@ -57,9 +60,12 @@ export function Header({
     if (!isMenuOpen) return
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMenuOpen(false)
-      }
+      const wasDismissed = dismissNavigationMenuOnEscape(
+        event.key,
+        () => setIsMenuOpen(false),
+        () => menuButtonRef.current?.focus(),
+      )
+      if (wasDismissed) event.preventDefault()
     }
 
     document.addEventListener('keydown', closeOnEscape)
@@ -101,6 +107,7 @@ export function Header({
         </button>
 
         <button
+          ref={menuButtonRef}
           className={styles.menuButton}
           type="button"
           aria-controls={mobileNavId}
@@ -121,25 +128,25 @@ export function Header({
           className={isMenuOpen ? styles.isMenuOpen : undefined}
           aria-label="Navegação principal"
         >
-          <button className={activeClass('profiles')} type="button" onClick={() => runAndClose(onProfilesClick)}>
+          <button aria-current={currentPage('profiles')} className={activeClass('profiles')} type="button" onClick={() => runAndClose(onProfilesClick)}>
             <NavIcon name="profiles" />Perfis
           </button>
-          <button className={activeClass('booking')} type="button" onClick={() => runAndClose(onBookingClick)}>
+          <button aria-current={currentPage('booking')} className={activeClass('booking')} type="button" onClick={() => runAndClose(onBookingClick)}>
             <NavIcon name="booking" />Agendar
           </button>
-          <button className={activeClass('contacts')} type="button" onClick={() => runAndClose(onContactsClick)}>
+          <button aria-current={currentPage('contacts')} className={activeClass('contacts')} type="button" onClick={() => runAndClose(onContactsClick)}>
             <NavIcon name="contacts" />Contactos
           </button>
-          <button className={activeClass('materials')} type="button" onClick={() => runAndClose(onMaterialsClick)}>
+          <button aria-current={currentPage('materials')} className={activeClass('materials')} type="button" onClick={() => runAndClose(onMaterialsClick)}>
             <NavIcon name="materials" />Materiais
           </button>
           {session && (
-            <button className={activeClass('favorites')} type="button" onClick={() => runAndClose(onFavoritesClick)}>
+            <button aria-current={currentPage('favorites')} className={activeClass('favorites')} type="button" onClick={() => runAndClose(onFavoritesClick)}>
               <NavIcon name="favorites" />Favoritos
             </button>
           )}
           {session?.role === 'ADMIN' && (
-            <button type="button" onClick={() => runAndClose(onAdminClick)}>
+            <button aria-current={currentPage('admin')} className={activeClass('admin')} type="button" onClick={() => runAndClose(onAdminClick)}>
               <NavIcon name="admin" />Admin
             </button>
           )}
@@ -147,6 +154,7 @@ export function Header({
           {session ? (
             <>
               <button
+                aria-current={currentPage('account')}
                 className={`${styles.accountButton} ${activeClass('account')}`}
                 type="button"
                 onClick={() => runAndClose(onAccountClick)}
