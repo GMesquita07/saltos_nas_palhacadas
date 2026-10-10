@@ -18,6 +18,7 @@ import {
   profilePath,
   type AdminPage,
 } from './navigation/routes'
+import { mainContentHref, mainContentId } from './navigation/accessibility'
 import { routeNeedsProfiles } from './performance/performanceConfig'
 import { SeoManager } from './seo/SeoManager'
 import { getProfiles, invalidateProfilesCache } from './services/profileService'
@@ -203,6 +204,7 @@ function App() {
 
   return (
     <>
+      <a className={styles.skipLink} href={mainContentHref}>Saltar para o conteúdo</a>
       <SeoManager hasProfilesError={profilesError} isProfilesLoading={effectiveProfilesLoading} profiles={profiles} />
       <ScrollToTop />
       <SplashScreen
@@ -232,7 +234,7 @@ function App() {
           onBookings={() => navigate(session?.role === 'ADMIN' ? adminPath('bookings') : bookingPath())}
           onViewAll={() => navigate('/conta#account-notifications-title')}
         />
-        <main className={styles.main}>
+        <main id={mainContentId} className={styles.main} tabIndex={-1}>
           <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route
