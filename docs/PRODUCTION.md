@@ -1,6 +1,6 @@
 # Produção
 
-Last verified: 2026-10-05.
+Last verified: 2026-10-11.
 
 ## Arquitetura Real
 
@@ -46,11 +46,12 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | GCP project | `saltos-prod-gmesquita` |
 | Região | `europe-west1` |
 | Cloud Run service | `saltos-backend` |
-| Imagem/código da aplicação | `backend:d50d8f9` / `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb` |
-| Revisão atual | `saltos-backend-00022-6x6` |
+| Imagem/código da aplicação | `backend:3f6a5a6` / `sha256:a5d8ffccf7c7009315963e425319b3dd9fa794bd1898b66ed2cef932ac818cf9` |
+| Source SHA | `3f6a5a6ece13bbcfd40a75cff84d7aa4143bcfae` |
+| Revisão atual | `saltos-backend-00025-vix` |
 | Tráfego | 100% nesta revisão |
-| Cloud Build | `a4a96676-45f3-4ed6-a097-e5213760498c` |
-| Image digest | `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb` |
+| Cloud Build | `4793fb92-e51f-433f-92cb-b98d88feeb21` |
+| Image digest | `sha256:a5d8ffccf7c7009315963e425319b3dd9fa794bd1898b66ed2cef932ac818cf9` |
 | Scaling | scale-to-zero enabled, max 2 |
 | CPU/memória | 1 CPU, 1 GiB |
 | Concurrency | 80 |
@@ -58,7 +59,7 @@ O ficheiro `frontend/public/_headers` define headers de segurança para Pages. A
 | Billing | request-based |
 | Health | `/actuator/health` |
 
-O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00022-6x6` serve 100% do tráfego com a imagem imutável `sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb`. Durante o rollout houve um HTTP 503 transitório antes da readiness; seis verificações posteriores devolveram HTTP 200/UP. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
+O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-backend-00025-vix` serve 100% do tráfego com a imagem imutável `sha256:a5d8ffccf7c7009315963e425319b3dd9fa794bd1898b66ed2cef932ac818cf9`. A revisão foi primeiro publicada com 0% de tráfego e validada diretamente durante 12 verificações consecutivas de health/readiness, todas HTTP 200/UP, além de um pedido real a `/api/v1/profiles` com HTTP 200. Depois da promoção para 100%, seis verificações adicionais de `/actuator/health`, liveness, readiness e `/api/v1/profiles` confirmaram produção estável. Produção deve correr com `SPRING_PROFILES_ACTIVE=prod`. Nesse profile:
 
 - `spring.jpa.hibernate.ddl-auto=validate`
 - `app.security.hsts.enabled=true` por default
@@ -79,9 +80,9 @@ O health endpoint `/actuator/health` de produção está UP. A revisão `saltos-
 | PITR/history observado no plano atual | 6 horas |
 | Snapshot manual durável | `pre-launch-2026-09-16` |
 
-Flyway validou 28 migrations. A revisão `saltos-backend-00022-6x6` encontrou o schema `public` em V26, aplicou `V27__user_notifications.sql` e `V28__booking_counterproposal_roundtrip.sql` e terminou em V28. O startup concluiu com sucesso e o schema ficou sem migrations pendentes.
+Flyway validou 28 migrations. A revisão `saltos-backend-00022-6x6` encontrou o schema `public` em V26, aplicou `V27__user_notifications.sql` e `V28__booking_counterproposal_roundtrip.sql` e terminou em V28. A revisão atual `saltos-backend-00025-vix` voltou a validar as 28 migrations, encontrou o schema já em V28 e reportou `Schema "public" is up to date. No migration necessary.`
 
-Este é o estado verificado na release de 2026-10-05, promovida de `main` no commit `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`. O Cloud Build `a4a96676-45f3-4ed6-a097-e5213760498c` produziu `backend:d50d8f9`; V27/V28, notificações in-app e contrapropostas bidirecionais foram promovidas para produção.
+O estado atual foi verificado na release de 2026-10-11, construída a partir de `main` no commit `3f6a5a6ece13bbcfd40a75cff84d7aa4143bcfae`. O Cloud Build `4793fb92-e51f-433f-92cb-b98d88feeb21` produziu `backend:3f6a5a6` com digest imutável `sha256:a5d8ffccf7c7009315963e425319b3dd9fa794bd1898b66ed2cef932ac818cf9`; a revisão `saltos-backend-00025-vix` está a servir 100% do tráfego.
 
 Não documentar passwords, connection strings completas ou hosts privados.
 
@@ -269,8 +270,8 @@ Concluído:
 
 - Feature 4 notifications/email DONE: PR #27 -> `dev`, PR #29 -> `main`;
 - Global UI Redesign: PR #44 -> `dev`, PR #45 -> `main`, seguido de fixes visuais posteriores;
-- backend de produção atualizado para source release `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`, imagem `backend:d50d8f9` (`sha256:093886ca8f34b2f6dc80bd0df2ea7960bceb7f4f627c4a871ed4060471c4ccbb`), revisão `saltos-backend-00022-6x6`;
-- Flyway em produção validado em V28, com 28 migrations confirmadas; `saltos-backend-00022-6x6` aplicou V27 e V28 a partir de V26;
+- backend de produção atualizado para source release `3f6a5a6ece13bbcfd40a75cff84d7aa4143bcfae`, imagem `backend:3f6a5a6` (`sha256:a5d8ffccf7c7009315963e425319b3dd9fa794bd1898b66ed2cef932ac818cf9`), Cloud Build `4793fb92-e51f-433f-92cb-b98d88feeb21`, revisão `saltos-backend-00025-vix` com 100% do tráfego;
+- Flyway em produção validado em V28, com 28 migrations confirmadas; a revisão atual não aplicou migrations novas porque o schema já estava atualizado;
 - CI, PostgreSQL CI e CodeQL passaram na release final `main`;
 - Cloudflare Pages production deployment vem de `main`;
 - produção manual smoke testing passou;
