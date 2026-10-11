@@ -18,7 +18,7 @@ import {
   profilePath,
   type AdminPage,
 } from './navigation/routes'
-import { mainContentHref, mainContentId, shouldMoveFocusToMain } from './navigation/accessibility'
+import { hashTargetId, mainContentHref, mainContentId, shouldMoveFocusToMain } from './navigation/accessibility'
 import { prefersReducedMotion } from './accessibility/motion'
 import { routeNeedsProfiles } from './performance/performanceConfig'
 import { SeoManager } from './seo/SeoManager'
@@ -60,9 +60,8 @@ function ScrollToTop() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       if (hash) {
-        const rawId = hash.slice(1)
-        const decodedId = rawId ? safelyDecodeHash(rawId) : ''
-        const target = decodedId ? document.getElementById(decodedId) : null
+        const targetId = hashTargetId(hash)
+        const target = targetId ? document.getElementById(targetId) : null
 
         if (target) {
           target.scrollIntoView({ block: 'start', behavior: 'auto' })
@@ -96,14 +95,6 @@ function RouteFocusManager() {
   }, [hash, pathname])
 
   return null
-}
-
-function safelyDecodeHash(value: string) {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
 }
 
 function App() {

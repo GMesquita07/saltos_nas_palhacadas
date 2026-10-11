@@ -9,7 +9,7 @@ export function useFocusOnError(message: string | null) {
 
   useEffect(() => {
     if (shouldFocusError(message)) {
-      errorRef.current?.focus({ preventScroll: true })
+      errorRef.current?.focus()
     }
   }, [message])
 

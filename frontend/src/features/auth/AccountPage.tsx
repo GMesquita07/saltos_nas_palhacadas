@@ -1,4 +1,5 @@
-import { useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAccessibleDialog } from '../../accessibility/useAccessibleDialog'
 import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
@@ -12,8 +13,11 @@ import { useNotifications } from '../notifications/NotificationContext'
 import { useAuth } from './AuthContext'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { PasswordField } from '../../components/PasswordField/PasswordField'
+import { hashTargetsElement } from '../../navigation/accessibility'
 import headerStyles from '../../components/Header/Header.module.css'
 import styles from './AccountPage.module.css'
+
+const accountNotificationsTargetId = 'account-notifications-title'
 
 type AccountPageProps = {
   onBookingsClick: () => void
@@ -32,6 +36,7 @@ type AccountForm = {
 }
 
 export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: AccountPageProps) {
+  const location = useLocation()
   const { changePassword, deleteAccount, exportAccountData, favorites, logout, session, updateAccount } = useAuth()
   const {
     error: notificationLoadError,
@@ -62,6 +67,17 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const profileErrorRef = useFocusOnError(error)
   const securityErrorRef = useFocusOnError(securityError)
   const dataErrorRef = useFocusOnError(dataError)
+  const notificationsHeadingRef = useRef<HTMLHeadingElement | null>(null)
+
+  useEffect(() => {
+    if (!hashTargetsElement(location.hash, accountNotificationsTargetId)) return
+
+    const target = notificationsHeadingRef.current
+    if (!target) return
+
+    target.scrollIntoView({ block: 'start', behavior: 'auto' })
+    target.focus({ preventScroll: true })
+  }, [location.hash, location.key])
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
@@ -319,10 +335,10 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                 </div>
               </section>
 
-              <section className={`${styles.sectionBlock} ${styles.notificationsSection}`} aria-labelledby="account-notifications-title">
+              <section className={`${styles.sectionBlock} ${styles.notificationsSection}`} aria-labelledby={accountNotificationsTargetId}>
                 <div className={styles.notificationsHeader}>
                   <div>
-                    <h2 id="account-notifications-title">Notificações</h2>
+                    <h2 id={accountNotificationsTargetId} ref={notificationsHeadingRef} tabIndex={-1}>Notificações</h2>
                     <p>Atualizações importantes que requerem a tua atenção.</p>
                   </div>
                   <span className={styles.unreadBadge} aria-label={`${unreadCount} notificações não lidas`}>

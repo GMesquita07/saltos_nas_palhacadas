@@ -51,11 +51,26 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Email pessoal do artista em bookings | DONE | Implementação já existente em `BookingNotificationService`; novo booking envia para `profile.notificationEmail` e admins ativos. Entrega real no email do artista confirmada em produção em 2026-10-05. |
 | UX da área de conta + notificações in-app | DONE | Dashboard, provider partilhado, sino global e reminder in-app promovidos por PR #95/#96; V27/V28 aplicadas e produção validada. |
 | Contrapropostas bidirecionais de booking | DONE | Fluxo ADMIN↔CUSTOMER, autoria e termos propostos promovidos por PR #95/#96; V28 aplicada e produção validada. |
-| Feature 7: Acessibilidade | DONE | Implementada em código: skip link e estrutura de navegação, foco de rotas SPA, dialogs com trap/Escape/retorno de foco, formulários e live regions, teclado, contraste WCAG e reduced motion. Testes/build locais concluídos; aguarda revisão, promoção e QA visual/assistivo humano antes de produção. |
+| Feature 7: Acessibilidade | IN PROGRESS | Implementação concluída em código e testes automáticos; QA humano de teclado, dark/light, 375/390/430 px, dialogs e leitor de ecrã básico, além da promoção, continuam pendentes. |
+| Feature 8: Admin Monitoring & Analytics | TODO | Planear `/admin/monitorizacao` com métricas agregadas de tráfego, contas, bookings, conteúdo, operação e performance, numa arquitetura privacy-first sujeita a revisão Privacy/Cookies/RGPD. |
 | Observabilidade/manutenção | TODO | Monitorizar budgets/logs de GCP, Cloudflare, Neon e R2; manter drills periódicos e rotinas operacionais. |
 | Legal, inbound email e cleanup media | TODO | Rever Privacy/Terms/Cookies juridicamente e em UX; decidir provider ou Cloudflare Email Routing para `ola@`; cleanup de media pública órfã requer tracking seguro de ownership/referências antes de apagar objetos R2. |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
 | Avatares predefinidos | OPTIONAL | Reduzir uploads livres |
+
+### Feature 8: Admin Monitoring & Analytics
+
+Objetivo: adicionar uma área exclusiva para `ADMIN`, por exemplo `/admin/monitorizacao`, para acompanhamento agregado e privacy-first do site.
+
+- Tráfego: visitas hoje e em 7/30 dias, page views, páginas públicas mais visitadas, evolução temporal e origens agregadas quando permitido.
+- Contas: total, habilitadas/inativas, novos registos em 7/30 dias e distribuição `CUSTOMER`/`ADMIN`; conta ativa significa habilitada no sistema, não tracking da última navegação.
+- Bookings: novos pedidos, estados, contrapropostas, próximos eventos e conversão agregada quando fizer sentido.
+- Conteúdo: perfis, portfolio publicado, materiais, reviews e favoritos agregados úteis.
+- Operação: health do backend, schedulers/jobs, reminders, backups, erros agregados e revisão conhecida.
+- Performance: Core Web Vitals e Cloudflare Web Analytics quando disponíveis.
+- Privacidade/RGPD: não recolher por defeito histórico individual, páginas ligadas a contas, IP completo, fingerprint, localização precisa ou session replay.
+
+Arquitetura prevista: Admin frontend -> endpoint backend exclusivo para `ADMIN` -> dados agregados da base de dados e provider de analytics. Uma integração futura com Cloudflare Web Analytics/APIs deve manter tokens apenas no backend/Secret Manager, nunca em `VITE_*`. A feature só poderá passar a DONE depois da revisão Privacy/Cookies/RGPD da telemetria efetivamente implementada.
 
 ## Produto e UX Migrado do `todolist.md`
 
