@@ -35,7 +35,8 @@ export function CookieConsent({ onManage }: CookieConsentProps) {
   }
 
   return (
-    <section aria-label="Preferências de cookies" className={styles.banner} role="dialog">
+    <section aria-labelledby="cookie-consent-title" className={styles.banner}>
+      <h2 className="visually-hidden" id="cookie-consent-title">Preferências de cookies</h2>
       <p>Usamos armazenamento necessário para a conta e segurança. Analytics ou cookies opcionais só ficam ativos com consentimento.</p>
       <div className={styles.actions}>
         <button type="button" onClick={() => saveConsent('rejected')}>Rejeitar</button>

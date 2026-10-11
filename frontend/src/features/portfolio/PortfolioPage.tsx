@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { preferredScrollBehavior } from '../../accessibility/motion'
 import { getPortfolioItems } from '../../services/portfolioService'
 import {
   invalidatePortfolioItemsCache,
@@ -125,7 +126,7 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
   function selectPortfolioFilter(nextFilter: Filter) {
     setFilter(nextFilter)
     window.requestAnimationFrame(() => {
-      document.getElementById('portfolio-events')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById('portfolio-events')?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' })
     })
   }
 
@@ -288,7 +289,7 @@ export function PortfolioPage({ profile, onBack, onBooking, onLogin }: Portfolio
           </div>
 
           {hasError
-            ? <p className={styles.feedback}>Não foi possível carregar este portfólio.</p>
+            ? <p className={styles.feedback} role="alert">Não foi possível carregar este portfólio.</p>
             : filteredItems.length === 0
               ? <p className={styles.feedback}>Ainda não existem conteúdos publicados neste perfil.</p>
               : (

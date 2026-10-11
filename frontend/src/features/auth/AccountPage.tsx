@@ -1,4 +1,7 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useAccessibleDialog } from '../../accessibility/useAccessibleDialog'
+import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import { ImageCropEditor } from '../../components/ImageCropEditor'
 import { CroppedImage } from '../../components/CroppedImage'
 import { useAuthenticatedMediaUrl } from '../../components/AuthenticatedMedia'
@@ -10,8 +13,11 @@ import { useNotifications } from '../notifications/NotificationContext'
 import { useAuth } from './AuthContext'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { PasswordField } from '../../components/PasswordField/PasswordField'
+import { hashTargetsElement } from '../../navigation/accessibility'
 import headerStyles from '../../components/Header/Header.module.css'
 import styles from './AccountPage.module.css'
+
+const accountNotificationsTargetId = 'account-notifications-title'
 
 type AccountPageProps = {
   onBookingsClick: () => void
@@ -30,6 +36,7 @@ type AccountForm = {
 }
 
 export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: AccountPageProps) {
+  const location = useLocation()
   const { changePassword, deleteAccount, exportAccountData, favorites, logout, session, updateAccount } = useAuth()
   const {
     error: notificationLoadError,
@@ -57,6 +64,20 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
   const [notificationActionError, setNotificationActionError] = useState<string | null>(null)
   const [notificationActionId, setNotificationActionId] = useState<string | null>(null)
   const [isMarkingAllNotifications, setIsMarkingAllNotifications] = useState(false)
+  const profileErrorRef = useFocusOnError(error)
+  const securityErrorRef = useFocusOnError(securityError)
+  const dataErrorRef = useFocusOnError(dataError)
+  const notificationsHeadingRef = useRef<HTMLHeadingElement | null>(null)
+
+  useEffect(() => {
+    if (!hashTargetsElement(location.hash, accountNotificationsTargetId)) return
+
+    const target = notificationsHeadingRef.current
+    if (!target) return
+
+    target.scrollIntoView({ block: 'start', behavior: 'auto' })
+    target.focus({ preventScroll: true })
+  }, [location.hash, location.key])
 
   const visibleForm = session ? (isEditing ? form : emptyForm(session)) : emptyForm(null)
   const resolvedProfileImageUrl = useAuthenticatedMediaUrl(visibleForm.profileImageUrl, session?.token)
@@ -290,7 +311,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
               <div><dt>Favoritos</dt><dd>{favorites.length}</dd></div>
             </dl>
 
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && <p className={styles.error} ref={profileErrorRef} role="alert" tabIndex={-1}>{error}</p>}
             {notice && <p className={styles.success} role="status">{notice}</p>}
 
             <div className={styles.actions}>
@@ -314,10 +335,10 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                 </div>
               </section>
 
-              <section className={`${styles.sectionBlock} ${styles.notificationsSection}`} aria-labelledby="account-notifications-title">
+              <section className={`${styles.sectionBlock} ${styles.notificationsSection}`} aria-labelledby={accountNotificationsTargetId}>
                 <div className={styles.notificationsHeader}>
                   <div>
-                    <h2 id="account-notifications-title">Notificações</h2>
+                    <h2 id={accountNotificationsTargetId} ref={notificationsHeadingRef} tabIndex={-1}>Notificações</h2>
                     <p>Atualizações importantes que requerem a tua atenção.</p>
                   </div>
                   <span className={styles.unreadBadge} aria-label={`${unreadCount} notificações não lidas`}>
@@ -411,7 +432,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                     value={passwordForm.confirmation}
                     onChange={(value) => setPasswordForm((current) => ({ ...current, confirmation: value }))}
                   />
-                  {securityError && <p className={styles.error} role="alert">{securityError}</p>}
+                  {securityError && <p className={styles.error} ref={securityErrorRef} role="alert" tabIndex={-1}>{securityError}</p>}
                   {securityNotice && <p className={styles.success} role="status">{securityNotice}</p>}
                   <button disabled={isChangingPassword} type="submit">{isChangingPassword ? 'A atualizar...' : 'Alterar palavra-passe'}</button>
                 </form>
@@ -435,7 +456,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
                       value={deletePassword}
                       onChange={setDeletePassword}
                     />
-                    {dataError && <p className={styles.error} role="alert">{dataError}</p>}
+                    {dataError && <p className={styles.error} ref={dataErrorRef} role="alert" tabIndex={-1}>{dataError}</p>}
                     <button className={styles.dangerButton} disabled={isDeletingAccount} type="submit">
                       {isDeletingAccount ? 'A eliminar...' : 'Eliminar a minha conta'}
                     </button>
@@ -481,11 +502,12 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
 
             <label>
               Email
-              <input readOnly value={session.email} />
+              <input autoComplete="email" readOnly type="email" value={session.email} />
             </label>
             <label>
               Nome de utilizador
               <input
+                autoComplete="username"
                 maxLength={30}
                 minLength={3}
                 onChange={(event) => setForm((current) => ({ ...current, username: event.target.value.toLowerCase().replace(/\s+/g, '') }))}
@@ -499,6 +521,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
               <label>
                 Primeiro nome
                 <input
+                  autoComplete="given-name"
                   maxLength={80}
                   minLength={2}
                   onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
@@ -509,6 +532,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
               <label>
                 Último nome
                 <input
+                  autoComplete="family-name"
                   maxLength={80}
                   minLength={2}
                   onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
@@ -520,6 +544,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
             <label>
               Contacto telefónico
               <input
+                autoComplete="tel"
                 inputMode="tel"
                 onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
                 placeholder="+351 912 345 678"
@@ -529,7 +554,7 @@ export function AccountPage({ onBookingsClick, onFavoritesClick, onExit }: Accou
               />
             </label>
 
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && <p className={styles.error} ref={profileErrorRef} role="alert" tabIndex={-1}>{error}</p>}
             {notice && <p className={styles.success} role="status">{notice}</p>}
 
             <div className={styles.actions}>
@@ -556,15 +581,10 @@ function AccountImageCropDialog({
   onSave: (crop: ImageCrop) => void
 }) {
   const [draftCrop, setDraftCrop] = useState(crop)
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  const titleId = useId()
+  const descriptionId = useId()
+  const initialFocusRef = useRef<HTMLInputElement | null>(null)
+  const dialogRef = useAccessibleDialog<HTMLDivElement>({ initialFocusRef, isOpen: true, onClose })
 
   function saveCrop() {
     onSave(draftCrop)
@@ -574,10 +594,13 @@ function AccountImageCropDialog({
   return (
     <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
       <div
-        aria-label="Ajustar foto de perfil"
+        aria-describedby={descriptionId}
+        aria-labelledby={titleId}
         aria-modal="true"
         className={styles.cropDialog}
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <ImageCropEditor
@@ -610,9 +633,12 @@ function AccountImageCropDialog({
           ]}
           crop={draftCrop}
           description="Arrasta a fotografia e ajusta o zoom para escolher como a tua foto aparece na conta."
+          descriptionId={descriptionId}
+          initialFocusRef={initialFocusRef}
           shape="circle"
           src={src}
           title="Ajustar foto de perfil"
+          titleId={titleId}
           onChange={setDraftCrop}
         />
         <div className={styles.cropDialogActions}>

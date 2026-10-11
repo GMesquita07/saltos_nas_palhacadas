@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { preferredScrollBehavior } from '../../accessibility/motion'
 import { askSupportChat } from '../../services/supportChatService'
 import type { SupportChatMessage } from '../../types/supportChat'
 import styles from './SupportChat.module.css'
@@ -18,11 +19,44 @@ export function SupportChat() {
     createMessage('assistant', 'Escolhe uma opção rápida ou escreve a tua pergunta.'),
   ])
   const threadRef = useRef<HTMLDivElement | null>(null)
+  const launcherRef = useRef<HTMLButtonElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const hasOpenedRef = useRef(false)
+  const panelId = useId()
+  const titleId = useId()
+  const moreSuggestionsId = useId()
 
   useEffect(() => {
     if (!isOpen) return
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: preferredScrollBehavior() })
   }, [isOpen, messages])
+
+  useEffect(() => {
+    if (isOpen) {
+      hasOpenedRef.current = true
+      inputRef.current?.focus({ preventScroll: true })
+      return
+    }
+
+    if (hasOpenedRef.current) {
+      hasOpenedRef.current = false
+      launcherRef.current?.focus({ preventScroll: true })
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [isOpen])
 
   async function sendMessage(text: string) {
     const message = text.trim()
@@ -52,16 +86,16 @@ export function SupportChat() {
 
   return (
     <div className={styles.wrapper}>
-      {isOpen ? (
-        <section className={`${styles.panel} ${isExpanded ? styles.expanded : ''}`} aria-label="Assistente virtual">
+      {isOpen && (
+        <section aria-labelledby={titleId} className={`${styles.panel} ${isExpanded ? styles.expanded : ''}`} id={panelId}>
           <header className={styles.header}>
             <div>
               <span className={styles.statusDot} aria-hidden="true" />
               <p>Assistente IA</p>
-              <strong>Saltos nas Palhaçadas</strong>
+              <h2 id={titleId}>Saltos nas Palhaçadas</h2>
             </div>
             <span className={styles.headerActions}>
-              <button type="button" aria-label={isExpanded ? 'Reduzir assistente' : 'Expandir assistente'} onClick={() => setIsExpanded((current) => !current)}>
+              <button aria-label={isExpanded ? 'Reduzir assistente' : 'Expandir assistente'} aria-pressed={isExpanded} type="button" onClick={() => setIsExpanded((current) => !current)}>
                 <ExpandIcon />
               </button>
               <button type="button" aria-label="Fechar assistente" onClick={() => setIsOpen(false)}>
@@ -70,7 +104,7 @@ export function SupportChat() {
             </span>
           </header>
 
-          <div aria-label="Conversa com o assistente" aria-live="polite" aria-relevant="additions text" className={styles.thread} ref={threadRef} role="log">
+          <div aria-busy={isSending} aria-label="Conversa com o assistente" aria-live="polite" aria-relevant="additions text" className={styles.thread} ref={threadRef} role="log">
             {messages.map((message) => (
               <div className={`${styles.message} ${styles[message.role]}`} key={message.id}>
                 {message.text}
@@ -80,12 +114,19 @@ export function SupportChat() {
           </div>
 
           <div className={styles.suggestions}>
-            {[...suggestions, ...(showMore ? moreSuggestions : [])].map((suggestion) => (
+            {suggestions.map((suggestion) => (
               <button disabled={isSending} key={suggestion} type="button" onClick={() => { void sendMessage(suggestion) }}>
                 {suggestion}
               </button>
             ))}
-            <button className={styles.moreButton} type="button" onClick={() => setShowMore((current) => !current)}>
+            <div className={styles.moreSuggestions} hidden={!showMore} id={moreSuggestionsId}>
+              {moreSuggestions.map((suggestion) => (
+                <button disabled={isSending} key={suggestion} type="button" onClick={() => { void sendMessage(suggestion) }}>
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+            <button aria-controls={moreSuggestionsId} aria-expanded={showMore} className={styles.moreButton} type="button" onClick={() => setShowMore((current) => !current)}>
               Mais opções <ChevronIcon isOpen={showMore} />
             </button>
           </div>
@@ -94,9 +135,11 @@ export function SupportChat() {
             <p className={styles.privacyNotice}>Não envies passwords, dados bancários ou informação sensível.</p>
             <input
               aria-label="Mensagem para o assistente"
+              autoComplete="off"
               maxLength={700}
               onChange={(event) => setInput(event.target.value)}
               placeholder="Escreve aqui a tua mensagem..."
+              ref={inputRef}
               value={input}
             />
             <button disabled={isSending || !input.trim()} type="submit" aria-label="Enviar mensagem">
@@ -104,11 +147,19 @@ export function SupportChat() {
             </button>
           </form>
         </section>
-      ) : (
-        <button className={styles.launcher} type="button" aria-label="Abrir assistente virtual" onClick={() => setIsOpen(true)}>
-          <ChatIcon />
-        </button>
       )}
+      <button
+        aria-controls={panelId}
+        aria-expanded={isOpen}
+        aria-label="Abrir assistente virtual"
+        className={styles.launcher}
+        hidden={isOpen}
+        ref={launcherRef}
+        type="button"
+        onClick={() => setIsOpen(true)}
+      >
+        <ChatIcon />
+      </button>
     </div>
   )
 }

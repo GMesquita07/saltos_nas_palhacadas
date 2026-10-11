@@ -26,7 +26,7 @@ export function FavoritesPage({ onBack }: FavoritesPageProps) {
         <p>As publicações que guardaste para voltar a ver mais tarde.</p>
       </header>
       {isFavoritesLoading ? (
-        <p className={styles.feedback}>A carregar favoritos...</p>
+        <p className={styles.feedback} role="status">A carregar favoritos...</p>
       ) : favorites.length === 0 ? (
         <p className={styles.feedback}>Ainda não guardaste nenhuma publicação. Explora os perfis e usa o ícone de favorito.</p>
       ) : (

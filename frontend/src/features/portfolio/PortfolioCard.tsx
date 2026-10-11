@@ -49,7 +49,7 @@ export function PortfolioCard({ item, onOpen }: { item: PortfolioItem; onOpen?: 
         )}
         <small>{item.type}</small>
         <button
-          aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          aria-label={`${isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}: ${item.title}`}
           aria-pressed={isFavorite}
           className={`${styles.favoriteButton} ${isFavorite ? styles.isFavorite : ''}`}
           disabled={isToggling || !isSessionReady}
@@ -78,7 +78,7 @@ export function PortfolioCard({ item, onOpen }: { item: PortfolioItem; onOpen?: 
           {item.location}
         </p>
 
-        {error && <p className={styles.favoriteError} role="status">{error}</p>}
+        {error && <p className={styles.favoriteError} role="alert">{error}</p>}
       </div>
     </article>
   )

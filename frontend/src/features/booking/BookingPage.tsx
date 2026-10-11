@@ -5,6 +5,8 @@ import type { AvailabilitySlot, Booking, BookingCounterProposalDecision, Booking
 import type { Profile } from '../../types/profile'
 import { CroppedImage } from '../../components/CroppedImage'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
+import { useAccessibleDialog } from '../../accessibility/useAccessibleDialog'
+import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import { bookingSyncIntervalMs, bookingsRefreshEvent, requestNotificationsRefresh } from './bookingRefresh'
 import styles from './BookingPage.module.css'
 
@@ -59,6 +61,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
   const [cancellationFeedback, setCancellationFeedback] = useState<{ bookingId: string; type: 'error' | 'success'; message: string } | null>(null)
   const respondingBookingRef = useRef<string | null>(null)
   const bookingFormRef = useRef<HTMLFormElement | null>(null)
+  const submitErrorRef = useFocusOnError(submitError)
   const bookingsRequestRef = useRef<{ controller: AbortController | null; inFlight: boolean }>({
     controller: null,
     inFlight: false,
@@ -593,8 +596,8 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
                   ))}
                 </div>
               )}
-              {isAvailabilityLoading && <p className={styles.calendarFeedback}>A atualizar disponibilidade...</p>}
-              {availabilityError && <p className={styles.error} role="status">{availabilityError}</p>}
+              {isAvailabilityLoading && <p className={styles.calendarFeedback} role="status">A atualizar disponibilidade...</p>}
+              {availabilityError && <p className={styles.error} role="alert">{availabilityError}</p>}
             </>
           )}
         </div>
@@ -673,7 +676,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
             <textarea maxLength={1000} name="notes" placeholder="Algum detalhe adicional que ajude a preparar o pedido." rows={3} />
           </label>
 
-          {submitError && <p className={styles.error} role="alert">{submitError}</p>}
+          {submitError && <p className={styles.error} ref={submitErrorRef} role="alert" tabIndex={-1}>{submitError}</p>}
           {submitSuccess && <p className={styles.success} role="status">{submitSuccess}</p>}
           {session ? (
             <button className={styles.submit} disabled={isSubmitting || !selectedProfile || !selectedDate || !isBookingFormValid} type="submit">{isSubmitting ? 'A enviar pedido...' : 'Enviar pedido'}</button>
@@ -693,7 +696,7 @@ export function BookingPage({ profiles, initialProfile, onBack, onRequireLogin }
               <p className={styles.sectionIntro}>Consulta rapidamente artista, data, local e estado de cada pedido.</p>
             </div>
           </div>
-          {isBookingsLoading ? <p className={styles.feedback}>A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="status">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} cancellationFeedback={cancellationFeedback} cancellingBookingId={cancellingBookingId} counterProposalFeedback={counterProposalFeedback} onCancelBooking={handleCancelBooking} onCounterProposal={handleCustomerCounterProposal} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
+          {isBookingsLoading ? <p className={styles.feedback} role="status">A carregar os teus pedidos...</p> : bookingsError ? <p className={styles.error} role="alert">{bookingsError}</p> : myBookings.length === 0 ? <p className={styles.feedback}>Ainda não enviaste nenhum pedido. Escolhe uma data disponível para começar.</p> : <BookingList bookings={myBookings} cancellationFeedback={cancellationFeedback} cancellingBookingId={cancellingBookingId} counterProposalFeedback={counterProposalFeedback} onCancelBooking={handleCancelBooking} onCounterProposal={handleCustomerCounterProposal} onCounterProposalDecision={handleCounterProposalDecision} respondingBookingId={respondingBookingId} respondingCounterDecision={respondingCounterDecision} />}
         </section>
       )}
     </section>
@@ -717,42 +720,32 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null)
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId) ?? null
   const bookingToCancel = bookings.find((booking) => booking.id === cancelBookingId) ?? null
-
-  useEffect(() => {
-    if (!selectedBooking && !bookingToCancel) return
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-
-      if (bookingToCancel) {
-        setCancelBookingId(null)
-      } else {
-        setSelectedBookingId(null)
-      }
-    }
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [bookingToCancel, selectedBooking])
+  const detailsCloseRef = useRef<HTMLButtonElement | null>(null)
+  const cancelCloseRef = useRef<HTMLButtonElement | null>(null)
+  const detailsDialogRef = useAccessibleDialog({
+    initialFocusRef: detailsCloseRef,
+    isOpen: selectedBooking !== null,
+    onClose: () => setSelectedBookingId(null),
+  })
+  const cancelDialogRef = useAccessibleDialog({
+    initialFocusRef: cancelCloseRef,
+    isOpen: bookingToCancel !== null,
+    onClose: () => setCancelBookingId(null),
+  })
 
   return (
     <>
       <div className={styles.bookingTableWrap}>
         <table className={styles.bookingTable}>
+          <caption className="visually-hidden">Pedidos de agendamento e respetivo estado</caption>
           <thead>
             <tr>
-              <th>Evento</th>
-              <th>Artista</th>
-              <th>Data</th>
-              <th>Local</th>
-              <th>Estado</th>
-              <th aria-label="Ações">Ações</th>
+              <th scope="col">Evento</th>
+              <th scope="col">Artista</th>
+              <th scope="col">Data</th>
+              <th scope="col">Local</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -827,20 +820,25 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
 
       {selectedBooking && (
         <div
-          aria-labelledby="booking-details-title"
-          aria-modal="true"
           className={styles.modalBackdrop}
-          role="dialog"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setSelectedBookingId(null)
           }}
         >
-          <article className={styles.bookingModal}>
+          <article
+            aria-describedby="booking-details-summary"
+            aria-labelledby="booking-details-title"
+            aria-modal="true"
+            className={styles.bookingModal}
+            ref={detailsDialogRef}
+            role="dialog"
+            tabIndex={-1}
+          >
             <div className={styles.modalHeader}>
               <div>
                 <p className={styles.modalEyebrow}>Detalhes do pedido</p>
                 <h3 id="booking-details-title">{eventTypeLabel(selectedBooking)}</h3>
-                <p>
+                <p id="booking-details-summary">
                   {selectedBooking.profileName} · {dateFormatter.format(toLocalDate(selectedBooking.eventDate))}
                 </p>
               </div>
@@ -848,6 +846,7 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
               <button
                 aria-label="Fechar detalhes"
                 className={styles.modalClose}
+                ref={detailsCloseRef}
                 type="button"
                 onClick={() => setSelectedBookingId(null)}
               >
@@ -989,18 +988,24 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
 
       {bookingToCancel && (
         <div
-          aria-labelledby="cancel-booking-title"
-          aria-modal="true"
           className={styles.modalBackdrop}
-          role="dialog"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setCancelBookingId(null)
           }}
         >
-          <article className={styles.cancelConfirmModal}>
+          <article
+            aria-describedby="cancel-booking-description cancel-booking-warning"
+            aria-labelledby="cancel-booking-title"
+            aria-modal="true"
+            className={styles.cancelConfirmModal}
+            ref={cancelDialogRef}
+            role="dialog"
+            tabIndex={-1}
+          >
             <button
               aria-label="Fechar confirmação"
               className={styles.cancelConfirmClose}
+              ref={cancelCloseRef}
               type="button"
               onClick={() => setCancelBookingId(null)}
             >
@@ -1015,11 +1020,11 @@ function BookingList({ bookings, cancellationFeedback, cancellingBookingId, coun
 
             <p className={styles.cancelConfirmEyebrow}>Cancelar agendamento</p>
             <h3 id="cancel-booking-title">Queres mesmo cancelar este pedido?</h3>
-            <p className={styles.cancelConfirmText}>
+            <p className={styles.cancelConfirmText} id="cancel-booking-description">
               <strong>{eventTypeLabel(bookingToCancel)}</strong> com {bookingToCancel.profileName},
               marcado para {dateFormatter.format(toLocalDate(bookingToCancel.eventDate))}.
             </p>
-            <p className={styles.cancelConfirmWarning}>
+            <p className={styles.cancelConfirmWarning} id="cancel-booking-warning">
               Depois de cancelado, o estado do pedido será atualizado e a disponibilidade do artista será recalculada.
             </p>
 
@@ -1285,6 +1290,7 @@ function CustomerCounterActions({
 }) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const proposal = booking.counterProposal
+  const counterFormId = `customer-counter-${booking.id}`
 
   if (!proposal || proposal.proposedBy === 'CUSTOMER') {
     return (
@@ -1302,13 +1308,14 @@ function CustomerCounterActions({
         <button disabled={isResponding} type="button" onClick={onAccept}>
           {respondingDecision === 'ACCEPTED' ? 'A aceitar...' : 'Aceitar proposta'}
         </button>
-        <button disabled={isResponding} type="button" onClick={() => setIsFormOpen((current) => !current)}>
+        <button aria-controls={counterFormId} aria-expanded={isFormOpen} disabled={isResponding} type="button" onClick={() => setIsFormOpen((current) => !current)}>
           Fazer contraproposta
         </button>
       </div>
       {isFormOpen && (
         <form
           className={styles.customerCounterForm}
+          id={counterFormId}
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
