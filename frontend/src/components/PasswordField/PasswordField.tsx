@@ -25,12 +25,14 @@ export function PasswordField({
   value,
 }: PasswordFieldProps) {
   const [isVisible, setIsVisible] = useState(false)
+  const hintId = hint ? `${id}-hint` : undefined
 
   return (
     <div className={styles.field}>
       <label htmlFor={id}>{label}</label>
       <div className={styles.control}>
         <input
+          aria-describedby={hintId}
           autoComplete={autoComplete}
           disabled={disabled}
           id={id}
@@ -51,7 +53,7 @@ export function PasswordField({
           {isVisible ? <EyeOffIcon /> : <EyeIcon />}
         </button>
       </div>
-      {hint && <small>{hint}</small>}
+      {hint && <small id={hintId}>{hint}</small>}
     </div>
   )
 }

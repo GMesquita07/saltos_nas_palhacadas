@@ -32,7 +32,7 @@ export function ContactPage() {
     }
   }, [])
 
-  return <section className={styles.page}><p className="eyebrow">Estamos disponíveis</p><h1>Contacto e suporte</h1><p className={styles.intro}>Encontra aqui os canais oficiais para pedidos, informações e suporte.</p>{hasError ? <p className={styles.feedback}>Não foi possível carregar os contactos.</p> : contacts.length === 0 ? <p className={styles.feedback}>Os contactos serão disponibilizados em breve.</p> : <div className={styles.list}>{contacts.map((contact) => <a className={styles.contact} key={contact.id} href={contactHref(contact)} target={isExternal(contact) ? '_blank' : undefined} rel={isExternal(contact) ? 'noreferrer' : undefined}><small>{contactTypeLabel(contact.type)}</small><strong>{contact.value}</strong><span>{contact.label}</span><b><NavIcon name="arrow-right" /></b></a>)}</div>}</section>
+  return <section className={styles.page}><p className="eyebrow">Estamos disponíveis</p><h1>Contacto e suporte</h1><p className={styles.intro}>Encontra aqui os canais oficiais para pedidos, informações e suporte.</p>{hasError ? <p className={styles.feedback} role="alert">Não foi possível carregar os contactos.</p> : contacts.length === 0 ? <p className={styles.feedback}>Os contactos serão disponibilizados em breve.</p> : <div className={styles.list}>{contacts.map((contact) => <a className={styles.contact} key={contact.id} href={contactHref(contact)} target={isExternal(contact) ? '_blank' : undefined} rel={isExternal(contact) ? 'noreferrer' : undefined}><small>{contactTypeLabel(contact.type)}</small><strong>{contact.value}</strong><span>{contact.label}</span><b><NavIcon name="arrow-right" /></b></a>)}</div>}</section>
 }
 
 function contactHref(contact: Contact) {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useFocusOnError } from '../../../accessibility/useFocusOnError'
 import { decideBooking, getAdminBookings } from '../../../services/bookingService'
 import type { Booking, BookingDecisionStatus, BookingStatus } from '../../../types/booking'
 import { bookingEmptyMessage, bookingFilters, defaultBookingFilter, toBookingStatusFilter, type BookingFilter } from './bookingFilters'
@@ -59,6 +60,7 @@ export function BookingManagement({
   const [isSending, setIsSending] = useState(false)
   const [draft, setDraft] = useState<DecisionDraft | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const formErrorRef = useFocusOnError(formError)
   const bookingRequestRef = useRef<{ controller: AbortController | null; inFlight: boolean }>({
     controller: null,
     inFlight: false,
@@ -257,7 +259,7 @@ export function BookingManagement({
       </header>
 
       {isLoading ? (
-        <p className={styles.feedback}>A carregar pedidos...</p>
+        <p className={styles.feedback} role="status">A carregar pedidos...</p>
       ) : bookings.length === 0 ? (
         <p className={styles.feedback}>
           {bookingEmptyMessage(filter)}
@@ -453,7 +455,7 @@ export function BookingManagement({
                     />
                   </label>
 
-                  {formError && <p className={styles.formError} role="alert">{formError}</p>}
+                  {formError && <p className={styles.formError} ref={formErrorRef} role="alert" tabIndex={-1}>{formError}</p>}
 
                   <button className={styles.confirmButton} disabled={isSending} type="submit">
                     {isSending ? 'A guardar...' : decisionConfirmLabel(draft.status)}

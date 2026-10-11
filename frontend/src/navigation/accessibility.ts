@@ -16,3 +16,11 @@ export function dismissNavigationMenuOnEscape(
   focusMenuButton()
   return true
 }
+
+export function shouldMoveFocusToMain(
+  previousPathname: string | null,
+  pathname: string,
+  hash: string,
+): boolean {
+  return previousPathname !== null && previousPathname !== pathname && hash.length === 0
+}

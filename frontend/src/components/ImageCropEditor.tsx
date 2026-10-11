@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { useRef, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { clampPercentage, clampZoom, dragImageCrop, formatImagePosition, type ImageCrop } from './imageCrop'
 import { CroppedImage } from './CroppedImage'
 import { ProfileHeroBackground, profileHeroDesktopAspectRatio } from './ProfileHeroBackground'
@@ -24,12 +24,15 @@ type ImageCropEditorProps = {
   alt?: string
   crop: ImageCrop
   description?: string
+  descriptionId?: string
+  initialFocusRef?: Ref<HTMLInputElement>
   aspectRatio?: string
   comparisonPreviews?: ComparisonPreview[]
   previewMode?: 'image' | 'profileHeroBackground'
   shape?: CropPreviewShape
   src: string
   title?: string
+  titleId?: string
   onChange: (crop: ImageCrop) => void
 }
 
@@ -37,12 +40,15 @@ export function ImageCropEditor({
   alt = 'Pré-visualização da foto',
   crop,
   description = 'Arrasta a fotografia e ajusta o zoom para escolher o enquadramento.',
+  descriptionId,
+  initialFocusRef,
   aspectRatio,
   comparisonPreviews = [],
   previewMode = 'image',
   shape = 'square',
   src,
   title = 'Ajustar foto',
+  titleId,
   onChange,
 }: ImageCropEditorProps) {
   const drag = useRef<{ crop: ImageCrop; startX: number; startY: number } | null>(null)
@@ -78,8 +84,8 @@ export function ImageCropEditor({
   return (
     <div className={styles.cropEditor}>
       <div>
-        <p className={styles.cropTitle}>{title}</p>
-        <p className={styles.cropDescription}>{description}</p>
+        <h2 className={styles.cropTitle} id={titleId}>{title}</h2>
+        <p className={styles.cropDescription} id={descriptionId}>{description}</p>
       </div>
       <div
         className={[styles.cropPreview, styles[shape]].join(' ')}
@@ -165,6 +171,7 @@ export function ImageCropEditor({
       <label className={styles.rangeLabel}>
         Posição horizontal
         <input
+          ref={initialFocusRef}
           aria-valuetext={crop.x + '%'}
           max="100"
           min="0"

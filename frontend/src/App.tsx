@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from './components/Footer/Footer'
 import { Header, type AuthenticationMode } from './components/Header/Header'
@@ -18,7 +18,8 @@ import {
   profilePath,
   type AdminPage,
 } from './navigation/routes'
-import { mainContentHref, mainContentId } from './navigation/accessibility'
+import { mainContentHref, mainContentId, shouldMoveFocusToMain } from './navigation/accessibility'
+import { prefersReducedMotion } from './accessibility/motion'
 import { routeNeedsProfiles } from './performance/performanceConfig'
 import { SeoManager } from './seo/SeoManager'
 import { getProfiles, invalidateProfilesCache } from './services/profileService'
@@ -70,6 +71,25 @@ function ScrollToTop() {
       }
 
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [hash, pathname])
+
+  return null
+}
+
+function RouteFocusManager() {
+  const { hash, pathname } = useLocation()
+  const previousPathnameRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const previousPathname = previousPathnameRef.current
+    previousPathnameRef.current = pathname
+    if (!shouldMoveFocusToMain(previousPathname, pathname, hash)) return
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(mainContentId)?.focus({ preventScroll: true })
     })
 
     return () => window.cancelAnimationFrame(frame)
@@ -207,6 +227,7 @@ function App() {
       <a className={styles.skipLink} href={mainContentHref}>Saltar para o conteúdo</a>
       <SeoManager hasProfilesError={profilesError} isProfilesLoading={effectiveProfilesLoading} profiles={profiles} />
       <ScrollToTop />
+      <RouteFocusManager />
       <SplashScreen
         phase={splashPhase}
         onDockingEnd={() => setSplashPhase('done')}
@@ -240,9 +261,9 @@ function App() {
             <Route
               path="/"
               element={profilesError
-                ? <p className={styles.feedback}>Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
+                ? <p className={styles.feedback} role="alert">Não foi possível carregar os perfis. Confirma que a API está a correr.</p>
                 : effectiveProfilesLoading && profiles.length === 0
-                  ? <p className={styles.feedback}>A carregar perfis...</p>
+                  ? <p className={styles.feedback} role="status">A carregar perfis...</p>
                 : <ProfileSelector profiles={profiles} viewerName={session && isSessionReady ? displaySessionName(session) : undefined} />}
             />
             <Route path="/perfis" element={<Navigate to="/" replace />} />
@@ -345,8 +366,8 @@ function ProfileRoute({
   const { slug = '' } = useParams()
   const profile = profiles.find((item) => item.slug === slug) ?? null
 
-  if (hasError) return <p className={styles.feedback}>Não foi possível carregar este perfil.</p>
-  if (!profile && isLoading) return <p className={styles.feedback}>A carregar perfil...</p>
+  if (hasError) return <p className={styles.feedback} role="alert">Não foi possível carregar este perfil.</p>
+  if (!profile && isLoading) return <p className={styles.feedback} role="status">A carregar perfil...</p>
   if (!profile) return <NotFoundPage onHome={onBack} title="Perfil não encontrado" />
 
   return <PortfolioPage profile={profile} onBack={onBack} onBooking={() => onBooking(profile)} onLogin={onLogin} />
@@ -370,8 +391,8 @@ function BookingRoute({
   const initialProfile = slug ? profiles.find((profile) => profile.slug === slug) ?? null : null
   const handleBack = slug ? () => navigate(profilePath(slug)) : onBack
 
-  if (hasError) return <p className={styles.feedback}>Não foi possível carregar os perfis para agendamento.</p>
-  if (slug && !initialProfile && isLoading) return <p className={styles.feedback}>A carregar agendamento...</p>
+  if (hasError) return <p className={styles.feedback} role="alert">Não foi possível carregar os perfis para agendamento.</p>
+  if (slug && !initialProfile && isLoading) return <p className={styles.feedback} role="status">A carregar agendamento...</p>
   if (slug && !initialProfile) return <NotFoundPage onHome={onBack} title="Perfil para agendamento não encontrado" />
 
   return <BookingPage key={slug ?? 'all'} initialProfile={initialProfile} onBack={handleBack} onRequireLogin={onRequireLogin} profiles={profiles} />
@@ -416,7 +437,7 @@ function RequireSession({
 }) {
   const location = useLocation()
 
-  if (!isSessionReady) return <p className={styles.feedback}>A validar sessão...</p>
+  if (!isSessionReady) return <p className={styles.feedback} role="status">A validar sessão...</p>
   if (!session) return <Navigate to={loginPath(location.pathname + location.search)} replace />
 
   return children(session)
@@ -440,7 +461,7 @@ function RequireAdmin({
 }) {
   const location = useLocation()
 
-  if (!isSessionReady) return <p className={styles.feedback}>A validar sessão...</p>
+  if (!isSessionReady) return <p className={styles.feedback} role="status">A validar sessão...</p>
   if (!session) return <Navigate to={loginPath(location.pathname + location.search)} replace />
   if (session.role !== 'ADMIN') return <Navigate to="/" replace />
 
@@ -458,16 +479,12 @@ function NotFoundPage({ onHome, title = 'Página não encontrada' }: { onHome: (
 }
 
 function RouteFallback() {
-  return <p className={styles.feedback}>A carregar...</p>
+  return <p className={styles.feedback} role="status">A carregar...</p>
 }
 
 function displaySessionName(session: AuthSession) {
   const fullName = [session.firstName, session.lastName].filter(Boolean).join(' ').trim()
   return fullName || session.username || session.email.split('@')[0] || 'user'
-}
-
-function prefersReducedMotion() {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function activeViewFromPath(pathname: string): NavigationView {

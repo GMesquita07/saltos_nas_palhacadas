@@ -19,6 +19,7 @@ import {
 } from './resetPasswordUx'
 import { NavIcon } from '../../components/NavIcon/NavIcon'
 import { PasswordField } from '../../components/PasswordField/PasswordField'
+import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import styles from './AuthPage.module.css'
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? ''
@@ -51,6 +52,7 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const turnstileRef = useRef<TurnstileHandle | null>(null)
+  const errorRef = useFocusOnError(error)
 
   const isRegistering = mode === 'register'
   const isRecoveringPassword = mode === 'forgot'
@@ -396,7 +398,7 @@ export function AuthPage({ initialMode, initialNotice, resetToken: initialResetT
           )}
           {notice && <p className={styles.success} role="status">{notice}</p>}
           {turnstileConfigError && <p className={styles.error} role="alert">{turnstileConfigError}</p>}
-          {error && <p className={styles.error} role="alert">{error}</p>}
+          {error && <p className={styles.error} ref={errorRef} role="alert" tabIndex={-1}>{error}</p>}
           {canShowResetForm && (
             <button disabled={isSubmitDisabled} type="submit">
               {isSubmitting ? 'A processar...' : submitLabel(mode)}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { SyntheticEvent } from 'react'
+import { restoreDialogFocus, trapDialogFocus } from '../../accessibility/dialog'
 import type { PortfolioItem } from '../../types/portfolio'
 import {
   mediaDimensionsFromSize,
@@ -33,16 +34,6 @@ type BodyScrollLockSnapshot = {
     overscrollBehavior: string
   }
 }
-
-const focusableSelector = [
-  'a[href]',
-  'button:not([disabled])',
-  'video[controls]',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',')
 
 export function MediaLightbox({ item, onClose, presentation = 'default' }: MediaLightboxProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null)
@@ -92,7 +83,7 @@ export function MediaLightbox({ item, onClose, presentation = 'default' }: Media
       }
 
       if (event.key === 'Tab') {
-        trapFocus(event, dialogRef.current)
+        trapDialogFocus(event, dialogRef.current)
       }
     }
 
@@ -100,9 +91,7 @@ export function MediaLightbox({ item, onClose, presentation = 'default' }: Media
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       unlockBodyScroll(scrollLock)
-      if (previouslyFocusedElementRef.current && document.contains(previouslyFocusedElementRef.current)) {
-        previouslyFocusedElementRef.current.focus({ preventScroll: true })
-      }
+      restoreDialogFocus(previouslyFocusedElementRef.current)
     }
   }, [])
 
@@ -196,28 +185,4 @@ function unlockBodyScroll(snapshot: BodyScrollLockSnapshot) {
   documentElement.style.overscrollBehavior = snapshot.documentElement.overscrollBehavior
 
   window.scrollTo({ top: snapshot.scrollY, left: 0, behavior: 'auto' })
-}
-
-function trapFocus(event: KeyboardEvent, dialog: HTMLDivElement | null) {
-  if (!dialog) return
-
-  const focusableElements = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
-    .filter((element) => element.offsetParent !== null || element === document.activeElement)
-  if (focusableElements.length === 0) {
-    event.preventDefault()
-    dialog.focus({ preventScroll: true })
-    return
-  }
-
-  const firstElement = focusableElements[0]
-  const lastElement = focusableElements[focusableElements.length - 1]
-  const activeElement = document.activeElement
-
-  if (event.shiftKey && activeElement === firstElement) {
-    event.preventDefault()
-    lastElement.focus({ preventScroll: true })
-  } else if (!event.shiftKey && activeElement === lastElement) {
-    event.preventDefault()
-    firstElement.focus({ preventScroll: true })
-  }
 }

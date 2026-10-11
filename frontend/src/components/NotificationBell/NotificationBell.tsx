@@ -13,12 +13,18 @@ function EnabledNotificationBell({ onBookings, onViewAll }: { onBookings: () => 
   const { error, isLoading, markAllRead, markRead, notifications, unreadCount } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
   const panelId = useId()
+  const panelTitleId = useId()
 
   useEffect(() => {
     if (!isOpen) return
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setIsOpen(false)
+        triggerRef.current?.focus({ preventScroll: true })
+      }
     }
     const closeOutside = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false)
@@ -47,6 +53,7 @@ function EnabledNotificationBell({ onBookings, onViewAll }: { onBookings: () => 
         aria-expanded={isOpen}
         aria-label={`${unreadCount} notificações não lidas`}
         className={`${styles.trigger} ${unreadCount > 0 ? styles.triggerAlert : ''}`}
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((current) => !current)}
       >
@@ -57,10 +64,10 @@ function EnabledNotificationBell({ onBookings, onViewAll }: { onBookings: () => 
       </button>
 
       {isOpen && (
-        <section aria-label="Notificações" className={styles.panel} id={panelId}>
-          <header><strong>Notificações</strong><span>{formatNotificationBadge(unreadCount)}</span></header>
-          {isLoading && notifications.length === 0 ? <p className={styles.state}>A carregar...</p>
-            : error && notifications.length === 0 ? <p className={styles.error}>{error}</p>
+        <section aria-labelledby={panelTitleId} className={styles.panel} id={panelId}>
+          <header><strong id={panelTitleId}>Notificações</strong><span>{formatNotificationBadge(unreadCount)}</span></header>
+          {isLoading && notifications.length === 0 ? <p className={styles.state} role="status">A carregar...</p>
+            : error && notifications.length === 0 ? <p className={styles.error} role="alert">{error}</p>
               : visibleNotifications.length === 0 ? <p className={styles.state}>Não tens notificações.</p>
                 : (
                   <ul>
