@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import { useAuth } from '../auth/AuthContext'
 import { getProfileReviews, submitProfileReview } from '../../services/reviewService'
 import type { Profile } from '../../types/profile'
@@ -26,6 +27,7 @@ export function ReviewsSection({ profile, onLoginClick, onSummaryChange }: Revie
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const errorRef = useFocusOnError(error)
 
   useEffect(() => {
     let isCurrent = true
@@ -139,6 +141,7 @@ export function ReviewsSection({ profile, onLoginClick, onSummaryChange }: Revie
             <label>
               Nome a apresentar
               <input
+                autoComplete="name"
                 maxLength={120}
                 minLength={2}
                 onChange={(event) => setForm((current) => ({ ...current, reviewerName: event.target.value }))}
@@ -186,7 +189,7 @@ export function ReviewsSection({ profile, onLoginClick, onSummaryChange }: Revie
                 value={form.comment}
               />
             </label>
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && <p className={styles.error} ref={errorRef} role="alert" tabIndex={-1}>{error}</p>}
             {notice && <p className={styles.success} role="status">{notice}</p>}
             <button disabled={isSubmitting} type="submit">{isSubmitting ? 'A enviar...' : 'Enviar avaliação'}</button>
           </form>

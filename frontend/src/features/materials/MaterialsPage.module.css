@@ -315,7 +315,7 @@
 
 .primaryAction {
   border: 1px solid var(--interactive);
-  color: #071017;
+  color: var(--interactive-text);
   background: var(--interactive);
 }
 

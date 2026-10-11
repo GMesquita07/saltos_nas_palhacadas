@@ -3,9 +3,12 @@ import test from 'node:test'
 
 import {
   dismissNavigationMenuOnEscape,
+  hashTargetId,
+  hashTargetsElement,
   mainContentHref,
   mainContentId,
   navigationAriaCurrent,
+  shouldMoveFocusToMain,
 } from './accessibility.ts'
 
 test('keeps the skip link and main target identifiers aligned', () => {
@@ -50,4 +53,29 @@ test('other keys leave the mobile navigation unchanged', () => {
 
   assert.equal(dismissed, false)
   assert.equal(called, false)
+})
+
+test('does not move focus on the initial route render', () => {
+  assert.equal(shouldMoveFocusToMain(null, '/contactos', ''), false)
+})
+
+test('moves focus when the pathname changes', () => {
+  assert.equal(shouldMoveFocusToMain('/', '/contactos', ''), true)
+  assert.equal(shouldMoveFocusToMain('/contactos', '/contactos', ''), false)
+})
+
+test('preserves hash navigation instead of moving focus to main', () => {
+  assert.equal(shouldMoveFocusToMain('/conta', '/conta', '#account-notifications-title'), false)
+  assert.equal(shouldMoveFocusToMain('/', '/conta', '#account-notifications-title'), false)
+})
+
+test('resolves valid hash targets for lazy route focus', () => {
+  assert.equal(hashTargetId('#account-notifications-title'), 'account-notifications-title')
+  assert.equal(hashTargetId('#sec%C3%A7%C3%A3o'), 'secção')
+  assert.equal(hashTargetId(''), null)
+})
+
+test('matches only the intended hash focus target', () => {
+  assert.equal(hashTargetsElement('#account-notifications-title', 'account-notifications-title'), true)
+  assert.equal(hashTargetsElement('#profile-about', 'account-notifications-title'), false)
 })

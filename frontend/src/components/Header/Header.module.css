@@ -365,7 +365,7 @@
 :global(html[data-theme='light']) .inner nav .authenticationButton,
 :global(html[data-theme='dark']) .inner nav .authenticationButton {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
@@ -373,7 +373,7 @@
 :global(html[data-theme='light']) .inner nav .authenticationButton:hover,
 :global(html[data-theme='dark']) .inner nav .authenticationButton:hover {
   border-color: var(--interactive-hover) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive-hover) !important;
 }
 

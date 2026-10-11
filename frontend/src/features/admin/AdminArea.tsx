@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useAccessibleDialog } from '../../accessibility/useAccessibleDialog'
+import { preferredScrollBehavior } from '../../accessibility/motion'
+import { useFocusOnError } from '../../accessibility/useFocusOnError'
 import { CroppedImage } from '../../components/CroppedImage'
 import { ArtistProfileImage } from '../../components/ArtistProfileImage'
 import { artistInitials } from '../../components/artistProfileImage'
@@ -180,6 +183,7 @@ export function AdminArea({
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
   const [contentForm, setContentForm] = useState<ContentFormState>(emptyContentForm)
   const [cropDialog, setCropDialog] = useState<ImageCropDialogState | null>(null)
+  const noticeErrorRef = useFocusOnError(notice?.type === 'error' ? notice.text : null)
   const [formActionNotice, setFormActionNotice] = useState<Notice | null>(null)
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm)
   const [editingProfileSlug, setEditingProfileSlug] = useState<string | null>(null)
@@ -798,7 +802,12 @@ export function AdminArea({
             <h2>{adminPageTitle(page)}</h2>
           </div>
           {notice && (
-            <p className={[styles.notice, styles[notice.type]].join(' ')} role="status">
+            <p
+              className={[styles.notice, styles[notice.type]].join(' ')}
+              ref={notice.type === 'error' ? noticeErrorRef : undefined}
+              role={notice.type === 'error' ? 'alert' : 'status'}
+              tabIndex={notice.type === 'error' ? -1 : undefined}
+            >
               {notice.text}
             </p>
           )}
@@ -1854,7 +1863,7 @@ function ContentManagement({
         </div>
 
         {isLoading ? (
-          <p className={styles.emptyState}>A carregar conteúdos...</p>
+          <p className={styles.emptyState} role="status">A carregar conteúdos...</p>
         ) : !form.profileSlug ? (
           <p className={styles.emptyState}>Seleciona um perfil para gerir o seu portfolio.</p>
         ) : items.length === 0 ? (
@@ -2190,15 +2199,10 @@ function ImageCropDialog({
   onClose: () => void
 }) {
   const [draftCrop, setDraftCrop] = useState(dialog.crop)
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  const titleId = useId()
+  const descriptionId = useId()
+  const initialFocusRef = useRef<HTMLInputElement | null>(null)
+  const dialogRef = useAccessibleDialog<HTMLDivElement>({ initialFocusRef, isOpen: true, onClose })
 
   function saveCrop() {
     dialog.onSave(draftCrop)
@@ -2208,21 +2212,27 @@ function ImageCropDialog({
   return (
     <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
       <div
-        aria-label={dialog.title}
+        aria-describedby={descriptionId}
+        aria-labelledby={titleId}
         aria-modal="true"
         className={[styles.cropDialog, dialog.previewMode === 'profileHeroBackground' ? styles.heroCropDialog : ''].filter(Boolean).join(' ')}
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <ImageCropEditor
           crop={draftCrop}
           description={dialog.description}
+          descriptionId={descriptionId}
+          initialFocusRef={initialFocusRef}
           aspectRatio={dialog.aspectRatio}
           comparisonPreviews={dialog.comparisonPreviews}
           previewMode={dialog.previewMode}
           shape={dialog.shape}
           src={dialog.src}
           title={dialog.title}
+          titleId={titleId}
           onChange={setDraftCrop}
         />
         <div className={styles.cropDialogActions}>
@@ -2432,6 +2442,6 @@ function contactField(type: ContactType): ContactField {
 
 function scrollToEditor(id: string) {
   window.requestAnimationFrame(() => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.getElementById(id)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' })
   })
 }

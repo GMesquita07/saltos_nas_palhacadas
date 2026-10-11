@@ -731,7 +731,7 @@
   border: 1px solid var(--brand-blue);
   border-radius: 999px;
   padding: 10px 16px;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--brand-blue);
   cursor: pointer;
   font-size: 13px !important;
@@ -742,7 +742,7 @@
 .uploadButton:hover,
 .uploadButton:focus-within {
   border-color: #1175ae;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: #1175ae !important;
   transform: translateY(-1px);
 }
@@ -928,14 +928,14 @@
 :global(html[data-theme='dark']) .actions button,
 :global(html[data-theme='dark']) .securityForm button {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
 .actions button:hover:not(:disabled),
 .securityForm button:hover:not(:disabled) {
   border-color: var(--interactive-hover) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive-hover) !important;
 }
 
@@ -1019,14 +1019,14 @@
 :global(html[data-theme='light']) .uploadButton,
 :global(html[data-theme='dark']) .uploadButton {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
 .uploadButton span,
 :global(html[data-theme='light']) .uploadButton span,
 :global(html[data-theme='dark']) .uploadButton span {
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
 }
 
 .uploadButton:hover,
@@ -1036,7 +1036,7 @@
 :global(html[data-theme='dark']) .uploadButton:hover,
 :global(html[data-theme='dark']) .uploadButton:focus-within {
   border-color: var(--interactive-hover) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive-hover) !important;
 }
 
@@ -1093,7 +1093,7 @@
   border: 1px solid var(--interactive);
   border-radius: 10px;
   padding: 10px 14px;
-  color: #ffffff;
+  color: var(--interactive-text);
   background: var(--interactive);
   font: inherit;
   font-size: .84rem;
@@ -1287,12 +1287,12 @@
 
 .notificationActions .viewBookingButton {
   border-color: var(--interactive);
-  color: #ffffff;
+  color: var(--interactive-text);
   background: var(--interactive);
 }
 
 .notificationActions .viewBookingButton:hover:not(:disabled) {
-  color: #ffffff;
+  color: var(--interactive-text);
   background: var(--interactive-hover);
 }
 

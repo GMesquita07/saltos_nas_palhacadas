@@ -54,9 +54,9 @@ export function MaterialsPage() {
       </header>
 
       {isLoading ? (
-        <p className={styles.feedback}>A carregar material...</p>
+        <p className={styles.feedback} role="status">A carregar material...</p>
       ) : hasError ? (
-        <p className={styles.feedback}>Não foi possível carregar a lista de material.</p>
+        <p className={styles.feedback} role="alert">Não foi possível carregar a lista de material.</p>
       ) : materials.length === 0 ? (
         <div className={styles.emptyState}>
           <p className="eyebrow">Disponibilidade</p>

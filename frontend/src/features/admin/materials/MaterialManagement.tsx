@@ -1,4 +1,6 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useAccessibleDialog } from '../../../accessibility/useAccessibleDialog'
+import { preferredScrollBehavior } from '../../../accessibility/motion'
 import { ImageCropEditor } from '../../../components/ImageCropEditor'
 import { defaultImageCrop, formatImagePosition, imageCropStyle, parseImageCrop, type ImageCrop } from '../../../components/imageCrop'
 import { uploadFile } from '../../../services/apiClient'
@@ -125,7 +127,7 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
     })
     onNotice({ type: 'success', text: 'A editar o material ' + material.name + '.' })
     window.requestAnimationFrame(() => {
-      document.getElementById('material-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById('material-editor')?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' })
     })
   }
 
@@ -268,7 +270,7 @@ export function MaterialManagement({ token, onNotice }: MaterialManagementProps)
       <section className={styles.manage}>
         <h2>Materiais publicados</h2>
         {isLoading ? (
-          <p>A carregar materiais...</p>
+          <p role="status">A carregar materiais...</p>
         ) : materials.length === 0 ? (
           <p>Ainda não existem materiais publicados.</p>
         ) : (
@@ -368,15 +370,10 @@ function MaterialImageCropDialog({
   onSave: (crop: ImageCrop) => void
 }) {
   const [draftCrop, setDraftCrop] = useState(crop)
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  const titleId = useId()
+  const descriptionId = useId()
+  const initialFocusRef = useRef<HTMLInputElement | null>(null)
+  const dialogRef = useAccessibleDialog<HTMLDivElement>({ initialFocusRef, isOpen: true, onClose })
 
   function saveCrop() {
     onSave(draftCrop)
@@ -386,10 +383,13 @@ function MaterialImageCropDialog({
   return (
     <div className={styles.cropDialogBackdrop} role="presentation" onMouseDown={onClose}>
       <div
-        aria-label="Ajustar fotografia do material"
+        aria-describedby={descriptionId}
+        aria-labelledby={titleId}
         aria-modal="true"
         className={styles.cropDialog}
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <ImageCropEditor
@@ -400,9 +400,12 @@ function MaterialImageCropDialog({
           ]}
           crop={draftCrop}
           description="Arrasta a fotografia e ajusta o zoom. A mesma posição é aplicada ao cartão desktop e mobile."
+          descriptionId={descriptionId}
+          initialFocusRef={initialFocusRef}
           shape="landscape"
           src={src}
           title="Ajustar fotografia do material"
+          titleId={titleId}
           onChange={setDraftCrop}
         />
         <div className={styles.cropDialogActions}>
