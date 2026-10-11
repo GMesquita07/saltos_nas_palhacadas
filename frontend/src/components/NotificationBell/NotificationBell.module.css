@@ -24,17 +24,17 @@
 
 .triggerAlert {
   border-color: color-mix(in srgb, var(--danger) 72%, var(--border));
-  color: #fff;
+  color: var(--danger-text);
   background: color-mix(in srgb, var(--danger) 84%, #11161b);
   box-shadow: 0 10px 26px color-mix(in srgb, var(--danger) 24%, transparent);
 }
 
 .triggerAlert:hover {
   border-color: var(--danger);
-  color: #fff;
+  color: var(--danger-text);
   background: var(--danger);
 }
-.trigger:focus-visible { outline: 3px solid var(--interactive-soft); outline-offset: 3px; }
+.trigger:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 .trigger svg { width: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 
 .panel {
@@ -68,7 +68,7 @@
 .panel time { font-size: .7rem; opacity: .72; }
 .panel footer { align-items: stretch; flex-direction: column; border-top: 1px solid var(--border); }
 .panel footer button { min-height: 36px; border: 1px solid var(--border); padding: 7px 10px; color: var(--text-primary); background: transparent; font: inherit; font-size: .76rem; font-weight: 760; }
-.panel footer button:last-child { border-color: var(--interactive); color: #fff; background: var(--interactive); }
+.panel footer button:last-child { border-color: var(--interactive); color: var(--interactive-text); background: var(--interactive); }
 .panel footer button:disabled { opacity: .5; }
 .state, .error { margin: 0; padding: 24px 14px; text-align: center; }
 .error { color: var(--danger); }

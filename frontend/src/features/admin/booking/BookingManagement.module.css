@@ -487,7 +487,7 @@
 :global(html[data-theme='light']) .actions button:first-child,
 :global(html[data-theme='light']) .confirmButton {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
@@ -498,7 +498,7 @@
 }
 
 :global(html[data-theme='light']) .declineButton:hover:not(:disabled) {
-  color: #ffffff !important;
+  color: var(--danger-text) !important;
   background: var(--danger-hover) !important;
 }
 
@@ -523,7 +523,7 @@
 .actions button:first-child,
 .confirmButton {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
@@ -550,7 +550,7 @@
 }
 
 .declineButton:hover:not(:disabled) {
-  color: #ffffff !important;
+  color: var(--danger-text) !important;
   background: var(--danger-hover) !important;
 }
 

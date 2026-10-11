@@ -2413,19 +2413,19 @@
 
 :global(html[data-theme='light']) .day.selected {
   border-color: #168bd0 !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: #168bd0 !important;
 }
 
 :global(html[data-theme='light']) .submit {
   border-color: #168bd0 !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: #168bd0 !important;
 }
 
 :global(html[data-theme='light']) .submit:hover:not(:disabled) {
   border-color: #1175ae !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: #1175ae !important;
 }
 
@@ -2649,7 +2649,7 @@
 :global(html[data-theme='light']) .day.selected,
 :global(html[data-theme='dark']) .day.selected {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
@@ -2691,7 +2691,7 @@
 :global(html[data-theme='light']) .modalDone,
 :global(html[data-theme='dark']) .modalDone {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
 }
 
@@ -2699,7 +2699,7 @@
 .detailsButton:hover,
 .modalDone:hover {
   border-color: var(--interactive-hover) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive-hover) !important;
 }
 
@@ -2736,7 +2736,7 @@
 
 .quickCancelButton:hover,
 .cancelConfirmDanger:hover {
-  color: #ffffff !important;
+  color: var(--danger-text) !important;
   background: var(--danger-hover) !important;
 }
 
@@ -2783,7 +2783,7 @@
 :global(html[data-theme='light']) .day.selected,
 :global(html[data-theme='light']) .day.selected:disabled {
   border-color: var(--interactive) !important;
-  color: #ffffff !important;
+  color: var(--interactive-text) !important;
   background: var(--interactive) !important;
   box-shadow: 0 10px 24px rgb(22 139 208 / 20%) !important;
   opacity: 1 !important;
@@ -2972,7 +2972,7 @@
   border: 1px solid var(--interactive);
   border-radius: 10px;
   padding: 9px 13px;
-  color: #ffffff;
+  color: var(--interactive-text);
   background: var(--interactive);
   cursor: pointer;
   font-size: .82rem;
@@ -3265,7 +3265,7 @@
   border: 1px solid var(--interactive);
   border-radius: 9px;
   padding: 10px 16px;
-  color: #fff;
+  color: var(--interactive-text);
   background: var(--interactive);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--interactive) 18%, transparent);
   font: inherit;
@@ -3281,7 +3281,7 @@
 }
 
 .customerCounterSubmit:focus-visible {
-  outline: 3px solid var(--interactive-soft);
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
