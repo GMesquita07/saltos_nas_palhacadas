@@ -1,6 +1,6 @@
 # Estado do Projeto
 
-Last updated: 2026-10-11. Estado operacional de produção em V28; Feature 7 Accessibility em progresso, com implementação local concluída e QA/promoção pendentes.
+Last updated: 2026-10-11. Estado operacional de produção em V28; Feature 7 Accessibility concluída em código e QA humano, com promoção para produção ainda pendente.
 
 ## Resumo
 
@@ -8,13 +8,13 @@ O lançamento técnico de produção está completo. A stack principal está em 
 
 Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media e Performance 6.2 Image Delivery / LCP estão DONE; a última medição documentada mantém PageSpeed 98 mobile / 100 desktop.
 
-Feature 7 Accessibility está IN PROGRESS. A implementação local e os testes automáticos estão concluídos, incluindo a fase estrutural já integrada e os follow-ups de dialogs, formulários, live regions, foco de rotas SPA, teclado, contraste e reduced motion. QA humano de teclado, dark/light, 375/390/430 px, dialogs e leitor de ecrã básico, além da promoção, continuam pendentes; não é ainda uma release de produção.
+Feature 7 Accessibility está DONE em implementação e QA humano. A fase estrutural e os follow-ups de dialogs, formulários, live regions, foco de rotas SPA e hashes, teclado, contraste e reduced motion foram validados, incluindo dark/light e desktop/mobile. A promoção para `dev`/`main` e produção ainda está pendente; não é ainda uma release de produção.
 
 Feature 8 Admin Monitoring & Analytics está TODO. Está planeada uma área exclusiva para `ADMIN`, por exemplo `/admin/monitorizacao`, com métricas agregadas de tráfego, contas habilitadas, bookings, conteúdo, operação e performance. A arquitetura será privacy-first, sem tracking individual por defeito, com providers/tokens apenas no backend e conclusão condicionada a revisão Privacy/Cookies/RGPD.
 
 O backend atualmente em produção foi construído do source SHA `3f6a5a6ece13bbcfd40a75cff84d7aa4143bcfae` pelo Cloud Build `4793fb92-e51f-433f-92cb-b98d88feeb21`, que produziu a imagem `backend:3f6a5a6`. A revisão `saltos-backend-00025-vix` encontrou o schema já em V28, validou 28 migrations e não aplicou nova migration. Este source SHA do backend é distinto do HEAD atual de `main`/frontend, `7632482595d2d85b6d653105ced7a4f5ed4caee3`.
 
-A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. A área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app foram promovidos por PR #95 -> `dev` e PR #96 -> `main`; backend, frontend, PostgreSQL CI, CodeQL, Cloudflare Pages, Flyway V28, health e smoke HTTP ficaram verdes. O trigger automático das 09:00 continua a ser monitorizado separadamente. Próximos trabalhos: QA/promoção da Feature 7; Feature 8 Admin Monitoring & Analytics; observabilidade/manutenção; legal/inbound email/media cleanup.
+A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. A área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app foram promovidos por PR #95 -> `dev` e PR #96 -> `main`; backend, frontend, PostgreSQL CI, CodeQL, Cloudflare Pages, Flyway V28, health e smoke HTTP ficaram verdes. O trigger automático das 09:00 continua a ser monitorizado separadamente. Próximos trabalhos: promoção da Feature 7; Feature 8 Admin Monitoring & Analytics; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -56,7 +56,7 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | Feature 5 SEO / Google | DONE | Sim | Sim | Páginas públicas/perfis indexados; structured data ProfilePage reconhecido pelo Search Console |
 | Performance & Media | DONE | Sim | Sim em build/CI/deploy e PageSpeed | PR #55 -> `dev`; PR #56 -> `main`; baseline pós-Feature 6: mobile 85, desktop 100; TBT 0 ms |
 | Performance 6.2 Image Delivery / LCP | DONE | Sim | Sim em PageSpeed pós-deploy | PR #68 -> `dev`; PR #69 -> `main`; mobile 98, LCP 2.3 s, FCP 1.2 s, TBT 0 ms; desktop 100, LCP 0.5 s; image waste estimado caiu de ~656 KiB para ~287 KiB |
-| Feature 7 Accessibility | IN PROGRESS — implementação concluída | Não, branch local | Testes automáticos concluídos; QA humano pendente | Validar teclado, dark/light, 375/390/430 px, dialogs e leitor de ecrã básico; depois promover |
+| Feature 7 Accessibility | DONE — implementação + QA | Não, branch remota | Testes automáticos e QA humano concluídos | Promover `feat/accessibility-complete` para `dev` e depois `main`; validar produção |
 | Feature 8 Admin Monitoring & Analytics | TODO | Não | Não | Planear `/admin/monitorizacao`, endpoints ADMIN agregados, provider analytics server-side e revisão Privacy/Cookies/RGPD |
 | Mobile UX Polish | DONE | Sim | Sim em dispositivo real | PR #59 -> `dev`; PR #60 -> `main`; scroll-to-top, theme toggle, cards de perfis, portfolio e booking mobile corrigidos |
 | Mobile lightbox + branding icons | DONE | Sim | Sim em iPhone | PR #61 -> `dev`; PR #62 -> `main`; portal para `document.body`, scroll lock iOS/iPadOS, safe areas e favicons Saltos atualizados |
@@ -67,7 +67,7 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | --- | --- | --- |
 | `main` | `7632482` | HEAD remoto atual do frontend/source; distinto do source SHA da imagem backend em Cloud Run |
 | `dev` | `688ce6f` | Base de integração anterior à Feature 7 completa |
-| `feat/accessibility-complete` | local | Feature 7 IN PROGRESS; implementação/testes automáticos concluídos, QA e promoção pendentes |
+| `feat/accessibility-complete` | `9e86901` | Branch remota; Feature 7 DONE em implementação + QA, aguarda integração/promoção |
 | `fix/artist-lightbox-desktop` | integrado | PR #81 -> `dev`; Artist media/crop UX |
 | PR #82 `dev` -> `main` | integrado | Promoveu a release Artist media/crop UX para `main` |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |
