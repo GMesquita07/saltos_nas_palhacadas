@@ -1,6 +1,6 @@
 # Estado do Projeto
 
-Last updated: 2026-10-05. Estado operacional de produção em V28, com notificações in-app, contrapropostas bidirecionais e reminders validados após a release.
+Last updated: 2026-10-11. Estado operacional de produção em V28; Feature 7 Accessibility concluída localmente e ainda não promovida.
 
 ## Resumo
 
@@ -8,9 +8,11 @@ O lançamento técnico de produção está completo. A stack principal está em 
 
 Feature 5 SEO / Google está DONE: Search Console configurado, domain property verificada, sitemap enviado, 11 URLs descobertas e perfis indexados. Feature 6 Performance & Media e Performance 6.2 Image Delivery / LCP estão DONE; a última medição documentada mantém PageSpeed 98 mobile / 100 desktop.
 
+Feature 7 Accessibility está DONE em código local. A fase estrutural já integrada acrescentou skip link, `main` focável, estado atual da navegação e teclado no menu mobile; a branch `feat/accessibility-complete` completa dialogs, formulários, live regions, foco de rotas SPA, teclado, contraste e reduced motion. Esta alteração ainda aguarda revisão, promoção e QA visual/assistivo humano; não está registada como release de produção.
+
 A alteração de runtime mais recente em produção é a release `d50d8f9a47fed3ca10fb038aba6d0d5970d48290`, que acrescenta notificações persistentes para clientes/admins, contrapropostas bidirecionais e reminder in-app. O Cloud Build `a4a96676-45f3-4ed6-a097-e5213760498c` produziu a imagem `backend:d50d8f9`; a revisão `saltos-backend-00022-6x6` aplicou V27 e V28 a partir de V26 e terminou com o schema em V28.
 
-A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. A área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app foram promovidos por PR #95 -> `dev` e PR #96 -> `main`; backend, frontend, PostgreSQL CI, CodeQL, Cloudflare Pages, Flyway V28, health e smoke HTTP ficaram verdes. O trigger automático das 09:00 continua a ser monitorizado separadamente. Próximos trabalhos: Feature 7 Accessibility; observabilidade/manutenção; legal/inbound email/media cleanup.
+A UX de link de reset inválido/expirado foi validada no domínio oficial. Os reminders cliente/artista foram validados com uma execução manual do Scheduler, receção nas duas mailboxes de teste e ausência de duplicados numa segunda execução. O email imediato de novo booking para `profile.notificationEmail` do artista também foi confirmado em produção. A área de conta, sino/inbox, contrapropostas bidirecionais e reminder in-app foram promovidos por PR #95 -> `dev` e PR #96 -> `main`; backend, frontend, PostgreSQL CI, CodeQL, Cloudflare Pages, Flyway V28, health e smoke HTTP ficaram verdes. O trigger automático das 09:00 continua a ser monitorizado separadamente. Próximos trabalhos: revisão/promoção e QA humano da Feature 7; observabilidade/manutenção; legal/inbound email/media cleanup.
 
 ## Estado por Área
 
@@ -52,6 +54,7 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | Feature 5 SEO / Google | DONE | Sim | Sim | Páginas públicas/perfis indexados; structured data ProfilePage reconhecido pelo Search Console |
 | Performance & Media | DONE | Sim | Sim em build/CI/deploy e PageSpeed | PR #55 -> `dev`; PR #56 -> `main`; baseline pós-Feature 6: mobile 85, desktop 100; TBT 0 ms |
 | Performance 6.2 Image Delivery / LCP | DONE | Sim | Sim em PageSpeed pós-deploy | PR #68 -> `dev`; PR #69 -> `main`; mobile 98, LCP 2.3 s, FCP 1.2 s, TBT 0 ms; desktop 100, LCP 0.5 s; image waste estimado caiu de ~656 KiB para ~287 KiB |
+| Feature 7 Accessibility | DONE em código | Não, branch local | Testes automatizados locais; QA humano pendente | Rever e promover `feat/accessibility-complete`; validar leitor de ecrã e teclado em desktop/mobile antes de produção |
 | Mobile UX Polish | DONE | Sim | Sim em dispositivo real | PR #59 -> `dev`; PR #60 -> `main`; scroll-to-top, theme toggle, cards de perfis, portfolio e booking mobile corrigidos |
 | Mobile lightbox + branding icons | DONE | Sim | Sim em iPhone | PR #61 -> `dev`; PR #62 -> `main`; portal para `document.body`, scroll lock iOS/iPadOS, safe areas e favicons Saltos atualizados |
 
@@ -61,6 +64,7 @@ A UX de link de reset inválido/expirado foi validada no domínio oficial. Os re
 | --- | --- | --- |
 | `main` | `d50d8f9` | Source release em produção; notificações in-app e contrapropostas bidirecionais validadas |
 | `dev` | integrado | Branch de integração |
+| `feat/accessibility-complete` | local | Feature 7 concluída em código; aguarda revisão e promoção |
 | `fix/artist-lightbox-desktop` | integrado | PR #81 -> `dev`; Artist media/crop UX |
 | PR #82 `dev` -> `main` | integrado | Promoveu a release Artist media/crop UX para `main` |
 | `feat/production-launch` | integrado | Branch de lançamento já promovida |

@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated: 2026-10-04.
+Last updated: 2026-10-11.
 
 Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 
@@ -51,7 +51,7 @@ Estados usados: DONE, IN PROGRESS, BLOCKED, TODO, POST-LAUNCH, OPTIONAL.
 | Email pessoal do artista em bookings | DONE | Implementação já existente em `BookingNotificationService`; novo booking envia para `profile.notificationEmail` e admins ativos. Entrega real no email do artista confirmada em produção em 2026-10-05. |
 | UX da área de conta + notificações in-app | DONE | Dashboard, provider partilhado, sino global e reminder in-app promovidos por PR #95/#96; V27/V28 aplicadas e produção validada. |
 | Contrapropostas bidirecionais de booking | DONE | Fluxo ADMIN↔CUSTOMER, autoria e termos propostos promovidos por PR #95/#96; V28 aplicada e produção validada. |
-| Feature 7: Acessibilidade | TODO | PageSpeed/Lighthouse atual 96; primeiro problema automático confirmado é contraste do botão `Aceitar` no Cookie Consent, seguido de teclado, focus, formulários, dialogs e leitor de ecrã. |
+| Feature 7: Acessibilidade | DONE | Implementada em código: skip link e estrutura de navegação, foco de rotas SPA, dialogs com trap/Escape/retorno de foco, formulários e live regions, teclado, contraste WCAG e reduced motion. Testes/build locais concluídos; aguarda revisão, promoção e QA visual/assistivo humano antes de produção. |
 | Observabilidade/manutenção | TODO | Monitorizar budgets/logs de GCP, Cloudflare, Neon e R2; manter drills periódicos e rotinas operacionais. |
 | Legal, inbound email e cleanup media | TODO | Rever Privacy/Terms/Cookies juridicamente e em UX; decidir provider ou Cloudflare Email Routing para `ola@`; cleanup de media pública órfã requer tracking seguro de ownership/referências antes de apagar objetos R2. |
 | Arquitetura híbrida/static content | PLANNED | Ver [decisões](DECISIONS.md) |
